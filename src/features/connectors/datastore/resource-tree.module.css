@@ -51,7 +51,7 @@
 .viewIcon { color: #8056b7; }
 :global(html[data-theme="dark"]) .viewIcon { color: #b995e0; }
 .indexes { color: var(--warn-ink); }
-.foreignKeys { color: var(--accent); }
+.foreignKeys { color: var(--info); }
 .triggers { color: var(--warn-ink); }
 .query { padding-left: 38px; }
 .query > svg { color: var(--accent-ink); }

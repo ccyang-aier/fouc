@@ -18,5 +18,5 @@
 .status[data-status="succeeded"] { color: var(--ok-ink); border-color: color-mix(in srgb, var(--ok-ink) 30%, transparent); background: color-mix(in srgb, var(--ok-ink) 8%, var(--panel)); }
 .status[data-status="failed"], .error { color: var(--err-ink); }
 .status[data-status="failed"] { border-color: color-mix(in srgb, var(--err-ink) 30%, transparent); background: color-mix(in srgb, var(--err-ink) 7%, var(--panel)); }
-.status[data-status="running"] { color: var(--accent-ink); }
+.status[data-status="running"] { color: var(--info-ink); }
 .error { margin-top: 6px; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }

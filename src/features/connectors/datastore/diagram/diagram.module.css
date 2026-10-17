@@ -51,7 +51,7 @@
 .columnName { fill: var(--ink); font: 13px var(--font-code, monospace); }
 .columnType { fill: var(--diagram-muted); font: 10px var(--font-code, monospace); }
 .pk { fill: #b88d43; font: 9px var(--font-code, monospace); }
-.fk { fill: var(--accent); font: 9px var(--font-code, monospace); }
+.fk { fill: var(--info); font: 9px var(--font-code, monospace); }
 .rowLine { stroke: var(--line); stroke-opacity: .45; }
 .footerText { fill: var(--diagram-muted); font: 10px var(--font-sans, sans-serif); }
 .edge { cursor: pointer; }
@@ -71,7 +71,7 @@
 .panel .relationItem { width: 100%; height: auto; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 6px; margin-top: 5px; text-align: left; overflow-wrap: anywhere; }.relationItem span, .relationItem small { color: var(--muted-strong); font-size: 11px; }.relationItem b { font-size: 13px; font-weight: 500; }
 .fields > input { width: 100%; margin-bottom: 8px; }
 .panel .fields > button { width: 100%; height: 30px; display: flex; justify-content: space-between; text-align: left; padding: 0 5px; }
-.fields button > span { min-width: 0; flex: 1; display: flex; align-items: baseline; gap: 7px; }.fields button b { flex: 1; min-width: 0; font: 13px var(--font-code); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.fields button small { max-width: 98px; color: var(--muted-strong); font: 11px var(--font-code); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.fields button em { width: 18px; text-align: right; color: var(--muted-strong); font: 10px var(--font-sans); }.fields button em[data-key="PK"] { color: #b88d43; }.fields button em:is([data-key="FK"],[data-key="UQ"]) { color: var(--accent-ink); }
+.fields button > span { min-width: 0; flex: 1; display: flex; align-items: baseline; gap: 7px; }.fields button b { flex: 1; min-width: 0; font: 13px var(--font-code); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.fields button small { max-width: 98px; color: var(--muted-strong); font: 11px var(--font-code); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.fields button em { width: 18px; text-align: right; color: var(--muted-strong); font: 10px var(--font-sans); }.fields button em[data-key="PK"] { color: #b88d43; }.fields button em:is([data-key="FK"],[data-key="UQ"]) { color: var(--info-ink); }
 .panel .fields > .activeField { background: var(--action-hover-bg); color: var(--ink); }
 .panel .nodeRelations > button { width: 100%; height: auto; min-height: 28px; justify-content: space-between; text-align: left; margin-bottom: 3px; padding: 5px; overflow-wrap: anywhere; }.nodeRelations button span { font-size: 11px; color: var(--muted-strong); white-space: nowrap; }
 .panel .endpoint { width: 100%; text-align: left; justify-content: flex-start; color: var(--ink); overflow-wrap: anywhere; }

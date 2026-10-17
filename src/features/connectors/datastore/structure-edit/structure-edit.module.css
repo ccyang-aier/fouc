@@ -1,10 +1,10 @@
 .panel { --editor-muted: color-mix(in srgb, var(--ink) 48%, transparent); width: 100%; min-width: 0; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--panel); color: var(--ink); box-shadow: 0 18px 65px rgb(0 0 0 / 0.133); font-size: 12px; }
 .header { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px 24px 18px; background: var(--surface-subtle); }
 .title { display: flex; gap: 13px; align-items: center; min-width: 0; }
-.icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 12px; color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 12px; color: var(--info); border: 1px solid color-mix(in srgb, var(--info) 22%, transparent); background: color-mix(in srgb, var(--info) 8%, transparent); }
 .title h2 { font-size: 17px; font-weight: 600; letter-spacing: -.35px; margin: 0 0 5px; }
 .title p { display: flex; gap: 9px; margin: 0; font: 11px var(--font-code, monospace); color: var(--editor-muted); word-break: break-all; }
-.title p span { font: 9px var(--font-sans, sans-serif); letter-spacing: .7px; padding: 2px 5px; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); border-radius: 4px; }
+.title p span { font: 9px var(--font-sans, sans-serif); letter-spacing: .7px; padding: 2px 5px; color: var(--info); background: color-mix(in srgb, var(--info) 12%, transparent); border-radius: 4px; }
 .headerActions { display: flex; align-items: center; gap: 14px; }
 .dirty { color: #c9a56e; font-size: 11px; }
 .clean { color: var(--editor-muted); font-size: 11px; }
@@ -25,7 +25,7 @@
 .object span { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 .object b { font-size: 12px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; }
 .object small { color: var(--editor-muted); font: 10px var(--font-code, monospace); }
-.object em { font: 9px var(--font-sans, sans-serif); color: var(--accent); flex-shrink: 0; }
+.object em { font: 9px var(--font-sans, sans-serif); color: var(--info); flex-shrink: 0; }
 .panel .object.active { background: color-mix(in srgb, var(--accent) 9%, transparent); border-color: color-mix(in srgb, var(--accent) 18%, transparent); }
 .object.dropped b { text-decoration: line-through; opacity: .5; }
 .object.dropped em { color: var(--err-ink); }
@@ -52,7 +52,7 @@
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chips label { display: flex; flex-direction: row; align-items: center; gap: 7px; padding: 8px 11px; border: 1px solid var(--line); border-radius: 6px; font: 11px var(--font-code, monospace); }
 .chips label:has(input:checked) { border-color: color-mix(in srgb, var(--accent) 35%, transparent); background: color-mix(in srgb, var(--accent) 6%, transparent); }
-.chips b { color: var(--accent); margin-left: 6px; font-size: 10px; }
+.chips b { color: var(--info); margin-left: 6px; font-size: 10px; }
 .primary { padding: 27px; width: 100%; min-height: 320px; }
 .primary h3 { margin: 0 0 8px; font-size: 14px; }
 .primary p { color: var(--editor-muted); line-height: 1.7; font-size: 11px; margin: 0 0 22px; }

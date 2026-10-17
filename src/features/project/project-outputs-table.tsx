@@ -118,7 +118,7 @@ export function OutputsTable({
                   />
                   {isWorkObject ? (
                     <>
-                      <FileText className="ml-3 size-[17px] shrink-0 text-[var(--ink-soft)]" />
+                      <FileText className="ml-3 size-[17px] shrink-0 text-[#33497c]" />
                       <span className="ml-4 truncate text-[12.5px] font-medium text-[var(--ink)]">
                         {section.id} · {fixtureField(section, 'title', locale)}
                       </span>

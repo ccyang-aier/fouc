@@ -42,7 +42,7 @@
 .progress > div { display: flex; align-items: center; gap: 8px; font-size: 12px; }
 .progress strong { font-weight: 500; }
 .progress span { margin-left: auto; font: 11px var(--font-code); }
-.progress progress { display: block; width: 100%; height: 4px; margin: 14px 0; accent-color: var(--accent); }
+.progress progress { display: block; width: 100%; height: 4px; margin: 14px 0; accent-color: var(--info); }
 .progress p { font-size: 10px; color: var(--muted-strong); }
 .spinner { animation: spin 900ms linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }

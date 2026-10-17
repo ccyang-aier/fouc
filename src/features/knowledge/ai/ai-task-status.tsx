@@ -60,7 +60,7 @@ export function aiTaskStatusView(snapshot: AiStreamingTaskSnapshot): AiTaskStatu
 }
 
 const toneClasses: Record<AiTaskStatusView['tone'], string> = {
-  progress: 'border-[var(--accent-soft-line)] bg-[var(--accent-soft)] text-[var(--accent-ink)]',
+  progress: 'border-[var(--info-soft-line)] bg-[var(--info-soft)] text-[var(--info-ink)]',
   ok: 'border-[color-mix(in_srgb,var(--ok-ink)_24%,transparent)] bg-[color-mix(in_srgb,var(--ok-ink)_8%,transparent)] text-[var(--ok-ink)]',
   warn: 'border-[var(--warn-soft-line)] bg-[var(--warn-soft)] text-[var(--warn-ink)]',
   error:

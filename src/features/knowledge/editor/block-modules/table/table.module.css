@@ -51,10 +51,10 @@
 .selectionToolbar { position: absolute; z-index: 90; display: flex; flex-wrap: wrap; justify-content: center; width: 444px; max-width: calc(100vw - 24px); padding: 4px 6px; border-radius: 6px; background: var(--panel); color: var(--ink-soft); box-shadow: 0 1px 3px rgb(0 0 0 / 0.071), 0 10px 20px rgb(0 0 0 / 0.071); transform: translate(-50%, -50%); cursor: default; }
 .toolbarGroup { display: contents; }
 .toolbarButton { display: grid; width: 36px; height: 36px; place-items: center; padding: 0; border: 0; border-radius: 4px; background: transparent; color: inherit; cursor: pointer; }
-.toolbarButton:hover, .toolbarButton[data-on] { background: var(--surface-subtle); color: var(--muted-strong); }
+.toolbarButton:hover, .toolbarButton[data-on] { background: #edf3fc; color: #2863dc; }
 .toolbarButton:disabled { color: var(--muted-strong); cursor: default; }
 .toolbarButton:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-.toolbarArrow { position: absolute; bottom: -10px; left: calc(50% - 8px); color: var(--muted-strong); transform: rotate(180deg); pointer-events: none; }
+.toolbarArrow { position: absolute; bottom: -10px; left: calc(50% - 8px); color: var(--panel); transform: rotate(180deg); pointer-events: none; }
 .menu.linkMenu { width: 300px; max-width: calc(100vw - 24px); padding: 12px; }
 .linkLabel { display: block; margin-bottom: 8px; font-size: 13px; }
 .linkMenu input { width: 100%; }

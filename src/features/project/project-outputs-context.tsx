@@ -123,7 +123,7 @@ function ContextBody({ groupId, output }: { groupId: string | null; output: Outp
           <ContextRow label={t('关联工作任务')}>
             <button
               type="button"
-              className="flex items-center gap-2 rounded text-left text-[var(--ink-soft)] outline-none transition-colors hover:underline focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+              className="flex items-center gap-2 rounded text-left text-[#4674ab] outline-none transition-colors hover:underline focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
             >
               <span>{detail.relatedTask.id}</span>
               <span>{fixtureField(detail.relatedTask, 'title', locale)}</span>
@@ -182,7 +182,7 @@ function ContextBody({ groupId, output }: { groupId: string | null; output: Outp
                   </span>
                   <button
                     type="button"
-                    className="rounded text-left text-[var(--ink-soft)] outline-none transition-colors hover:underline focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                    className="rounded text-left text-[#4674ab] outline-none transition-colors hover:underline focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                   >
                     {item.file}
                   </button>
@@ -192,7 +192,7 @@ function ContextBody({ groupId, output }: { groupId: string | null; output: Outp
           </ContextRow>
 
           <ContextRow label={t('残余风险')}>
-            <span className="grid size-[28px] place-items-center rounded-[9px] bg-[var(--warn-soft)] text-[13px] font-medium text-[var(--warn-ink)]">
+            <span className="grid size-[28px] place-items-center rounded-[9px] bg-[#eef3fa] text-[13px] font-medium text-[#4674ab]">
               {fixtureField(detail.risk, 'level', locale)}
             </span>
             <p className="mt-[7px]">{fixtureField(detail.risk, 'note', locale)}</p>

@@ -33,7 +33,7 @@
 .table thead small[data-type="date"] { color: #a648df; }
 .table thead small[data-type="text"] { color: #21815d; }
 .table thead small { display: flex; align-items: center; gap: 4px; color: var(--muted-strong); font: 10px/14px var(--font-code); white-space: nowrap; }
-.table thead small i { color: var(--accent-ink); font: italic 11px var(--font-code); }
+.table thead small i { color: var(--info-ink); font: italic 11px var(--font-code); }
 .table .resizeHandle { position: absolute; right: 0; top: 0; bottom: 0; width: 6px; z-index: 3; --resize-line-position: calc(100% - 1px); }
 .table th[data-drop-edge]::after { content: ""; position: absolute; top: 0; bottom: 0; width: var(--drag-indicator-width); background: var(--drag-indicator-color); z-index: 4; pointer-events: none; }
 .table th[data-drop-edge="before"]::after { left: 0; }.table th[data-drop-edge="after"]::after { right: 0; }
@@ -100,7 +100,7 @@
 
 .table thead th[data-jump-current]:not([data-selected]) { background: var(--accent-soft); color: var(--accent-ink); }
 .table td[data-search-match]:not([data-selected]) { background: var(--warn-soft); }
-.table td[data-value-type="number"]:not([data-selected]) { color: var(--accent-ink); }
+.table td[data-value-type="number"]:not([data-selected]) { color: var(--info-ink); }
 .table td[data-value-type="date"]:not([data-selected]) { color: #a648df; }
 .table td[data-value-type="text"]:not([data-selected]) { color: var(--ok-ink); }
 .booleanValue { display: inline-flex; vertical-align: middle; align-items: center; justify-content: center; width: 16px; height: 16px; border: 1px solid var(--control-border); border-radius: 4px; }.booleanValue[data-checked=true] { color: white; background: var(--drag-indicator-color); border-color: var(--drag-indicator-color); }

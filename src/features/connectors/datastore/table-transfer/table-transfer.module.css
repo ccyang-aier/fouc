@@ -1,7 +1,7 @@
 .panel { --transfer-muted: color-mix(in srgb, var(--ink) 47%, transparent); width: 100%; min-width: 0; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; font-size: 12px; }
 .header { padding: 22px 24px 18px; display: flex; justify-content: space-between; align-items: center; gap: 18px; }
 .title { display: flex; align-items: center; gap: 13px; }
-.icon { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; color: var(--accent); background: color-mix(in srgb, var(--accent) 9%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent); }
+.icon { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; color: var(--info); background: color-mix(in srgb, var(--info) 9%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent); }
 .title h2 { margin: 0 0 5px; font-size: 17px; font-weight: 600; letter-spacing: -.3px; }
 .title p { margin: 0; font-size: 11px; color: var(--transfer-muted); }
 .panel button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 11px; font: inherit; color: inherit; border: 1px solid var(--line); border-radius: 6px; background: transparent; cursor: pointer; transition: background .12s; }
@@ -12,7 +12,7 @@
 .endpoints > div { border: 1px solid var(--line); padding: 13px 15px; border-radius: 8px; min-width: 0; }
 .endpoints small { color: var(--transfer-muted); font-size: 10px; }
 .endpoints h3 { font-size: 13px; font-weight: 500; margin: 7px 0 6px; overflow: hidden; text-overflow: ellipsis; }
-.endpoints code { color: var(--accent); font: 11px var(--font-code, monospace); overflow-wrap: anywhere; }
+.endpoints code { color: var(--info); font: 11px var(--font-code, monospace); overflow-wrap: anywhere; }
 .endpoints > svg { color: var(--transfer-muted); margin: auto; }
 .tabs { display: flex; gap: 8px; padding: 0 24px; border-bottom: 1px solid var(--line); align-items: center; }
 .tabs button { border: 0; border-bottom: 2px solid transparent; border-radius: 0; padding: 11px 12px; color: var(--transfer-muted); }
@@ -63,12 +63,12 @@
 .empty p { margin: 0; font-size: 11px; line-height: 1.7; }
 .progress { border: 1px solid var(--line); border-radius: 8px; margin-top: 18px; padding: 16px; background: color-mix(in srgb, var(--accent) 4%, transparent); }
 .phase { display: flex; gap: 10px; align-items: center; color: var(--transfer-muted); font-size: 10px; }
-.phase [data-active="true"] { color: var(--accent); }
+.phase [data-active="true"] { color: var(--info); }
 .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 19px 0 15px; }
 .metrics span { color: var(--transfer-muted); font-size: 9px; }
 .metrics b { display: block; font: 19px var(--font-code, monospace); color: var(--ink); margin-bottom: 6px; }
-.indeterminate { height: 3px; overflow: hidden; border-radius: 2px; background: color-mix(in srgb, var(--accent) 12%, transparent); }
-.indeterminate i { display: block; width: 35%; height: 100%; background: var(--accent); animation: transfer-loading 1.5s ease-in-out infinite; }
+.indeterminate { height: 3px; overflow: hidden; border-radius: 2px; background: color-mix(in srgb, var(--info) 12%, transparent); }
+.indeterminate i { display: block; width: 35%; height: 100%; background: var(--info); animation: transfer-loading 1.5s ease-in-out infinite; }
 .progress p { color: var(--transfer-muted); font-size: 10px; margin: 10px 0 0; }
 .resultSuccess, .resultError { padding: 14px 16px; border: 1px solid #85bc9d30; background: #85bc9d08; border-radius: 8px; margin-top: 15px; color: #85bc9d; }
 .resultError { color: var(--err-ink); border-color: color-mix(in srgb, var(--err-ink) 25%, transparent); background: color-mix(in srgb, var(--err-ink) 5%, transparent); }

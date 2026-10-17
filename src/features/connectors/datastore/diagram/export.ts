@@ -109,7 +109,7 @@ export function exportErDiagramSvg(
     for (const [index, column] of columns.entries()) {
       const y = ER_HEADER_HEIGHT + index * ER_ROW_HEIGHT;
       svg.push(
-        `<line x1="1" y1="${y}" x2="${box.width - 1}" y2="${y}" stroke="${xml(theme.line)}" opacity=".45"/><text x="13" y="${y + 16}" font-size="9" fill="${xml(column.primary ? '#b88d43' : theme.accent)}">${column.primary ? 'PK' : column.foreign ? 'FK' : ''}</text><text x="38" y="${y + 16}" font-size="13" fill="${xml(theme.ink)}">${xml(shorten(column.name, 22))}<title>${xml(column.name)}</title></text><text x="${box.width - 12}" y="${y + 16}" text-anchor="end" font-size="10" fill="${xml(theme.muted)}">${xml(shorten(column.dataType ?? '?', 12))}</text>`,
+        `<line x1="1" y1="${y}" x2="${box.width - 1}" y2="${y}" stroke="${xml(theme.line)}" opacity=".45"/><text x="13" y="${y + 16}" font-size="9" fill="${xml(column.primary ? '#b88d43' : column.foreign ? '#3e63dd' : theme.accent)}">${column.primary ? 'PK' : column.foreign ? 'FK' : ''}</text><text x="38" y="${y + 16}" font-size="13" fill="${xml(theme.ink)}">${xml(shorten(column.name, 22))}<title>${xml(column.name)}</title></text><text x="${box.width - 12}" y="${y + 16}" text-anchor="end" font-size="10" fill="${xml(theme.muted)}">${xml(shorten(column.dataType ?? '?', 12))}</text>`,
       );
     }
     svg.push(

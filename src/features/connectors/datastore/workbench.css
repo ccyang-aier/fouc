@@ -623,7 +623,7 @@ html[data-theme="dark"] .mw {
 .mw-where {
   min-width: 95px;
   flex: 1;
-  color: var(--muted-strong);
+  color: #176ce8;
   font-weight: 650;
 }
 .mw-where svg {
@@ -632,7 +632,7 @@ html[data-theme="dark"] .mw {
 .mw-order {
   min-width: 100px;
   flex: 1;
-  color: var(--muted-strong);
+  color: #e95d18;
   font-weight: 650;
 }
 .mw-grid-actions {
@@ -763,9 +763,9 @@ html[data-theme="dark"] .mw {
   align-items: center;
   gap: 12px;
   padding: 0 12px;
-  border-bottom: 1px solid var(--control-border);
-  background: var(--surface-subtle);
-  color: var(--muted-strong);
+  border-bottom: 1px solid var(--info-soft-line);
+  background: var(--info-soft);
+  color: var(--info-ink);
   font-size: 11px;
 }
 .mw-pending-bar button {
@@ -1337,8 +1337,8 @@ html[data-theme="dark"] .mw {
   display: grid;
   place-items: center;
   border-radius: 7px;
-  background: var(--surface-subtle);
-  color: var(--mw-blue);
+  background: var(--info-soft);
+  color: var(--info-ink);
 }
 .mw-ai-welcome strong {
   font-size: 11.5px;
@@ -1405,8 +1405,8 @@ html[data-theme="dark"] .mw {
   display: grid;
   place-items: center;
   border-radius: 6px;
-  background: var(--surface-subtle);
-  color: var(--mw-blue);
+  background: var(--info-soft);
+  color: var(--info-ink);
 }
 .mw-ai-sql {
   margin-top: 8px;
@@ -1433,7 +1433,7 @@ html[data-theme="dark"] .mw {
   overflow: auto;
   margin: 0;
   padding: 8px;
-  color: var(--muted-strong);
+  color: #315b9e;
   font: 10.5px/1.6 var(--font-code);
   white-space: pre-wrap;
 }

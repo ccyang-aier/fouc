@@ -6,7 +6,7 @@
 .cardText small { display: block; margin-top: 2px; color: var(--muted-strong); font-size: 10px; }
 .edit,.open { display: grid; width: 27px; height: 27px; flex: none; place-items: center; border: 0; border-radius: 6px; background: transparent; color: var(--muted-strong); cursor: pointer; }
 .edit:hover,.open:hover { background: var(--surface-subtle); color: var(--muted-strong); }
-.open { color: var(--muted-strong); }
+.open { color: #447cbd; }
 .picker { padding: 14px; }
 .pickerTitle { display: flex; align-items: center; gap: 7px; margin-bottom: 11px; color: var(--muted-strong); font-size: 12px; font-weight: 650; }
 .search { display: flex; align-items: center; gap: 7px; padding: 6px 9px; border: 1px solid var(--control-border); border-radius: 6px; color: var(--muted-strong); }

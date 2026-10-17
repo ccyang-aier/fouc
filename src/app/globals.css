@@ -64,6 +64,12 @@
   --side-panel-shadow: -12px 0 28px -20px rgba(18, 18, 18, 0.32);
   --side-panel-shadow-left: 12px 0 28px -20px rgba(18, 18, 18, 0.28);
   --ok-ink: #1f8a5f;
+  /* 固定的信息、运行进度和数据类型色；独立于通用黑白灰操作令牌。 */
+  --info: #3e63dd;
+  --info-strong: #3355c9;
+  --info-ink: #3a55b0;
+  --info-soft: #eef1fd;
+  --info-soft-line: #ccd6f3;
   --err-ink: #b3413c;
   --danger-action-bg: #d4383d;
   --warn-ink: #a06b12;
@@ -162,6 +168,11 @@ html[data-theme="dark"] {
   --side-panel-shadow: -12px 0 30px -18px rgba(0, 0, 0, 0.55);
   --side-panel-shadow-left: 12px 0 30px -18px rgba(0, 0, 0, 0.5);
   --ok-ink: #37c395;
+  --info: #6681f5;
+  --info-strong: #7f97f8;
+  --info-ink: #9db2fa;
+  --info-soft: rgba(102, 129, 245, 0.16);
+  --info-soft-line: rgba(102, 129, 245, 0.36);
   --err-ink: #e06c5f;
   --warn-ink: #d9a743;
   --warn-soft: rgba(217, 167, 67, 0.1);

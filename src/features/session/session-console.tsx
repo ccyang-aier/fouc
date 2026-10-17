@@ -397,7 +397,7 @@ function ConsoleItemView(props: {
   switch (item.kind) {
     case 'user':
       return (
-        <div className="chat-scope ml-auto max-w-[85%] rounded-xl rounded-br-sm bg-[var(--accent)] px-3.5 py-2 text-[var(--accent-foreground)]">
+        <div className="chat-scope ml-auto max-w-[85%] rounded-xl rounded-br-sm bg-[#6c5bb3] px-3.5 py-2 text-white">
           {item.text}
         </div>
       );

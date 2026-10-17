@@ -1020,6 +1020,7 @@ export function RelationalQuery({
             variant="ghost"
             size="icon-sm"
             loading={formatting}
+            data-sql-tool="format"
             aria-label={tConnector('formatSql')}
             title={tConnector('formatSqlCtrlShiftFSelectionTakesPriority')}
             disabled={
@@ -1036,6 +1037,7 @@ export function RelationalQuery({
           <button
             type="button"
             className="fouc-action"
+            data-sql-tool="format"
             aria-label={tConnector('minifySql')}
             title={tConnector('minifySelectedOrFullSqlPreservingLiteralsAndExecutionHints')}
             disabled={!current || running || formatting}
@@ -1054,6 +1056,7 @@ export function RelationalQuery({
           <button
             type="button"
             className="fouc-action"
+            data-sql-tool="pane"
             aria-label={tConnector('showQueryResults')}
             title={
               resultsVisible ? tConnector('collapseQueryResults') : tConnector('showQueryResults')
@@ -1066,6 +1069,7 @@ export function RelationalQuery({
           <button
             type="button"
             className="fouc-action"
+            data-sql-tool="file"
             aria-label={tConnector('saveSql')}
             title={tConnector('saveSqlCtrlS')}
             disabled={

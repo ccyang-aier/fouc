@@ -58,7 +58,7 @@
 .fileBadge{display:inline-flex;align-items:center;justify-content:center;position:relative;width:19px;height:22px;border-radius:4px;color:white;font-size:12px;font-weight:700;flex:none;box-shadow:0 2px 4px #283e6a16}
 .fileBadge:after{content:'';position:absolute;right:0;top:0;border-top:5px solid #fff9;border-left:5px solid transparent;border-radius:0 3px 0 0}
 .creator,.source,.status{display:flex;align-items:center;gap:9px}
-.creator>span{display:grid;place-items:center;width:25px;height:25px;border-radius:50%;background:var(--accent-soft);color:var(--ink-soft);font-size:11px}
+.creator>span{display:grid;place-items:center;width:25px;height:25px;border-radius:50%;background:linear-gradient(135deg,#e3e9f2,#cbd5e5);color:#64748b;font-size:11px}
 .status{gap:7px}
 .status svg{color:#12aa65}
 .statusDot{width:7px;height:7px;background:var(--muted);border-radius:50%}

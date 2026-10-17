@@ -3,7 +3,7 @@
 .group+.group { border-inline-start:1px solid var(--line); padding-inline-start:7px; }
 .tool { display:inline-flex; align-items:center; justify-content:center; flex:none; width:27px; height:27px; padding:0; border:0; border-radius:4px; background:transparent; color:inherit; font-size:12px; font-weight:650; cursor:pointer; }
 .tool:hover { background:var(--surface-hover); color:var(--ink); }
-.tool[aria-pressed=true] { background:var(--accent); color:var(--accent-foreground); }
+.tool[aria-pressed=true] { background:#0667f5; color:#fff; }
 .tool:focus-visible { outline:2px solid var(--focus-ring); outline-offset:2px; }
 .tool:disabled { opacity:.35; cursor:default; }
 .linkForm { padding:8px; width:250px; font-size:12px; }

@@ -135,7 +135,7 @@ export function DocumentEditorHeader({
               {knowledgeT('copyTitleAndContent')}
             </DropdownMenuItem>
             {copyState !== 'idle' ? (
-              <p role="status" className={styles.shareStatus}>
+              <p role="status" className={styles.shareStatus} data-status={copyState}>
                 {copyState === 'copied'
                   ? knowledgeT('copiedToClipboard')
                   : knowledgeT('unableToCopyCheckBrowserPermissions')}

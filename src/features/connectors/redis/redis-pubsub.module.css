@@ -14,7 +14,7 @@
 .subscriptions input { width: 100%; }
 .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
 .tags > span { display: inline-flex; gap: 5px; align-items: center; min-width: 0; max-width: 100%; padding: 3px 6px; border: 1px solid var(--line); border-radius: 4px; color: var(--muted-strong); background: var(--panel); }
-.tags[data-connected=true] > span { color: var(--accent); }
+.tags[data-connected=true] > span { color: var(--info); }
 .tags code { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; }
 .tags button { cursor: pointer; flex-shrink: 0; }
 .messages { display: flex; flex-direction: column; flex: 1; min-height: 0; min-width: 0; }

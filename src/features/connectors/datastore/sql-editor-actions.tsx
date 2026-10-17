@@ -76,6 +76,7 @@ export function SqlEditorActions({
       <button
         type="button"
         className="fouc-action"
+        data-sql-tool="format"
         aria-label={tConnector('toggleSqlKeywordCase')}
         title={tConnector('toggleSqlKeywordCaseSelectionFirst')}
         disabled={disabled}

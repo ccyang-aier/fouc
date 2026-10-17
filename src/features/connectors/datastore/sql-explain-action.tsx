@@ -137,6 +137,7 @@ export function SqlExplainAction({
       <button
         type="button"
         className="fouc-action"
+        data-sql-tool="plan"
         aria-label={tConnector('viewExecutionPlan')}
         title={tConnector('selectionOrCurrentQueryEstimatedPlanOnly')}
         disabled={disabled}

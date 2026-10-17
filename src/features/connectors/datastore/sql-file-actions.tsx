@@ -112,6 +112,7 @@ export function SqlFileActions({ provider, disabled, getDocument, onOpen, onNoti
       <button
         type="button"
         className="fouc-action"
+        data-sql-tool="file"
         aria-label={tConnector('importSqlFiles')}
         title={tConnector('openLocalSqlFilesLoadIntoQueryTabsOnly')}
         disabled={disabled}
@@ -122,6 +123,7 @@ export function SqlFileActions({ provider, disabled, getDocument, onOpen, onNoti
       <button
         type="button"
         className="fouc-action"
+        data-sql-tool="file"
         aria-label={tConnector('downloadSqlFile')}
         title={tConnector('downloadTheFullCurrentDocumentAsUtfSql')}
         disabled={disabled}

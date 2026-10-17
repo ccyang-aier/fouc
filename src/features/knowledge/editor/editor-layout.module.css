@@ -78,7 +78,7 @@
 .document :global(.ProseMirror blockquote) { border-left: 3px solid var(--line-strong); padding-left: 18px; color: var(--muted-strong); }
 .document :global(.ProseMirror code) { border-radius: 4px; background: var(--raise); padding: 2px 4px; font-family: var(--document-code-font, var(--font-code)); font-size: .88em; }
 .document :global(.ProseMirror hr) { border: 0; border-top: var(--separator-width) solid var(--separator-color); margin: 32px 0; }
-.document :global(.ProseMirror a) { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.document :global(.ProseMirror a) { color: #0869cf; text-decoration: underline; text-underline-offset: 3px; }
 .document :global(.ProseMirror mark) { background: #e6f0ff; }
 
 @media (max-width: 700px) {
@@ -98,3 +98,5 @@
 .document :global(.ProseMirror[contenteditable=true] h3::before) { content:'H3' / ''; }
 .document :global(.ProseMirror[contenteditable=true] h4::before) { content:'H4' / ''; }
 .document :global(.ProseMirror[contenteditable=true] :is(h1,h2,h3,h4):hover::before),.document :global(.ProseMirror[contenteditable=true]:focus-within [data-heading-current]::before) { opacity:1; }
+
+:global(html[data-theme="dark"]) .document :global(.ProseMirror a) { color:#8cc7ff; }

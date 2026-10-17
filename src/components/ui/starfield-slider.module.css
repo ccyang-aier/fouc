@@ -100,12 +100,12 @@
 }
 
 .levels span[data-current="true"] {
-  color: var(--ink);
+  color: #9253c2;
   font-weight: 600;
 }
 
 :global(html[data-theme="dark"]) .levels span[data-current="true"] {
-  color: var(--ink);
+  color: #c084fc;
 }
 
 :global(html:not([data-theme="dark"])) .card {

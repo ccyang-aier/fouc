@@ -315,6 +315,7 @@ export function SqlQuickActions({
         type="button"
         className="fouc-action"
         disabled={disabled}
+        data-sql-tool="paste"
         aria-label={tConnector('sqlQuickActions')}
         title={tConnector('sqlQuickActions')}
         onClick={open}

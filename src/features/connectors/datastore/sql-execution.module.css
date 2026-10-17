@@ -8,8 +8,8 @@
 .cancel { display: inline-flex; align-items: center; gap: 5px; color: var(--err-ink); padding: 3px 7px; border: 1px solid color-mix(in srgb,var(--err-ink) 22%,transparent); border-radius: 4px; cursor: pointer; }
 .cancel:hover { background: color-mix(in srgb,var(--err-ink) 7%,var(--panel)); }
 .cancel:disabled { opacity: .6; cursor: wait; }
-.progress { height: 2px; background: var(--accent-soft); flex-shrink: 0; }
-.progress i { display: block; height: 100%; background: var(--accent-ink); transition: width .2s ease; }
+.progress { height: 2px; background: var(--info-soft); flex-shrink: 0; }
+.progress i { display: block; height: 100%; background: var(--info-ink); transition: width .2s ease; }
 .body { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
 .connectionError { padding: 7px 12px; color: var(--err-ink); background: color-mix(in srgb,var(--err-ink) 7%,var(--panel)); font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
 .connectionError button { text-decoration: underline; cursor: pointer; margin-left: 8px; }

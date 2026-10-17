@@ -66,7 +66,7 @@
 .errorBar,.error { color:var(--err-ink); background:var(--err-soft,var(--surface-subtle)); overflow-wrap:anywhere; }
 .feedback { color:var(--ok-ink); }
 .progress { padding:28px 0 24px; }
-.statusIcon { display:grid; place-items:center; width:48px; height:48px; background:var(--accent-soft); color:var(--accent); border-radius:14px; margin:0 auto 17px; }
+.statusIcon { display:grid; place-items:center; width:48px; height:48px; background:var(--info-soft); color:var(--info); border-radius:14px; margin:0 auto 17px; }
 .statusIcon[data-status=completed] { color:var(--ok-ink); background:var(--ok-soft,var(--surface-subtle)); }
 .statusIcon[data-status=failed] { color:var(--err-ink); background:var(--err-soft,var(--surface-subtle)); }
 .progress h2 { text-align:center; font-size:16px; font-weight:600; margin:0 0 8px; letter-spacing:-.015em; }
@@ -74,7 +74,7 @@
 .spinner { width:19px; height:19px; border:2px solid var(--accent-soft-line); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; }
 @keyframes spin { to { transform:rotate(360deg); } }
 .progressTrack { height:4px; background:var(--line); overflow:hidden; border-radius:4px; margin:0 5px 20px; }
-.progressTrack span { display:block; height:100%; background:var(--accent); border-radius:inherit; transition:width .3s; }
+.progressTrack span { display:block; height:100%; background:var(--info); border-radius:inherit; transition:width .3s; }
 .progressTrack[data-indeterminate=true] span { width:35%!important; animation:drift 1.2s ease-in-out infinite alternate; }
 @keyframes drift { to { transform:translateX(180%); } }
 .statistics { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:15px 0; border:1px solid var(--line); border-radius:8px; }

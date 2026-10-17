@@ -5,7 +5,7 @@
 .context > div { display:flex; flex-direction:column; gap:4px; min-width:0; }
 .context strong { font-size:12px; color:var(--ink); font-weight:600; }
 .context div span { font-size:10px; overflow-wrap:anywhere; }
-.badge { margin-left:auto; border:1px solid var(--accent-soft-line); border-radius:5px; padding:4px 7px; font-size:10px; color:var(--accent-ink); background:var(--accent-soft); white-space:nowrap; }
+.badge { margin-left:auto; border:1px solid var(--accent-soft-line); border-radius:5px; padding:4px 7px; font-size:10px; color:var(--info-ink); background:var(--info-soft); white-space:nowrap; }
 .body { min-height:0; overflow:auto; padding:18px 22px; display:flex; flex-direction:column; gap:14px; }
 .targetFields { display:grid; grid-template-columns:minmax(160px,1fr) minmax(240px,2fr); gap:14px; }
 .targetFields label { display:flex; flex-direction:column; gap:7px; font-size:11px; font-weight:600; color:var(--ink-soft); min-width:0; }

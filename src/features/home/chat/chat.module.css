@@ -357,8 +357,8 @@
   flex: 0 0 27px;
   height: 27px;
   border-radius: 50%;
-  background: var(--accent);
-  color: var(--accent-foreground);
+  background: #26382d;
+  color: #e9f4d6;
 }
 .assistantContent {
   min-width: 0;

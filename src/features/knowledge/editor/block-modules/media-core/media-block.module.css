@@ -17,7 +17,7 @@
 .pick { display: flex; align-items: center; gap: 9px; width: 100%; padding: 10px 12px; border-radius: 6px; background: var(--surface-subtle); color: var(--muted-strong); font: 13px/1.5 var(--font-sans); text-align: left; cursor: pointer; transition: background 180ms ease; }
 .pick:hover { background: var(--surface-hover); color: var(--ink); }
 .loading,.progress { display: flex; align-items: center; gap: 12px; min-height: 42px; color: var(--muted-strong); font-size: 12px; }
-.progress progress { flex: 1; max-width: 200px; height: 3px; accent-color: var(--accent); }
+.progress progress { flex: 1; max-width: 200px; height: 3px; accent-color: var(--info); }
 .progress button,.error button { margin-left: 8px; color: var(--accent-ink); cursor: pointer; }
 .error { display: flex; align-items: center; gap: 10px; margin: 8px 0; color: var(--err-ink); font-size: 12px; }
 .caption { margin-top: 6px; color: var(--muted-strong); font-size: 12px; text-align: center; }

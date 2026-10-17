@@ -65,7 +65,7 @@ const sqlHighlight = HighlightStyle.define([
   { tag: [tags.string, tags.special(tags.string)], color: 'var(--mw-sql-string)' },
   { tag: tags.number, color: 'var(--mw-sql-number)' },
   { tag: tags.comment, color: 'var(--mw-muted)', fontStyle: 'italic' },
-  { tag: [tags.typeName, tags.className], color: 'var(--accent-ink)' },
+  { tag: [tags.typeName, tags.className], color: 'var(--info-ink)' },
   { tag: tags.standard(tags.name), color: 'var(--sql-completion-function-ink)' },
   { tag: [tags.operator, tags.punctuation], color: 'var(--ink)' },
 ]);

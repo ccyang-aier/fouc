@@ -13,7 +13,7 @@ import type { SyncIndicatorView, SyncTone } from '../editor-state';
 
 const toneClasses: Record<SyncTone, string> = {
   quiet: 'text-[var(--muted-strong)]',
-  progress: 'text-[var(--accent-ink)]',
+  progress: 'text-[var(--info-ink)]',
   ok: 'text-[var(--ok-ink)]',
   warn: 'text-[var(--warn-ink)]',
   error: 'text-[var(--err-ink)]',
@@ -21,7 +21,7 @@ const toneClasses: Record<SyncTone, string> = {
 
 const dotClasses: Record<SyncTone, string> = {
   quiet: 'bg-[var(--muted)]',
-  progress: 'bg-[var(--accent)]',
+  progress: 'bg-[var(--info)]',
   ok: 'bg-[var(--ok-ink)]',
   warn: 'bg-[var(--warn-ink)]',
   error: 'bg-[var(--err-ink)]',

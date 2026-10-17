@@ -15,7 +15,7 @@
 .options button svg { flex: none; color: var(--muted-strong); }
 .back { display: flex; align-items: center; gap: 7px; margin: 2px 15px 7px; padding: 5px 0; border: 0; background: none; color: var(--muted-strong); font-size: 12px; cursor: pointer; }
 .localCard { position: relative; display: flex; gap: 0; margin: 14px 0; overflow: hidden; border: 1px solid var(--control-border); border-radius: 10px; background: var(--panel); }
-.localAccent { flex: none; width: 3px; background: var(--accent); }
+.localAccent { flex: none; width: 3px; background: #2475d1; }
 .localBody { min-width: 0; flex: 1; padding: 12px 15px; }
 .localHeader { display: flex; align-items: center; gap: 7px; margin-bottom: 6px; color: var(--muted-strong); font-size: 11px; }
 .localContent { color: var(--ink-soft); font-size: 13px; line-height: 1.6; }

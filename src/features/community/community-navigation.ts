@@ -1,13 +1,14 @@
 'use client';
 
-import { WORKBENCH_VIEW_CHANGED } from '@/lib/settings-navigation';
+import { pushWorkbenchLocation, replaceWorkbenchLocation } from '@/lib/navigation-history';
 
 export function openSkillsMarket() {
   const url = new URL(window.location.href);
+  const fromSettings = url.searchParams.get('view') === 'settings';
   url.searchParams.set('view', 'community');
   url.searchParams.set('communityType', 'skills');
   url.searchParams.delete('section');
   url.searchParams.delete('returnView');
-  window.history.replaceState(null, '', url);
-  window.dispatchEvent(new Event(WORKBENCH_VIEW_CHANGED));
+  if (fromSettings) replaceWorkbenchLocation(url);
+  else pushWorkbenchLocation(url);
 }

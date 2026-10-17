@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAppAlert } from '@/components/app-alert-provider';
 import { useTranslation } from '@/lib/i18n';
+import { replaceWorkbenchLocation } from '@/lib/navigation-history';
 import { fixtureField, translateFixed } from '../i18n/display';
 import { DashboardDeleteDialog } from './dashboard-actions';
 import { DashboardContent, type DashboardContentActions } from './dashboard-content';
@@ -93,7 +94,7 @@ function ProjectDashboardCanvas({ projectName, scopeKey, onNavigate }: ProjectDa
     const url = new URL(window.location.href);
     for (const key of ['dashboardTask', 'dashboardProject', 'dashboardDocument', 'dashboardMeeting', 'dashboardScope'])
       url.searchParams.delete(key);
-    window.history.replaceState(null, '', url);
+    replaceWorkbenchLocation(url);
   }
 
   function exportActivity() {

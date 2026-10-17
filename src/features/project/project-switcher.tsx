@@ -39,7 +39,7 @@ export function ProjectSwitcher({ onSwitch }: { onSwitch: () => void }) {
       </DropdownMenuTrigger>
       {menuOpen && <DropdownMenuContent className={styles.menu} align="start" side="bottom" sideOffset={6} aria-label={t('switch')}>
         <div className={styles.search}><MagnifyingGlass size={15} /><input autoFocus value={query} onChange={e => setQuery(e.target.value)} onKeyDown={e => {
-          if (e.key === 'Escape') return;
+          if (e.key === 'Escape') { e.preventDefault(); setMenuOpen(false); return; }
           e.stopPropagation();
           if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
             e.preventDefault();

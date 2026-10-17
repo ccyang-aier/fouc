@@ -31,9 +31,9 @@ export function WorkbenchShell() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [conversationVersion, setConversationVersion] = useState(0);
   const [conversation, setConversation] = useState<{ scopeKey: string; id: string } | null>(null);
-  const [view, setView, settingsOpen] = useWorkbenchView();
   const settingsSection = useSettingsSection();
   const { projects, selectedProject, selectProject, scopeKey } = useProjectResources();
+  const [view, setView, settingsOpen, navigation] = useWorkbenchView(scopeKey);
   const history = useChatHistory();
   const frameRef = useRef<HTMLDivElement>(null);
   useEffect(() => { applyAppearancePrefs(readAppearancePrefs()); }, []);
@@ -57,12 +57,12 @@ export function WorkbenchShell() {
   const projectView = ['home', 'workbench', 'tasks', 'members', 'assets', 'chats', 'agents'].includes(view);
   return <TooltipProvider>
     <div className="h-dvh w-full p-[var(--win-frame-inset)]">
-      <div ref={frameRef} className={`${styles.frame} flex h-full w-full min-w-[660px] min-h-[540px] flex-col overflow-hidden bg-background text-[var(--ink)] shadow-[var(--win-shadow)]`}>
+      <div ref={frameRef} className={`${styles.frame} flex h-full w-full min-w-[660px] min-h-[540px] flex-col overflow-hidden text-[var(--ink)] shadow-[var(--win-shadow)]`}>
         <div className="flex min-h-0 flex-1">
           <div className={`${styles.navigation} flex shrink-0`}><NavigationSidebar open={!sidebarCollapsed} onCollapse={() => setSidebarCollapsed(true)} onExpand={() => setSidebarCollapsed(false)} view={view} onViewChange={changeView} onProjectChange={() => { setConversation(null); setView('workbench'); }} onOpenChat={openChat} /></div>
-          <div className="flex min-w-0 flex-1 flex-col">
-            <div className={styles.systemBar}><SystemBar onNavigate={changeView} /></div>
-            <main className="relative min-w-0 flex-1 overflow-hidden bg-panel">
+          <div className={styles.workspace}>
+            <div className={styles.systemBar}><SystemBar onNavigate={changeView} navigation={navigation} /></div>
+            <main className={styles.content}>
               <div key={projectView ? scopeKey ?? 'no-project' : view} className="relative h-full min-h-0">
                 <AnimatePresence initial={false} mode="wait">
                   <motion.div key={view} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: .12 }} className="absolute inset-0">

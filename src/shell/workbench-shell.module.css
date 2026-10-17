@@ -1,3 +1,20 @@
 /* Explicit document fullscreen uses the native Fullscreen API. */
-.frame { min-width:0; }
+.frame {
+  --workbench-toolbar-height: 56px;
+  min-width: 0;
+  background: var(--wt-sidebar-standard-panel);
+}
 .navigation,.systemBar { flex-shrink:0; }
+.workspace { display:flex; min-width:0; min-height:0; flex:1; flex-direction:column; }
+.content {
+  position:relative;
+  flex:1;
+  min-width:0;
+  min-height:0;
+  margin:0 8px 8px 0;
+  overflow:hidden;
+  border:var(--separator-width) solid var(--separator-color);
+  border-radius:16px 0 16px 0;
+  background:var(--panel);
+  isolation:isolate;
+}

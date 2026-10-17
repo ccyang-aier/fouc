@@ -1,7 +1,7 @@
 'use client';
 
-import { useSyncExternalStore } from 'react';
-import { WORKBENCH_VIEW_CHANGED } from '@/lib/settings-navigation';
+import { useEffect, useSyncExternalStore } from 'react';
+import { getNavigationSnapshot, getServerNavigationSnapshot, goBack, goForward, pushWorkbenchLocation, replaceWorkbenchLocation, startNavigationHistory, subscribeNavigationHistory, WORKBENCH_VIEW_CHANGED } from '@/lib/navigation-history';
 
 export type WorkbenchView = 'home' | 'workbench' | 'tasks' | 'members' | 'assets' | 'chats' | 'agents' | 'settings' | 'community' | 'knowledge' | 'connectors';
 const views: readonly WorkbenchView[] = ['home', 'workbench', 'tasks', 'members', 'assets', 'chats', 'agents', 'settings', 'community', 'knowledge', 'connectors'];
@@ -14,8 +14,10 @@ function subscribe(listener: () => void) {
   window.addEventListener(viewChanged, listener);
   return () => { window.removeEventListener('popstate', listener); window.removeEventListener(viewChanged, listener); };
 }
-export function useWorkbenchView() {
+export function useWorkbenchView(scopeKey: string | null) {
+  useEffect(() => startNavigationHistory(scopeKey), [scopeKey]);
   const search = useSyncExternalStore(subscribe, () => window.location.search, () => '');
+  const navigation = useSyncExternalStore(subscribeNavigationHistory, getNavigationSnapshot, getServerNavigationSnapshot);
   const params = new URLSearchParams(search);
   const settingsOpen = params.get('view') === 'settings';
   const requestedView = resolveView(params.get(settingsOpen ? 'returnView' : 'view'));
@@ -28,7 +30,7 @@ export function useWorkbenchView() {
     if (next === 'workbench') url.searchParams.delete('view');
     else url.searchParams.set('view', next);
     if (next !== 'settings') { url.searchParams.delete('section'); url.searchParams.delete('returnView'); }
-    window.history.replaceState(null, '', url);
-    window.dispatchEvent(new Event(viewChanged));
-  }, settingsOpen] as const;
+    if (next === 'settings' || settingsOpen) replaceWorkbenchLocation(url);
+    else pushWorkbenchLocation(url);
+  }, settingsOpen, { ...navigation, goBack, goForward }] as const;
 }

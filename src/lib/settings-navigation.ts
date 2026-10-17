@@ -2,11 +2,7 @@
 
 import { useSyncExternalStore } from 'react';
 import type { SettingsSection } from '@/features/settings/settings-canvas';
-
-export const WORKBENCH_VIEW_CHANGED = 'fouc:view-changed';
-function notify() {
-  window.dispatchEvent(new Event(WORKBENCH_VIEW_CHANGED));
-}
+import { replaceWorkbenchLocation, WORKBENCH_VIEW_CHANGED } from './navigation-history';
 
 export function openSettings(section: SettingsSection = 'general') {
   const url = new URL(window.location.href);
@@ -15,15 +11,13 @@ export function openSettings(section: SettingsSection = 'general') {
   }
   url.searchParams.set('view', 'settings');
   url.searchParams.set('section', section);
-  window.history.replaceState(null, '', url);
-  notify();
+  replaceWorkbenchLocation(url);
 }
 
 export function setSettingsSection(section: SettingsSection) {
   const url = new URL(window.location.href);
   url.searchParams.set('section', section);
-  window.history.replaceState(null, '', url);
-  notify();
+  replaceWorkbenchLocation(url);
 }
 
 export function closeSettings() {
@@ -33,8 +27,7 @@ export function closeSettings() {
   else url.searchParams.delete('view');
   url.searchParams.delete('returnView');
   url.searchParams.delete('section');
-  window.history.replaceState(null, '', url);
-  notify();
+  replaceWorkbenchLocation(url);
 }
 
 function readSection(): SettingsSection {

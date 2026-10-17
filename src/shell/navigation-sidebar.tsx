@@ -5,7 +5,6 @@ import { AccountItem } from '@/features/identity/components/account-item';
 import { ProjectSwitcher } from '@/features/project/project-switcher';
 import type { ChatHistoryEntry } from '@/features/home/chat/chat-history';
 import { useProjectResources } from '@/features/project/project-resources';
-import { FoucMark } from '@/components/fouc-mark';
 import { NavButton, type SidebarRowItem } from '@/components/nav-button';
 import { SidebarResizeHandle, useSidebarWidth } from '@/components/sidebar-resize';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -17,6 +16,7 @@ import { messages } from './i18n/navigation-sidebar.messages';
 import { SidebarProjectSections } from './sidebar-project-sections';
 import { SidebarThemeSwitch } from './sidebar-theme-switch';
 import styles from './sidebar-footer.module.css';
+import layout from './navigation-sidebar.module.css';
 
 export function NavigationSidebar({ open, onCollapse, onExpand, view, onViewChange, onProjectChange, onOpenChat }: {
   open: boolean; onCollapse: () => void; onExpand: () => void;
@@ -44,12 +44,15 @@ export function NavigationSidebar({ open, onCollapse, onExpand, view, onViewChan
     const button = <NavButton item={item} active={view === item.id} compact={!open} onSelect={() => onViewChange(item.id)} />;
     return open ? <div key={item.id}>{button}</div> : <Tooltip key={item.id}><TooltipTrigger asChild>{button}</TooltipTrigger><TooltipContent side="right" sideOffset={10}>{item.label}</TooltipContent></Tooltip>;
   }
-  return <aside aria-label={t(open ? '主导航' : '主导航（已收起）')} style={{ width: open ? width : 52 }} className={cn('sidebar-material relative flex h-full shrink-0 flex-col border-r border-[var(--wt-sidebar-edge)]', !dragging && 'transition-[width] duration-200 ease-out')}>
-    <header className={cn('flex h-11 shrink-0 items-center border-b border-[var(--line)]', open ? 'px-3' : 'justify-center')}>
-      {open ? <><FoucMark /><span className="ml-1.5 text-[13px] font-semibold">Fouc</span><button type="button" className="fouc-action ml-auto grid size-7 cursor-pointer place-items-center rounded-md text-[var(--muted-strong)]" aria-label={t('收起主导航')} onClick={onCollapse}><SidebarSimple size={16} weight="duotone" /></button></> : <button type="button" className="fouc-action grid size-8 cursor-pointer place-items-center rounded-md" aria-label={t('展开主导航')} onClick={onExpand}><FoucMark compact /></button>}
+  return <aside aria-label={t(open ? '主导航' : '主导航（已收起）')} style={{ width: open ? width : 52 }} className={cn('sidebar-material relative flex h-full shrink-0 flex-col', !dragging && 'transition-[width] duration-200 ease-out')}>
+    <header className={layout.header} data-compact={!open} data-tauri-drag-region>
+      {open && <div className={layout.project} data-tauri-drag-region="false"><ProjectSwitcher onSwitch={onProjectChange} /></div>}
+      <Tooltip>
+        <TooltipTrigger asChild><button type="button" data-tauri-drag-region="false" className={`fouc-action ${layout.toggle}`} aria-label={t(open ? '收起主导航' : '展开主导航')} onClick={open ? onCollapse : onExpand}><SidebarSimple size={18} weight="duotone" /></button></TooltipTrigger>
+        <TooltipContent side="bottom">{t(open ? '收起主导航' : '展开主导航')}</TooltipContent>
+      </Tooltip>
     </header>
-    {open && <div className="shrink-0 px-3 py-3"><ProjectSwitcher onSwitch={onProjectChange} /></div>}
-    <ScrollArea className="min-h-0 flex-1" viewportClassName={open ? 'px-3 pb-4' : 'px-1 pb-3 pt-3'}>
+    <ScrollArea className="min-h-0 flex-1" viewportClassName={open ? 'px-3 pb-4 pt-3' : 'px-1 pb-3 pt-3'}>
       <nav aria-label={t('项目导航')} className="flex flex-col gap-0.5">{primary.map(row)}</nav>
       <div role="separator" className="mx-2 my-3 border-t border-[var(--line)]" />
       {open && <SidebarProjectSections key={scopeKey ?? 'no-project'} onNewChat={() => onViewChange('home')} onAllChats={() => onViewChange('chats')} onOpenChat={onOpenChat} />}
@@ -65,6 +68,6 @@ export function NavigationSidebar({ open, onCollapse, onExpand, view, onViewChan
         </Tooltip></>}
       </div>
     </footer>
-    {open && <SidebarResizeHandle dragging={dragging} onPointerDown={startResize} />}
+    {open && <SidebarResizeHandle className={layout.resizeHandle} dragging={dragging} onPointerDown={startResize} />}
   </aside>;
 }

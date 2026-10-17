@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useImperativeHandle, useRef, useState, type CSSProperties, type KeyboardEvent, type Ref } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { Brain, CaretDown, ImageSquare, Robot, VideoCamera } from "@phosphor-icons/react";
 import type { ModelCatalogEntry } from '@fouc/shared/model-catalog';
 import { Button } from "@/components/ui/button";
@@ -27,13 +27,10 @@ import picker from "./chat-picker.module.css";
 
 type ExecutionPreview = { kind: 'auto' } | { kind: 'model'; id: string };
 
-export type ChatExecutionSelectorHandle = { open: () => void };
-
-export function ChatExecutionSelector({ context, onChange, t, ref }: {
+export function ChatExecutionSelector({ context, onChange, t }: {
   context: ChatContext;
   onChange: (change: Partial<ChatContext>) => void;
   t: ChatText;
-  ref?: Ref<ChatExecutionSelectorHandle>;
 }) {
   const [open, setOpen] = useState(false);
   const [kind, setKind] = useState<'model' | 'agent'>("model");
@@ -126,7 +123,6 @@ export function ChatExecutionSelector({ context, onChange, t, ref }: {
     setPreview(null);
     if (next) { setKind(execution.kind === 'agent' ? 'agent' : 'model'); setQuery(''); updateMenuOffset(); }
   }
-  useImperativeHandle(ref, () => ({ open: () => changeOpen(true) }));
 
   return <div className={styles.selection}>
     <DropdownMenu open={open} onOpenChange={changeOpen}>

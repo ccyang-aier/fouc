@@ -1,0 +1,13 @@
+.dialog { width: min(440px, calc(100vw - 32px)); max-height: calc(100dvh - 40px); padding: 0; border: 1px solid var(--menu-border); border-radius: 12px; background: var(--panel); color: var(--ink); box-shadow: var(--menu-shadow); }
+.dialog::backdrop { background: var(--modal-backdrop); }
+.dialog header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 18px 22px 0; }
+.dialog h2 { margin: 0; font-size: 15px; font-weight: 600; }
+.dialog .close { width: 26px; height: 26px; padding: 0; }
+.body { display: flex; flex-direction: column; gap: 15px; padding: 0 22px 22px; }
+.body p { margin: 10px 0 1px; color: var(--muted-strong); font-size: 12px; line-height: 1.7; }
+.body label { display: flex; flex-direction: column; gap: 7px; font-size: 12px; font-weight: 500; }
+.body :is(input, textarea, select) { width: 100%; min-height: 34px; padding: 7px 9px; border: 1px solid var(--control-border); border-radius: 5px; outline: none; box-shadow: none; background: var(--panel); font-size: 12px; font-weight: 400; color: var(--ink); }
+.body :is(input, textarea, select):focus { border-color: var(--accent); }
+.body :is(input, textarea)::placeholder { color: var(--muted-strong); }
+.body textarea { resize: vertical; }
+.dialog footer { border-top: 1px solid var(--separator-color); }

@@ -39,7 +39,7 @@ export function closeSettings() {
 
 function readSection(): SettingsSection {
   const section = new URLSearchParams(window.location.search).get('section');
-  return ['appearance', 'general', 'agents', 'about'].includes(section ?? '')
+  return ['appearance', 'general', 'agents', 'skills', 'about'].includes(section ?? '')
     ? (section as SettingsSection)
     : 'appearance';
 }

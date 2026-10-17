@@ -1,4 +1,5 @@
 import type { ModelCatalogEntry, ModelReasoningLevel } from '@fouc/shared/model-catalog';
+import type { ComposerResourceReference } from '@/features/community/composer-catalog';
 
 export type ChatExecution =
   | { kind: "auto" }
@@ -8,6 +9,8 @@ export type ChatExecution =
 export type AutoModelRules = { modelIds: string[] | null; reasoningEffort: ModelReasoningLevel };
 
 export type ChatContext = {
+  resources?: ComposerResourceReference[];
+  builtinSkillIds?: string[];
   execution: ChatExecution;
   autoRules: AutoModelRules;
   localEnvironment?: { createWorktree: boolean };
@@ -17,7 +20,7 @@ export type ChatContext = {
 };
 export type ChatAttachment = { id: string; file: File };
 export type ChatTaskKind = 'website' | 'desktop' | 'slides' | 'design' | 'writing' | 'research' | 'data';
-export type ChatMode = 'plan' | 'debug' | 'multitask' | 'ask';
+export type ChatMode = 'plan' | 'debug' | 'multitask' | 'goal';
 export type ChatSubmission = {
   id: string;
   text: string;

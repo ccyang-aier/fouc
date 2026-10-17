@@ -9,7 +9,7 @@ import { messages } from './i18n/settings-canvas.messages';
  */
 
 import { useState } from 'react';
-import { Info, MagnifyingGlass, PaintBrush, Robot, SlidersHorizontal } from '@phosphor-icons/react';
+import { Info, MagnifyingGlass, PaintBrush, Robot, SlidersHorizontal, Sparkle } from '@phosphor-icons/react';
 
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -20,13 +20,15 @@ import { AboutSettings } from './about-settings';
 import { AgentSettings } from './agent-settings';
 import { AppearanceSettings } from './appearance-settings';
 import { GeneralSettings } from './general-settings';
+import { SkillsSettings } from '@/features/skills/skills-settings';
 
-export type SettingsSection = 'appearance' | 'general' | 'agents' | 'about';
+export type SettingsSection = 'appearance' | 'general' | 'agents' | 'skills' | 'about';
 
 const SECTIONS: Array<SidebarRowItem & { id: SettingsSection; label: keyof typeof messages }> = [
   { id: 'appearance', label: '外观', icon: PaintBrush },
   { id: 'general', label: '通用', icon: SlidersHorizontal },
   { id: 'agents', label: 'Agent', icon: Robot },
+  { id: 'skills', label: 'Skills', icon: Sparkle },
   { id: 'about', label: '关于', icon: Info },
 ];
 
@@ -128,6 +130,8 @@ export function SettingsCanvas({
           <GeneralSettings />
         ) : section === 'agents' ? (
           <AgentSettings />
+        ) : section === 'skills' ? (
+          <SkillsSettings />
         ) : (
           <AboutSettings />
         )}

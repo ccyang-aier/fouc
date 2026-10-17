@@ -22,8 +22,11 @@ import {
 } from "@/components/ui/tooltip";
 import { ChatAttachments } from "./chat-attachments";
 import { ChatContextSelectors } from "./chat-selectors";
-import { ChatExecutionSelector, type ChatExecutionSelectorHandle } from "./chat-execution-selector";
+import { ChatExecutionSelector } from "./chat-execution-selector";
 import { ChatAddMenu } from "./chat-add-menu";
+import { ChatResourceTags } from './chat-resource-tags';
+import { getBuiltinSkills, useBuiltinSkills } from '@/features/skills/builtin-skills';
+import { useLocale } from '@/lib/i18n/react';
 import { ChatToolsLink } from "./chat-tools-link";
 import { ChatQuickActions } from "./chat-quick-actions";
 import { ChatPromptInput } from "./chat-prompt-input";
@@ -55,11 +58,12 @@ export function ChatComposer({
   t: ChatText;
 }) {
   const fileInput = useRef<HTMLInputElement>(null);
-  const executionPicker = useRef<ChatExecutionSelectorHandle>(null);
   const dragDepth = useRef(0);
   const [dragging, setDragging] = useState(false);
   const [invalid, setInvalid] = useState(false);
   const { notify } = useAppAlert();
+  const locale = useLocale();
+  const disabledBuiltinIds = useBuiltinSkills();
   const voice = useChatVoice({
     onTranscript: (transcript) =>
       setDraft((current) => ({
@@ -103,33 +107,6 @@ export function ChatComposer({
     setInvalid(false);
     inputRef.current?.focus();
   }
-  async function pasteClipboard() {
-    try {
-      const items = await navigator.clipboard.read();
-      const images: File[] = [];
-      let text = "";
-      for (const item of items) {
-        const imageType = item.types.find((type) => type.startsWith("image/"));
-        if (imageType)
-          images.push(
-            new File(
-              [await item.getType(imageType)],
-              `clipboard-${Date.now()}.png`,
-              { type: imageType },
-            ),
-          );
-        else if (item.types.includes("text/plain"))
-          text += await (await item.getType("text/plain")).text();
-      }
-      if (images.length) addFiles(images);
-      else if (text) {
-        setDraft((current) => ({ ...current, text: current.text + text }));
-        inputRef.current?.focus();
-      } else notify("info", t("clipboardEmpty"));
-    } catch {
-      notify("info", t("clipboardError"));
-    }
-  }
   function submit() {
     if (!hasMessage) {
       setInvalid(true);
@@ -144,10 +121,12 @@ export function ChatComposer({
       task: draft.task,
       mode: draft.mode,
       attachments: draft.attachments,
-      context: { ...context },
+      context: { ...context, resources: context.resources?.map(resource => ({ ...resource })),
+        builtinSkillIds: getBuiltinSkills(locale).filter(skill => !disabledBuiltinIds.includes(skill.id)).map(skill => skill.id) },
       createdAt: new Date(),
     });
     setDraft({ text: "", attachments: [], task: null, mode: null });
+    setContext({ resources: [] });
   }
   return (
     <>
@@ -198,6 +177,10 @@ export function ChatComposer({
             }
           />
         ) : null}
+        <ChatResourceTags resources={context.resources ?? []} onRemove={resource => {
+          setContext({ resources: context.resources?.filter(item => item.id !== resource.id || item.kind !== resource.kind) });
+          inputRef.current?.focus({ preventScroll: true });
+        }} />
         <ChatPromptInput
           inputRef={inputRef}
           task={draft.task}
@@ -252,14 +235,19 @@ export function ChatComposer({
                 event.target.value = "";
               }}
             />
-            <ChatAddMenu className={styles.iconButton} mode={draft.mode} context={context} t={t}
+            <ChatAddMenu className={styles.iconButton} mode={draft.mode} resources={context.resources ?? []} t={t}
               onModeChange={mode => {
                 setDraft(current => ({ ...current, mode }));
                 inputRef.current?.focus({ preventScroll: true });
               }}
-              onFiles={() => fileInput.current?.click()} onPaste={() => void pasteClipboard()}
-              onModels={() => executionPicker.current?.open()} onConnectors={onOpenConnectors} />
-            <ChatExecutionSelector ref={executionPicker} context={context} onChange={setContext} t={t} />
+              onFiles={() => fileInput.current?.click()}
+              onResourceToggle={resource => {
+                const resources = context.resources ?? [];
+                const exists = resources.some(item => item.id === resource.id && item.kind === resource.kind);
+                setContext({ resources: exists ? resources.filter(item => item.id !== resource.id || item.kind !== resource.kind)
+                  : [...resources, { id: resource.id, kind: resource.kind, name: resource.name }] });
+              }} />
+            <ChatExecutionSelector context={context} onChange={setContext} t={t} />
           </div>
           <div className={styles.toolbarRight}>
             <Tooltip>

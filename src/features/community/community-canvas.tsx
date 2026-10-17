@@ -136,6 +136,7 @@ export function CommunityCanvas() {
           tone: skill.tone,
           category: skill.category,
           summary: skill.summary,
+          rating: skill.rating,
           author: skill.author,
           official: isOfficialCommunityResource(skill.id),
           version: skill.version,

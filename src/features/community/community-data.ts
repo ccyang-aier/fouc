@@ -30,6 +30,7 @@ export type CommunityAgent = {
 };
 
 export type CommunitySkill = {
+  rating: number;
   id: string;
   name: string;
   version: string;
@@ -328,6 +329,7 @@ export const initialCommunityAgents: CommunityAgent[] = [
 export const initialCommunitySkills: CommunitySkill[] = [
   {
     id: 'skill-review',
+    rating: 4.9,
     name: '评审清单',
     version: '3.0',
     tone: 'blue',
@@ -341,6 +343,7 @@ export const initialCommunitySkills: CommunitySkill[] = [
   },
   {
     id: 'skill-apiread',
+    rating: 4.7,
     name: 'API 文档速读',
     version: '1.5',
     tone: 'sky',
@@ -354,6 +357,7 @@ export const initialCommunitySkills: CommunitySkill[] = [
   },
   {
     id: 'skill-unittest',
+    rating: 4.8,
     name: '单测补全',
     version: '2.2',
     tone: 'teal',
@@ -367,6 +371,7 @@ export const initialCommunitySkills: CommunitySkill[] = [
   },
   {
     id: 'skill-depaudit',
+    rating: 4.6,
     name: '依赖体检',
     version: '1.7',
     tone: 'rose',
@@ -380,6 +385,7 @@ export const initialCommunitySkills: CommunitySkill[] = [
   },
   {
     id: 'skill-regex',
+    rating: 4.7,
     name: '正则生成器',
     version: '2.0',
     tone: 'blue',
@@ -393,6 +399,7 @@ export const initialCommunitySkills: CommunitySkill[] = [
   },
   {
     id: 'skill-slides',
+    rating: 4.9,
     name: 'PPT 大纲师',
     version: '2.0',
     tone: 'amber',
@@ -406,6 +413,7 @@ export const initialCommunitySkills: CommunitySkill[] = [
   },
   {
     id: 'skill-weekly',
+    rating: 4.8,
     name: '周报编排',
     version: '1.8',
     tone: 'teal',
@@ -419,6 +427,7 @@ export const initialCommunitySkills: CommunitySkill[] = [
   },
   {
     id: 'skill-minutes',
+    rating: 4.7,
     name: '会议纪要模板',
     version: '2.2',
     tone: 'teal',
@@ -432,6 +441,7 @@ export const initialCommunitySkills: CommunitySkill[] = [
   },
   {
     id: 'skill-email',
+    rating: 4.6,
     name: '邮件措辞润色',
     version: '1.3',
     tone: 'sky',
@@ -445,6 +455,7 @@ export const initialCommunitySkills: CommunitySkill[] = [
   },
   {
     id: 'skill-brainstorm',
+    rating: 4.8,
     name: '头脑风暴主持',
     version: '1.1',
     tone: 'violet',
@@ -458,6 +469,7 @@ export const initialCommunitySkills: CommunitySkill[] = [
   },
   {
     id: 'skill-release-note',
+    rating: 4.7,
     name: '发布说明生成',
     version: '1.6',
     tone: 'amber',
@@ -471,6 +483,7 @@ export const initialCommunitySkills: CommunitySkill[] = [
   },
   {
     id: 'skill-sql',
+    rating: 4.9,
     name: 'SQL 查询生成',
     version: '2.3',
     tone: 'indigo',
@@ -484,6 +497,7 @@ export const initialCommunitySkills: CommunitySkill[] = [
   },
   {
     id: 'skill-validation',
+    rating: 4.6,
     name: '数据校验规则',
     version: '0.9',
     tone: 'rose',
@@ -497,6 +511,7 @@ export const initialCommunitySkills: CommunitySkill[] = [
   },
   {
     id: 'skill-competitor',
+    rating: 4.7,
     name: '竞品分析框架',
     version: '1.2',
     tone: 'violet',
@@ -510,6 +525,7 @@ export const initialCommunitySkills: CommunitySkill[] = [
   },
   {
     id: 'skill-attribution',
+    rating: 4.8,
     name: '归因分析',
     version: '1.0',
     tone: 'indigo',
@@ -523,6 +539,7 @@ export const initialCommunitySkills: CommunitySkill[] = [
   },
   {
     id: 'skill-chart',
+    rating: 4.9,
     name: '图表建议',
     version: '1.4',
     tone: 'teal',

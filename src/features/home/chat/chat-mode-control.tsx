@@ -23,7 +23,7 @@ export function ChatModeControl({ mode, onChange, t }: {
       <Tooltip><TooltipTrigger asChild>
         <DropdownMenuTrigger asChild>
           <Button type="button" variant="ghost" className={styles.trigger} aria-label={t('currentMode', { mode: t(label) })}>
-            <Icon size={15} aria-hidden="true" /><span>{t(label)}</span><CaretDown size={10} aria-hidden="true" />
+            <Icon size={15} className={styles.icon} data-mode={mode} data-static-color aria-hidden="true" /><span>{t(label)}</span><CaretDown size={10} aria-hidden="true" />
           </Button>
         </DropdownMenuTrigger>
       </TooltipTrigger><TooltipContent>{t(description)}</TooltipContent></Tooltip>

@@ -96,8 +96,8 @@ export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigu
     const bounds = row.getBoundingClientRect();
     const width = Math.min(264, window.innerWidth - 24);
     // A modest stagger keeps the card visibly attached to the current row.
-    const right = bounds.left + 104;
-    const left = bounds.right - width - 104;
+    const right = bounds.left + 136;
+    const left = bounds.right - width - 136;
     const preferred = right + width <= window.innerWidth - 12 || bounds.left < window.innerWidth - bounds.right ? right : left;
     const x = Math.max(12, Math.min(preferred, window.innerWidth - width - 12));
     const side = bounds.top + bounds.height / 2 < window.innerHeight / 2 ? 'bottom' : 'top';

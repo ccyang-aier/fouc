@@ -90,7 +90,7 @@
   cursor: text;
 }
 .input::placeholder {
-  color: var(--muted-strong);
+  color: var(--muted);
   opacity: 1;
 }
 .input:focus {

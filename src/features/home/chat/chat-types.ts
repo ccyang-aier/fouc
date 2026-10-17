@@ -5,7 +5,7 @@ export type ChatExecution =
   | { kind: "agent"; id: string; name?: string }
   | { kind: "model"; id: string; name?: string; provider?: ModelCatalogEntry['provider']; reasoningEffort: ModelReasoningLevel | null };
 
-export type AutoModelRules = { modelIds: string[] | null };
+export type AutoModelRules = { modelIds: string[] | null; reasoningEffort: ModelReasoningLevel };
 
 export type ChatContext = {
   execution: ChatExecution;

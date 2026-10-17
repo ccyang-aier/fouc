@@ -19,6 +19,15 @@ const tasks = {
 const primaryTasks = ['website', 'desktop', 'slides', 'design'] as const;
 const moreTasks = ['writing', 'research', 'data'] as const;
 
+function animatePress(button: HTMLButtonElement) {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  button.animate([
+    { transform: 'scale(1)' },
+    { transform: 'scale(0.95)', offset: 0.35 },
+    { transform: 'scale(1)' },
+  ], { duration: 240, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' });
+}
+
 export function ChatQuickActions({ value, onSelect, t }: {
   value: ChatTaskKind | null;
   onSelect: (task: ChatTaskKind) => void;
@@ -28,13 +37,17 @@ export function ChatQuickActions({ value, onSelect, t }: {
     {primaryTasks.map(task => {
       const { icon: Icon, label } = tasks[task];
       return <Button key={task} type="button" variant="outline" className={styles.action}
-        aria-pressed={value === task} data-active={value === task} onClick={() => onSelect(task)}>
+        aria-pressed={value === task} onClick={event => {
+          animatePress(event.currentTarget);
+          onSelect(task);
+        }}>
         <Icon size={17} aria-hidden="true" />{t(label)}
       </Button>;
     })}
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
-        <Button type="button" variant="outline" className={styles.action}>{t('moreTasks')}</Button>
+        <Button type="button" variant="outline" className={styles.action}
+          data-selected={moreTasks.some(task => task === value)} onClick={event => animatePress(event.currentTarget)}>{t('moreTasks')}</Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" sideOffset={6}>
         {moreTasks.map(task => {

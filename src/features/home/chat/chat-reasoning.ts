@@ -1,5 +1,10 @@
-import type { ModelReasoningLevel } from '@fouc/shared/model-catalog';
+import type { ModelCatalogEntry, ModelReasoningLevel } from '@fouc/shared/model-catalog';
 import type { chatMessages } from './chat-messages';
+
+export const autoReasoning: NonNullable<ModelCatalogEntry['reasoning']> = {
+  levels: ['low', 'medium', 'high', 'xhigh', 'max'],
+  defaultLevel: 'medium',
+};
 
 export const reasoningLabels = {
   none: 'reasoningNone', minimal: 'reasoningMinimal', low: 'reasoningLow', medium: 'reasoningMedium',

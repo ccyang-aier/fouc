@@ -17,6 +17,7 @@ import { ChatRecentConversations } from "./chat-recent-conversations";
 import { saveChatConversation, type ChatHistoryEntry } from "./chat-history";
 import type { ChatContext, ChatSubmission } from "./chat-types";
 import type { ChatText } from "./chat-messages";
+import { autoReasoning } from './chat-reasoning';
 import styles from "./chat.module.css";
 
 export function HomeChat({
@@ -34,7 +35,7 @@ export function HomeChat({
   const [draft, setDraft] = useState<ChatDraft>({ text: "", attachments: [], task: null });
   const [context, setContext] = useState<ChatContext>({
     execution: { kind: "auto" },
-    autoRules: { modelIds: null },
+    autoRules: { modelIds: null, reasoningEffort: autoReasoning.defaultLevel },
     projectId: selectedProject?.id ?? null,
     projectName: selectedProject?.name ?? null,
     knowledgeIncluded: true,

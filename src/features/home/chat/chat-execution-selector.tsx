@@ -19,6 +19,7 @@ import { ModelInfoPane, modelInfoNarrowWidth, modelInfoPaneGap, modelInfoPaneWid
 import { modelInfoMessages } from './model-info-messages';
 import { useModelCatalog } from './use-model-catalog';
 import { ModelReasoningControl } from './model-reasoning-control';
+import { autoReasoning } from './chat-reasoning';
 import { aggregateModelUsage, getMockModelUsage } from './model-usage-data';
 import { ModelUsageSparkline } from './model-usage-sparkline';
 import styles from "./chat-execution-selector.module.css";
@@ -199,7 +200,10 @@ export function ChatExecutionSelector({ context, onChange, t }: {
       </ModelInfoPane> : null}
     </ChatPickerContent>
     </DropdownMenu>
-    {currentModel?.reasoning && execution.kind === 'model' ?
+    {execution.kind === 'auto' ?
+      <ModelReasoningControl key="auto" reasoning={autoReasoning} value={context.autoRules.reasoningEffort}
+        onChange={reasoningEffort => onChange({ autoRules: { ...context.autoRules, reasoningEffort } })} t={t} />
+    : currentModel?.reasoning && execution.kind === 'model' ?
       <ModelReasoningControl key={currentModel.id} reasoning={currentModel.reasoning} value={execution.reasoningEffort}
         onChange={reasoningEffort => onChange({ execution: { ...execution, reasoningEffort } })} t={t} />
     : null}

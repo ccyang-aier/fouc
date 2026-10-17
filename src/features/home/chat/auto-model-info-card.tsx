@@ -58,9 +58,9 @@ export function AutoModelInfoCard({ models, rules, onChange, onSelect, onClose, 
   const blocked = blockedModelId !== null && selectedCount === 1 && selectedIds.has(blockedModelId);
   const showFeedback = canEdit && (blocked || selectedCount === 0);
 
-  function updateRules(nextRules: AutoModelRules) {
+  function updateRules(modelIds: string[] | null) {
     setBlockedModelId(null);
-    onChange(nextRules);
+    onChange({ ...rules, modelIds });
   }
 
   function toggleModel(modelId: string) {
@@ -71,7 +71,7 @@ export function AutoModelInfoCard({ models, rules, onChange, onSelect, onClose, 
     const nextIds = models
       .filter(model => model.id === modelId ? !selectedIds.has(model.id) : selectedIds.has(model.id))
       .map(model => model.id);
-    updateRules({ modelIds: nextIds });
+    updateRules(nextIds);
   }
 
   return <article className={styles.card} aria-label={t('details')} onKeyDown={event => {
@@ -91,9 +91,9 @@ export function AutoModelInfoCard({ models, rules, onChange, onSelect, onClose, 
       <div className={styles.toolbar}>
         <span className={styles.count} aria-live="polite">{t('selected', { selected: selectedCount, total: models.length })}</span>
         <Button type="button" variant="ghost" size="sm" disabled={!canEdit || selectedCount === models.length}
-          onClick={() => updateRules({ modelIds: models.map(model => model.id) })}>{t('selectAll')}</Button>
+          onClick={() => updateRules(models.map(model => model.id))}>{t('selectAll')}</Button>
         <Button type="button" variant="ghost" size="sm" disabled={!canEdit || rules.modelIds === null}
-          title={t('resetHint')} onClick={() => updateRules({ modelIds: null })}>{t('reset')}</Button>
+          title={t('resetHint')} onClick={() => updateRules(null)}>{t('reset')}</Button>
       </div>
 
       {loading ? <div className={styles.state} role="status">{t('loading')}</div>

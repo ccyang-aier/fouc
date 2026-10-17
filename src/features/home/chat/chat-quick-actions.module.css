@@ -1,3 +1,10 @@
+.actions,
+.tag {
+  --task-blue-bg: #e8f3ff;
+  --task-blue-ink: #2589ec;
+  --task-blue-border: #3094fb;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;
@@ -18,10 +25,23 @@
   font-weight: 450;
   box-shadow: none;
   cursor: pointer;
+  translate: none;
+}
+
+.action.action,
+.tag.tag {
+  --action-state-bg: var(--task-blue-bg);
+  --action-state-ink: var(--task-blue-ink);
 }
 
 .action svg { color: var(--muted-strong); }
-.action[aria-pressed="true"] { color: var(--accent-ink); border-color: var(--accent-soft-line); }
+.action:is(:hover, :focus-visible, [aria-pressed="true"], [aria-expanded="true"], [data-selected="true"]) {
+  background: var(--task-blue-bg);
+  color: var(--task-blue-ink);
+  border-color: var(--task-blue-border);
+  border-style: solid;
+}
+.action:is(:hover, :focus-visible, [aria-pressed="true"], [aria-expanded="true"], [data-selected="true"]) svg { color: currentColor; }
 .action:focus-visible { outline: none; box-shadow: none; }
 
 .tag {
@@ -32,8 +52,8 @@
   padding: 0 10px;
   border: 0;
   border-radius: 999px;
-  background: #e8f3ff;
-  color: #2589ec;
+  background: var(--task-blue-bg);
+  color: var(--task-blue-ink);
   font-size: 12px;
   line-height: 24px;
   font-weight: 500;
@@ -43,4 +63,9 @@
 }
 
 .messageTag { margin-bottom: 8px; cursor: default; }
-:global(html[data-theme="dark"]) .tag { background: #17354f; color: #8cc7ff; }
+:global(html[data-theme="dark"]) .actions,
+:global(html[data-theme="dark"]) .tag {
+  --task-blue-bg: #17354f;
+  --task-blue-ink: #8cc7ff;
+  --task-blue-border: #589ee4;
+}

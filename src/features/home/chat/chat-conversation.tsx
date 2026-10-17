@@ -44,7 +44,10 @@ export function ChatConversation({
           })}
         </span>
       </div>
-      {submissions.map((submission) => (
+      {submissions.map((submission) => {
+        const reasoningEffort = submission.context.execution.kind === 'auto' ? submission.context.autoRules.reasoningEffort
+          : submission.context.execution.kind === 'model' ? submission.context.execution.reasoningEffort : null;
+        return (
         <article className={styles.turn} key={submission.id}>
           <div className={styles.userMessage}>
             {submission.attachments.length ? (
@@ -88,8 +91,8 @@ export function ChatConversation({
                 {submission.context.execution.kind === 'auto' ? <div>
                   <dt>{t('autoPool')}</dt><dd>{submission.context.autoRules.modelIds === null ? t('autoAllModels') : t('autoModelCount', { count: submission.context.autoRules.modelIds.length })}</dd>
                 </div> : null}
-                {submission.context.execution.kind === 'model' && submission.context.execution.reasoningEffort ? <div>
-                  <dt>{t('reasoningEffort')}</dt><dd>{t(reasoningLabels[submission.context.execution.reasoningEffort])}</dd>
+                {reasoningEffort ? <div>
+                  <dt>{t('reasoningEffort')}</dt><dd>{t(reasoningLabels[reasoningEffort])}</dd>
                 </div> : null}
                 <div>
                   <dt>{t("project")}</dt>
@@ -118,7 +121,8 @@ export function ChatConversation({
             </div>
           </div>
         </article>
-      ))}
+        );
+      })}
     </div>
   );
 }

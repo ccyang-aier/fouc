@@ -22,8 +22,6 @@ export const messages = defineMessages({
   管理外部服务: ['管理外部服务', 'Manage external services'],
   设置: ['设置', 'Settings'],
   '调整 Fouc 偏好': ['调整 Fouc 偏好', 'Adjust Fouc preferences'],
-  帮助与反馈: ['帮助与反馈', 'Help and feedback'],
-  查看使用帮助并反馈问题: ['查看使用帮助并反馈问题', 'Find help and send feedback'],
   全局搜索: ['全局搜索', 'Global search'],
   搜索: ['搜索', 'Search'],
   没有匹配结果: ['没有匹配结果', 'No matches'],

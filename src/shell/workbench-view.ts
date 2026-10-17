@@ -3,8 +3,8 @@
 import { useSyncExternalStore } from 'react';
 import { WORKBENCH_VIEW_CHANGED } from '@/lib/settings-navigation';
 
-export type WorkbenchView = 'home' | 'workbench' | 'tasks' | 'members' | 'assets' | 'chats' | 'agents' | 'settings' | 'help' | 'community' | 'knowledge' | 'connectors';
-const views: readonly WorkbenchView[] = ['home', 'workbench', 'tasks', 'members', 'assets', 'chats', 'agents', 'settings', 'help', 'community', 'knowledge', 'connectors'];
+export type WorkbenchView = 'home' | 'workbench' | 'tasks' | 'members' | 'assets' | 'chats' | 'agents' | 'settings' | 'community' | 'knowledge' | 'connectors';
+const views: readonly WorkbenchView[] = ['home', 'workbench', 'tasks', 'members', 'assets', 'chats', 'agents', 'settings', 'community', 'knowledge', 'connectors'];
 const viewChanged = WORKBENCH_VIEW_CHANGED;
 function resolveView(value: string | null): WorkbenchView {
   return views.includes(value as WorkbenchView) ? value as WorkbenchView : 'workbench';

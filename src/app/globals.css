@@ -113,7 +113,7 @@
   --wt-sidebar-identity-hover: #e4e4e4;
   --wt-sidebar-edge: var(--line);
   /* 侧栏交互使用浅灰平面，悬停与激活保持同一反馈。 */
-  --sidebar-row-bg: #eeeeee;
+  --sidebar-row-bg: #f1f1f1;
   --sidebar-row-border: #e3e3e3;
   --sidebar-row-hover-border: var(--sidebar-row-border);
   --sidebar-row-shadow: none;

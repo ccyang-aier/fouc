@@ -8,7 +8,7 @@ export function SidebarSection({ title, actions, children }: { title: string; ac
   const [expanded, setExpanded] = useState(true);
   const contentId = useId();
   return <section className={styles.section} aria-label={title}>
-    <div className={`fouc-action ${styles.heading}`}>
+    <div className={`sidebar-nav-row ${styles.heading}`}>
       <h2><button type="button" className={styles.toggle} aria-expanded={expanded} aria-controls={contentId} onClick={() => setExpanded(value => !value)}>
         <CaretRight size={12} weight="bold" className={styles.caret} data-expanded={expanded} /><span>{title}</span>
       </button></h2>

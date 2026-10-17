@@ -12,10 +12,11 @@ export const messages = defineMessages({
   编辑频道名称: ['编辑频道“{name}”', 'Edit channel “{name}”'], 按名称排序: ['按名称排序', 'Sort by name'], 频道名称已存在: ['频道名称已存在', 'This channel name already exists'],
   频道保存失败: ['频道保存失败，请重试', 'Could not save channels. Try again.'], 确认删除: ['确认删除', 'Confirm delete'], 删除频道: ['删除频道', 'Delete channel'],
   置顶: ['置顶', 'Pin'], 取消置顶: ['取消置顶', 'Unpin'], 置顶名称: ['置顶“{name}”', 'Pin “{name}”'], 取消置顶名称: ['取消置顶“{name}”', 'Unpin “{name}”'],
+  已置顶名称: ['已置顶“{name}”', 'Pinned “{name}”'], 已取消置顶名称: ['已取消置顶“{name}”', 'Unpinned “{name}”'],
   条目更多操作: ['“{name}”的更多操作', 'More actions for “{name}”'], 重命名: ['重命名', 'Rename'], 删除: ['删除', 'Delete'],
   重命名对话: ['重命名对话', 'Rename chat'], 删除对话: ['删除对话', 'Delete chat'], 对话名称: ['对话名称', 'Chat name'], 输入对话名称: ['输入对话名称', 'Enter a chat name'],
   删除频道确认: ['删除频道“{name}”？此操作无法撤销。', 'Delete channel “{name}”? This cannot be undone.'], 删除对话确认: ['删除对话“{name}”及其中的全部消息？此操作无法撤销。', 'Delete chat “{name}” and all its messages? This cannot be undone.'],
   关闭: ['关闭', 'Close'], 取消: ['取消', 'Cancel'], 保存: ['保存', 'Save'],
-  设置: ['设置', 'Settings'], 帮助与反馈: ['帮助与反馈', 'Help and feedback'],
+  设置: ['设置', 'Settings'],
   切换到浅色模式: ['切换到浅色模式', 'Switch to light mode'], 切换到深色模式: ['切换到深色模式', 'Switch to dark mode'],
 });

@@ -13,7 +13,6 @@ import { ProjectChatsPage, ProjectEmptyPage, ProjectSelectionEmpty } from '@/fea
 import { useProjectResources } from '@/features/project/project-resources';
 import { AgentSettings } from '@/features/settings/agent-settings';
 import { SettingsDialog } from '@/features/settings/settings-dialog';
-import { HelpFeedbackCanvas } from '@/features/help/help-feedback-canvas';
 import { closeSettings, setSettingsSection, useSettingsSection } from '@/lib/settings-navigation';
 import { useMenuMotion } from '@/lib/use-menu-motion';
 import { applyAppearancePrefs, readAppearancePrefs } from '@/lib/appearance';
@@ -75,7 +74,7 @@ export function WorkbenchShell() {
                       : view === 'community' ? <CommunityCanvas />
                       : view === 'connectors' ? <ConnectorsCanvas onOpenProject={id => { if (projects.some(project => project.id === id)) selectProject(id); changeView('workbench'); }} />
                       : view === 'knowledge' ? <KnowledgePage onOpenSettings={() => changeView('settings')} />
-                      : view === 'help' ? <HelpFeedbackCanvas onNavigate={changeView} /> : null}
+                      : null}
                   </motion.div>
                 </AnimatePresence>
               </div>

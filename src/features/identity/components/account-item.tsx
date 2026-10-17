@@ -4,7 +4,7 @@ import { useTranslation } from '@/lib/i18n/react';
 import { messages } from './i18n/account-item.messages';
 
 import {
-  ArrowsLeftRight,
+  UserSwitch,
   Check,
   CircleNotch,
   SignOut,
@@ -180,7 +180,7 @@ export function AccountItem({ compact = false }: { compact?: boolean }) {
               openSignIn();
             }}
           >
-            <UserCircle />
+            <UserCircle weight="duotone" />
             {uiText('个人信息')}
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -190,7 +190,7 @@ export function AccountItem({ compact = false }: { compact?: boolean }) {
               openSwitchAccount();
             }}
           >
-            <ArrowsLeftRight />
+            <UserSwitch weight="duotone" />
             {uiText('切换账户')}
           </DropdownMenuItem>
           <DropdownMenuSeparator className={styles.separator} />

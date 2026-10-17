@@ -1,9 +1,8 @@
 .section { margin-top: 12px; }
 .section:first-child { margin-top: 0; }
-.heading { display: flex; align-items: center; min-height: 30px; border-radius: 6px; color: var(--muted-strong); }
-.heading h2 { flex: 1; min-width: 0; margin: 0; font-size: 12px; font-weight: 500; }
-.toggle { display: flex; width: 100%; height: 30px; align-items: center; gap: 7px; padding: 0 7px; text-align: left; cursor: pointer; border-radius: 6px; outline: none; }
-.toggle:focus-visible { background: var(--action-hover-bg); }
+.heading { display: flex; align-items: center; height: 30px; border-radius: 6px; color: var(--muted-strong); }
+.heading h2 { flex: 1; min-width: 0; height: 100%; margin: 0; font-size: 12px; font-weight: 500; }
+.toggle { display: flex; width: 100%; height: 100%; align-items: center; gap: 7px; padding: 0 6px; text-align: left; cursor: pointer; border-radius: 6px; outline: none; }
 .caret { flex-shrink: 0; transform: rotate(0); transition: transform 160ms ease-out; }
 .caret[data-expanded=true] { transform: rotate(-90deg); }
 .actions { display: flex; align-items: center; gap: 1px; padding-right: 3px; }
@@ -14,8 +13,11 @@
 .row { display: flex; align-items: center; width: 100%; height: 30px; padding: 0 3px 0 8px; border-radius: 6px; font-size: 11px; text-align: left; }
 .entry { display: flex; flex: 1; align-items: center; gap: 8px; min-width: 0; height: 100%; padding: 0; text-align: left; cursor: pointer; outline: none; }
 .entry > span { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.rowActions { display: flex; flex: none; gap: 1px; margin-left: 4px; opacity: 0; pointer-events: none; }
-.row:is(:hover, :focus-within, [data-menu-open=true]) .rowActions { opacity: 1; pointer-events: auto; }
+.rowActions { display: flex; flex: none; gap: 1px; margin-left: 4px; }
+.rowActions > button { opacity: 0; pointer-events: none; }
+.row:is(:hover, :focus-within, [data-menu-open=true]) .rowActions > button,
+.row[data-pinned=true] .rowActions > button[aria-pressed=true] { opacity: 1; pointer-events: auto; }
+.rowActions > button[aria-pressed=true] { color: var(--ink); }
 .description { margin: 0 20px 18px; color: var(--muted-strong); font-size: 12px; line-height: 20px; overflow-wrap: anywhere; }
 .dialog { position: fixed; inset: 0; margin: auto; width: min(360px, calc(100vw - 32px)); padding: 0; border: 1px solid var(--floating-border); border-radius: 12px; color: var(--ink); background: var(--panel); box-shadow: var(--floating-shadow); }
 .dialog::backdrop { background: var(--modal-backdrop); }

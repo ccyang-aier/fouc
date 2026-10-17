@@ -1,6 +1,6 @@
 'use client';
 
-import { Archive, BookOpenText, ChatCircleDots, ChatsCircle, GearSix, ListChecks, Planet, PlugsConnected, Question, Robot, SidebarSimple, SquaresFour, UsersThree } from '@phosphor-icons/react';
+import { Archive, BookOpenText, ChatCircleDots, ChatsCircle, GearSix, ListChecks, Planet, PlugsConnected, Robot, SidebarSimple, SquaresFour, UsersThree } from '@phosphor-icons/react';
 import { AccountItem } from '@/features/identity/components/account-item';
 import { ProjectSwitcher } from '@/features/project/project-switcher';
 import type { ChatHistoryEntry } from '@/features/home/chat/chat-history';
@@ -56,7 +56,6 @@ export function NavigationSidebar({ open, onCollapse, onExpand, view, onViewChan
     </ScrollArea>
     <footer className={cn('flex shrink-0 flex-col gap-0.5 pt-2', open ? 'px-3' : 'px-1')}>
       <nav aria-label={t('服务')} className="flex flex-col gap-0.5">{services.map(row)}</nav>
-      {row({ id: 'help', label: t('帮助与反馈'), icon: Question })}
       <div className={styles.dock} data-compact={!open}>
         <div className={styles.account}><AccountItem compact={!open} /></div>
         {open && <><SidebarThemeSwitch />

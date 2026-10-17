@@ -47,6 +47,16 @@ export function SidebarProjectSections({ onNewChat, onAllChats, onOpenChat }: { 
     return <Tooltip><TooltipTrigger asChild><button type="button" className={`fouc-action ${styles.action}`} aria-label={label} onClick={onClick} disabled={!scopeKey}>{child}</button></TooltipTrigger><TooltipContent side="top">{label}</TooltipContent></Tooltip>;
   }
   function newChannel() { setEditing({ kind: 'create', resource: 'channel', name: '' }); }
+  function toggleChannelPin(channel: SidebarChannel) {
+    if (saveChannels(channels.map(item => item.id === channel.id ? { ...item, pinned: !item.pinned } : item))) {
+      notify('success', t(channel.pinned ? '已取消置顶名称' : '已置顶名称', { name: channel.name }));
+    }
+  }
+  function toggleChatPin(entry: ChatHistoryEntry) {
+    if (!scopeKey) return;
+    pinChatConversation(scopeKey, entry.id, !entry.pinned);
+    notify('success', t(entry.pinned ? '已取消置顶名称' : '已置顶名称', { name: chatConversationTitle(entry) }));
+  }
   const sortedChannels = [...channels].sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)));
   return <>
     <SidebarSection title={t('频道')} actions={<>
@@ -57,7 +67,7 @@ export function SidebarProjectSections({ onNewChat, onAllChats, onOpenChat }: { 
     </>}>
       {channels.length ? <div className={styles.list}>{sortedChannels.map(channel => {
         const rename = () => setEditing({ kind: 'rename', resource: 'channel', id: channel.id, name: channel.name });
-        return <SidebarEntryRow key={channel.id} name={channel.name} label={t('编辑频道名称', { name: channel.name })} icon={<Hash size={15} className="sidebar-nav-icon shrink-0" aria-hidden />} pinned={channel.pinned} onOpen={rename} onPin={() => saveChannels(channels.map(item => item.id === channel.id ? { ...item, pinned: !item.pinned } : item))} onRename={rename} onDelete={() => setEditing({ kind: 'delete', resource: 'channel', id: channel.id, name: channel.name })} />;
+        return <SidebarEntryRow key={channel.id} name={channel.name} label={t('编辑频道名称', { name: channel.name })} icon={<Hash size={15} className="sidebar-nav-icon shrink-0" aria-hidden />} pinned={channel.pinned} onOpen={rename} onPin={() => toggleChannelPin(channel)} onRename={rename} onDelete={() => setEditing({ kind: 'delete', resource: 'channel', id: channel.id, name: channel.name })} />;
       })}</div> : <p className={styles.empty}>{t('暂无频道')}</p>}
     </SidebarSection>
     <SidebarSection title={t('最近')} actions={<>
@@ -66,7 +76,7 @@ export function SidebarProjectSections({ onNewChat, onAllChats, onOpenChat }: { 
     </>}>
       {history.length ? <div className={styles.list}>{history.slice(0, 6).map(entry => {
         const name = chatConversationTitle(entry);
-        return <SidebarEntryRow key={entry.id} name={name} icon={<ChatCircleDots size={15} weight="duotone" className="sidebar-nav-icon shrink-0" aria-hidden />} pinned={entry.pinned} onOpen={() => onOpenChat(entry)} onPin={() => { if (scopeKey) pinChatConversation(scopeKey, entry.id, !entry.pinned); }} onRename={() => setEditing({ kind: 'rename', resource: 'chat', id: entry.id, name })} onDelete={() => setEditing({ kind: 'delete', resource: 'chat', id: entry.id, name })} />;
+        return <SidebarEntryRow key={entry.id} name={name} icon={<ChatCircleDots size={15} weight="duotone" className="sidebar-nav-icon shrink-0" aria-hidden />} pinned={entry.pinned} onOpen={() => onOpenChat(entry)} onPin={() => toggleChatPin(entry)} onRename={() => setEditing({ kind: 'rename', resource: 'chat', id: entry.id, name })} onDelete={() => setEditing({ kind: 'delete', resource: 'chat', id: entry.id, name })} />;
       })}</div> : <p className={styles.empty}>{t('暂无最近对话')}</p>}
     </SidebarSection>
     {editing && <SidebarEntryDialog action={editing} nameExists={editing.resource === 'channel' ? name => channels.some(item => (editing.kind === 'create' || item.id !== editing.id) && item.name.toLocaleLowerCase() === name.toLocaleLowerCase()) : undefined} onConfirm={confirm} onClose={() => setEditing(null)} />}

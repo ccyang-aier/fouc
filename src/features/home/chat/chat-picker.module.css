@@ -54,9 +54,6 @@
   font-weight: 400;
 }
 .item > svg { width: 14px; height: 14px; flex-shrink: 0; }
-/* Selection is the resting highlight; pointer or keyboard interaction owns the single active row. */
-.surface:has(.item:hover) .item:is([data-highlighted], [data-current="true"], :focus-visible):not(:hover),
-.surface:not(:has(.item:hover)):has(.item[data-highlighted]) .item[data-current="true"]:not([data-highlighted]) { background: transparent; color: var(--ink); }
 .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .check { margin-left: auto; }
 .list { min-height: 0; max-height: 140px; }

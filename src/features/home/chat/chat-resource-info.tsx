@@ -30,16 +30,17 @@ export function ResourceIcon({ resource }: { resource: ComposerResource }) {
     : <SkillIcon className={styles.resourceIcon} data-static-color aria-hidden="true" />;
 }
 
-export function ChatResourceInfo({ resource, side, onEscape }: {
+export function ChatResourceInfo({ resource, side, offset, onEscape }: {
   resource: ComposerResource;
   side: 'top' | 'bottom';
+  offset: number;
   onEscape: () => void;
 }) {
   const { t } = useTranslation(resourceMessages);
   const rating = resource.rating;
   const stars = Math.round((rating ?? 0) * 2) / 2;
 
-  return <TooltipContent className={styles.infoCard} side={side} sideOffset={8} collisionPadding={12}
+  return <TooltipContent className={styles.infoCard} side={side} sideOffset={offset} collisionPadding={12}
     onEscapeKeyDown={event => { event.preventDefault(); onEscape(); }}>
     <div className={styles.infoHeading}>
       <ResourceIcon resource={resource} />

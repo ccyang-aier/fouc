@@ -1,7 +1,7 @@
 'use client';
 
-import { useLayoutEffect, useRef, useState } from 'react';
-import { ArrowUpRight, CaretDown, Check, GearSix, Info, PlugsConnected, Plus, SlidersHorizontal } from '@phosphor-icons/react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { ArrowSquareOut, CaretDown, Check, GearSix, Info, PlugsConnected, Plus, SlidersHorizontal } from '@phosphor-icons/react';
 import { SkillIcon } from '@/components/icons/skill-icon';
 import { DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,8 @@ import { ChatResourceInfo, ResourceIcon } from './chat-resource-info';
 import { resourceMessages } from './chat-resource-messages';
 import styles from './chat-resource-menu.module.css';
 import addStyles from './chat-add-menu.module.css';
+
+const PREVIEW_SPACE = 180;
 
 export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigure, onOpenMarket }: {
   kind: ComposerResourceKind;
@@ -35,9 +37,18 @@ export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigu
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [sideOffset, setSideOffset] = useState(8);
   const [alignOffset, setAlignOffset] = useState(0);
-  const [tooltipSide, setTooltipSide] = useState<'top' | 'bottom'>('bottom');
+  const [tooltipPlacement, setTooltipPlacement] = useState<{ side: 'top' | 'bottom'; offset: number }>({ side: 'top', offset: 8 });
+  const [maxHeight, setMaxHeight] = useState<number>();
   const trigger = useRef<HTMLDivElement>(null);
+  const menu = useRef<HTMLDivElement>(null);
   const search = useRef<HTMLInputElement>(null);
+  const previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pointerMode = useRef(true);
+  const hidePreview = useCallback(() => {
+    if (previewTimer.current !== null) clearTimeout(previewTimer.current);
+    previewTimer.current = null;
+    setPreviewId(null);
+  }, []);
   const disabledBuiltinIds = useBuiltinSkills();
   const builtin = kind === 'skills' ? getBuiltinSkills(locale) : [];
   const market = useComposerCatalog(kind, locale);
@@ -62,91 +73,120 @@ export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigu
         // Radix offsets from the inset trigger; the visible menu surfaces need a 6px gap.
         setSideOffset(Math.min(6 + inset, Math.max(bounds.left - 12, window.innerWidth - bounds.right - 12) - Math.min(284, window.innerWidth - 24)));
         setAlignOffset(parent.top - bounds.top);
+        // Reserve an outside preview lane before hovering, so short menus never jump on preview.
+        const reservedBelow = parent.top < PREVIEW_SPACE + 12 ? PREVIEW_SPACE + 12 : 0;
+        setMaxHeight(Math.max(100, Math.min(438, window.innerHeight - parent.top - 12 - reservedBelow)));
       }
     }
     position();
     const placement = new MutationObserver(position);
     if (parentMenu?.parentElement) placement.observe(parentMenu.parentElement, { attributes: true, attributeFilter: ['style'] });
-    window.addEventListener('resize', position);
-    return () => { placement.disconnect(); window.removeEventListener('resize', position); };
-  }, [open]);
+    const resize = () => { hidePreview(); position(); };
+    window.addEventListener('resize', resize);
+    return () => {
+      placement.disconnect(); window.removeEventListener('resize', resize);
+      if (previewTimer.current !== null) clearTimeout(previewTimer.current);
+    };
+  }, [open, hidePreview]);
 
   function toggleCategory(value: string) {
     setCategory(value);
     setCategoryOpen(false);
-    setPreviewId(null);
+    hidePreview();
     search.current?.focus();
   }
 
-  function positionTooltip(row: HTMLElement) {
+  function showPreview(id: string, row: HTMLElement) {
+    if (previewTimer.current !== null) clearTimeout(previewTimer.current);
+    previewTimer.current = null;
     const bounds = row.getBoundingClientRect();
-    setTooltipSide(bounds.top + bounds.height / 2 < window.innerHeight / 2 ? 'bottom' : 'top');
+    const surface = menu.current!.getBoundingClientRect();
+    const above = surface.top - 12;
+    const below = window.innerHeight - surface.bottom - 12;
+    const preferAbove = bounds.top + bounds.height / 2 < surface.top + surface.height / 2;
+    const side = (preferAbove ? above >= PREVIEW_SPACE || above > below : below < PREVIEW_SPACE && above > below) ? 'top' : 'bottom';
+    const offset = 8 + (side === 'top' ? bounds.top - surface.top : surface.bottom - bounds.bottom);
+    setTooltipPlacement({ side, offset });
+    setPreviewId(id);
+  }
+
+  function schedulePreview(id: string, row: HTMLElement) {
+    if (previewTimer.current !== null || previewId === id) return;
+    previewTimer.current = setTimeout(() => showPreview(id, row), 650);
   }
 
   function renderResource(resource: ComposerResource, builtin = false) {
     const checked = builtin ? !disabledBuiltinIds.includes(resource.id) : selected.some(item => item.id === resource.id && item.kind === kind);
-    return <Tooltip key={resource.id} open={previewId === resource.id} delayDuration={300} disableHoverableContent
-      onOpenChange={next => setPreviewId(current => next ? resource.id : current === resource.id ? null : current)}>
+    return <Tooltip key={resource.id} open={previewId === resource.id} delayDuration={0} disableHoverableContent
+      onOpenChange={next => { if (!next) setPreviewId(current => current === resource.id ? null : current); }}>
       <TooltipTrigger asChild><ChatPickerItem className={styles.resourceRow} role="menuitemcheckbox" aria-checked={checked}
         textValue={resource.name} aria-label={resource.name}
-        onPointerEnter={event => positionTooltip(event.currentTarget)} onFocus={event => positionTooltip(event.currentTarget)}
-        onKeyDown={event => { if (event.key === 'ArrowRight') { event.preventDefault(); setPreviewId(resource.id); } }}
-        onSelect={event => { event.preventDefault(); if (builtin) toggleBuiltinSkill(resource.id); else onToggle(resource); }}>
+        onPointerEnter={event => {
+          if (event.pointerType !== 'mouse') return;
+          pointerMode.current = true;
+          hidePreview();
+          schedulePreview(resource.id, event.currentTarget);
+        }} onPointerMove={event => { if (event.pointerType === 'mouse') schedulePreview(resource.id, event.currentTarget); }}
+        onPointerLeave={hidePreview}
+        onFocus={event => { if (!pointerMode.current) showPreview(resource.id, event.currentTarget); }}
+        onKeyDown={event => { if (event.key === 'ArrowRight') { event.preventDefault(); showPreview(resource.id, event.currentTarget); } }}
+        onSelect={event => { event.preventDefault(); hidePreview(); if (builtin) toggleBuiltinSkill(resource.id); else onToggle(resource); }}>
         <ResourceIcon resource={resource} />
         <span className={styles.resourceName}>{resource.name}</span>
         {checked ? <Check className={styles.check} size={13} weight="bold" data-builtin={builtin} data-static-color aria-hidden="true" /> : null}
         <button type="button" tabIndex={-1} className={`fouc-action ${styles.infoButton}`} aria-label={t('details', { name: resource.name })}
           onPointerDown={event => event.stopPropagation()} onPointerUp={event => event.stopPropagation()}
-          onClick={event => { event.stopPropagation(); setPreviewId(resource.id); }}><Info size={15} /></button>
+          onClick={event => { event.stopPropagation(); showPreview(resource.id, event.currentTarget.parentElement!); }}><Info size={15} /></button>
       </ChatPickerItem></TooltipTrigger>
-      <ChatResourceInfo resource={resource} side={tooltipSide} onEscape={() => { setPreviewId(null); search.current?.focus(); }} />
+      <ChatResourceInfo resource={resource} {...tooltipPlacement} onEscape={() => { hidePreview(); search.current?.focus(); }} />
     </Tooltip>;
   }
 
   return <DropdownMenuSub open={open} onOpenChange={next => {
-    setOpen(next); setPreviewId(null); setCategoryOpen(false);
+    setOpen(next); hidePreview(); setCategoryOpen(false);
     if (next) { setQuery(''); setCategory(''); }
   }}>
     <DropdownMenuSubTrigger ref={trigger} className={addStyles.item} aria-label={t(kind)}>
       <Icon className={addStyles.neutralIcon} data-resource-kind={kind} data-static-color aria-hidden="true" /><span>{t(kind)}</span>
       {selectedCount ? <span className={styles.triggerCount} aria-hidden="true">{selectedCount}</span> : null}
     </DropdownMenuSubTrigger>
-    <DropdownMenuSubContent className={styles.menu} collisionPadding={12} sideOffset={sideOffset} alignOffset={alignOffset}
+    <DropdownMenuSubContent ref={menu} className={styles.menu} style={{ maxHeight }} collisionPadding={12} sideOffset={sideOffset} alignOffset={alignOffset}
       aria-label={t(kind)}
+      onKeyDownCapture={() => { pointerMode.current = false; hidePreview(); }} onPointerDownCapture={() => { pointerMode.current = true; }}
       onFocusOutside={event => {
         // Radix briefly focuses the parent container while crossing an overlapping submenu.
         const target = event.target;
         if (target instanceof HTMLElement && target.getAttribute('role') === 'menu' && target.contains(trigger.current)) event.preventDefault();
       }}
-      onEscapeKeyDown={event => { if (previewId || categoryOpen) { event.preventDefault(); setPreviewId(null); setCategoryOpen(false); search.current?.focus(); } }}>
-      <div className={styles.toolbar} onPointerEnter={() => setPreviewId(null)} onKeyDown={event => { if (event.key === 'Tab') event.stopPropagation(); }}>
+      onEscapeKeyDown={event => { if (previewId || categoryOpen) { event.preventDefault(); hidePreview(); setCategoryOpen(false); search.current?.focus(); } }}>
+      <div className={styles.toolbar} onPointerEnter={hidePreview} onKeyDown={event => { if (event.key === 'Tab') event.stopPropagation(); }}>
         <ChatPickerSearch ref={search} value={query} aria-label={t(kind === 'skills' ? 'searchSkills' : 'searchMcp')}
-          placeholder={t(kind === 'skills' ? 'searchSkills' : 'searchMcp')} onChange={event => { setQuery(event.target.value); setPreviewId(null); }} />
+          placeholder={t(kind === 'skills' ? 'searchSkills' : 'searchMcp')} onChange={event => { setQuery(event.target.value); hidePreview(); }} />
         <Button type="button" variant="ghost" className={styles.toolbarButton} aria-label={t('category')} aria-expanded={categoryOpen}
-          title={t('category')} data-active={Boolean(category)} onClick={() => { setCategoryOpen(value => !value); setPreviewId(null); }}><SlidersHorizontal size={15} /></Button>
+          title={t('category')} data-active={Boolean(category)} onClick={() => { setCategoryOpen(value => !value); hidePreview(); }}><SlidersHorizontal size={16} weight="bold" /></Button>
         <Button type="button" variant="ghost" className={styles.toolbarButton} aria-label={t(kind === 'skills' ? 'addSkill' : 'addMcp')}
-          title={t(kind === 'skills' ? 'addSkill' : 'addMcp')} onClick={onCreate}><Plus size={16} /></Button>
+          title={t(kind === 'skills' ? 'addSkill' : 'addMcp')} onClick={onCreate}><Plus size={16} weight="bold" /></Button>
       </div>
       {categoryOpen || category ? <div className={styles.categories} role="group" aria-label={t('category')}>
         {['', ...new Set(all.map(item => item.category))].map(value => <button key={value} type="button" className={`fouc-action ${styles.category}`}
           aria-pressed={category === value} data-active={category === value} onClick={() => toggleCategory(value)}>{value ? communityCategoryLabel(value, locale) : t('all')}</button>)}
       </div> : null}
-      <ScrollArea className={styles.list} viewportClassName={styles.viewport} onScrollCapture={() => setPreviewId(null)}
+      <ScrollArea className={styles.list} viewportClassName={styles.viewport} onScrollCapture={hidePreview}
         onKeyDown={event => { if (event.key === 'Tab') event.stopPropagation(); }}>
         {kind === 'skills' && builtinResults.length ? <section className={styles.section} aria-label={t('builtin')}>
           <div className={styles.sectionHeading}>
             <button type="button" className={`fouc-action ${styles.collapse}`} data-variant="collapsible" aria-expanded={!collapsed}
-              onClick={() => { setCollapsed(value => !value); setPreviewId(null); }}><CaretDown size={10} data-collapsed={collapsed} />{t('builtin')}</button>
-            <button type="button" className={`fouc-action ${styles.configure}`} aria-label={t('configure')} title={t('configure')} onClick={onConfigure}><GearSix size={14} /></button>
+              onClick={() => { setCollapsed(value => !value); hidePreview(); }}><CaretDown size={10} data-collapsed={collapsed} />{t('builtin')}</button>
+            <button type="button" className={`fouc-action ${styles.configure}`} aria-label={t('configure')} title={t('configure')} onClick={onConfigure}><GearSix size={15} weight="bold" /></button>
           </div>
           {!collapsed ? builtinResults.map(item => renderResource(item, true)) : null}
         </section> : null}
         {marketResults.length ? <section className={styles.section} aria-label={t(kind === 'skills' ? 'market' : 'mcpMarket')}>
           {kind === 'skills' ? <div className={styles.sectionHeading}>
             <button type="button" className={`fouc-action ${styles.collapse}`} data-variant="collapsible" aria-expanded={!marketCollapsed}
-              onClick={() => { setMarketCollapsed(value => !value); setPreviewId(null); }}><CaretDown size={10} data-collapsed={marketCollapsed} />{t('market')}</button>
+              onClick={() => { setMarketCollapsed(value => !value); hidePreview(); }}><CaretDown size={10} data-collapsed={marketCollapsed} />{t('market')}</button>
             <button type="button" className={`fouc-action ${styles.configure}`} aria-label={t('openMarket')} title={t('openMarket')}
-              onClick={onOpenMarket}><ArrowUpRight size={14} /></button>
+              onClick={onOpenMarket}><ArrowSquareOut size={15} weight="bold" /></button>
           </div> : null}
           {kind === 'mcp' || !marketCollapsed ? marketResults.map(item => renderResource(item)) : null}
         </section> : null}

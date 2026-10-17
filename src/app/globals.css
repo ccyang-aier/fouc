@@ -385,12 +385,17 @@ input {
   --menu-state-ink: var(--menu-warning-hover-ink);
   color: var(--menu-warning-ink);
 }
-.fouc-menu-item:is(:hover, :focus-visible, [data-highlighted], [data-state="open"], [data-current="true"]):not(:disabled):not([data-disabled]):not([aria-disabled="true"]) {
+.fouc-menu-item:is(:hover, :focus-visible, [data-highlighted], [aria-expanded="true"], [data-current="true"]):not(:disabled):not([data-disabled]):not([aria-disabled="true"]) {
   background: var(--menu-state-bg);
   color: var(--menu-state-ink);
 }
-.fouc-menu-item:is(:hover, :focus-visible, [data-highlighted], [data-state="open"]):not(:disabled):not([data-disabled]):not([aria-disabled="true"]) svg:not([data-static-color]) {
+.fouc-menu-item:is(:hover, :focus-visible, [data-highlighted], [aria-expanded="true"]):not(:disabled):not([data-disabled]):not([aria-disabled="true"]) svg:not([data-static-color]) {
   color: inherit;
+}
+/* 每级菜单只绘制当前交互行；展开态和上一次焦点不能与新 hover 叠加。 */
+.menu-surface:has(.fouc-menu-item:hover) .fouc-menu-item:not(:hover),
+.menu-surface:not(:has(.fouc-menu-item:hover)):has(.fouc-menu-item[data-highlighted]) .fouc-menu-item:is([data-current="true"], [aria-expanded="true"]):not([data-highlighted]) {
+  background: transparent;
 }
 .fouc-menu-checkbox { display: grid; place-items: center; width: 14px; height: 14px; border: 1px solid var(--line-strong); border-radius: 3px; background: var(--panel); }
 [data-state="checked"] > .fouc-menu-checkbox { border-color: var(--accent); background: var(--accent); color: var(--accent-foreground); }

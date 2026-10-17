@@ -1,5 +1,5 @@
 export const resourceMessages = {
-  skills: ['Skills', 'Skills'], mcp: ['MCP', 'MCP'],
+  skills: ['skills', 'skills'], mcp: ['MCP', 'MCP'],
   searchSkills: ['搜索 skills…', 'Search skills…'], searchMcp: ['搜索 MCP…', 'Search MCP…'],
   category: ['按分类筛选', 'Filter by category'], all: ['全部分类', 'All categories'],
   addSkill: ['添加 skill', 'Add skill'], addMcp: ['新建 MCP', 'Create MCP'],
@@ -14,6 +14,6 @@ export const resourceMessages = {
   name: ['名称', 'Name'], description: ['描述', 'Description'],
   namePlaceholder: ['给资源起个名字', 'Name this resource'], descriptionPlaceholder: ['描述适合使用它的任务', 'Describe the tasks it helps with'],
   creator: ['我', 'Me'], cancel: ['取消', 'Cancel'], save: ['添加到当前任务', 'Add to this task'],
-  createHint: ['创建本次会话的目录草稿，不会安装 Skill 或连接 MCP 服务。', 'Create a catalog draft for this app session. This does not install a skill or connect an MCP server.'],
+  createHint: ['创建本次会话的目录草稿，不会安装 skill 或连接 MCP 服务。', 'Create a catalog draft for this app session. This does not install a skill or connect an MCP server.'],
   created: ['已添加到当前任务', 'Added to this task'],
 } as const;

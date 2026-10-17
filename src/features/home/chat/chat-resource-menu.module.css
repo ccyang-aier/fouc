@@ -13,7 +13,7 @@
   animation-duration: 140ms;
 }
 .toolbar { display: flex; align-items: center; flex-shrink: 0; gap: 2px; min-height: 34px; margin: 0 9px 4px; padding: 0 0 4px 4px; border-bottom: 1px solid var(--separator-color); }
-.toolbarButton { width: 25px; height: 25px; padding: 0; border-radius: 4px; }
+.toolbarButton { width: 25px; height: 25px; padding: 0; border-radius: 4px; color: var(--ink-soft); }
 .categories { display: flex; flex-wrap: wrap; flex-shrink: 0; gap: 3px; margin: 0 8px 4px; padding: 1px 0 5px; border-bottom: 1px solid var(--separator-color); }
 .category { padding: 4px 7px; border: 0; border-radius: 4px; background: transparent; color: var(--muted-strong); font-size: 11px; cursor: pointer; outline: none; }
 .category[aria-pressed="true"] { color: var(--accent-ink); background: var(--accent-soft); }
@@ -25,7 +25,7 @@
 .collapse { display: flex; align-items: center; gap: 5px; min-height: 23px; padding: 0 3px; border: 0; border-radius: 4px; background: transparent; color: var(--muted-strong); font-size: 11px; font-weight: 400; cursor: pointer; outline: none; }
 .collapse svg { transition: transform 140ms ease-out; }
 .collapse svg[data-collapsed="true"] { transform: rotate(-90deg); }
-.configure { display: grid; place-items: center; width: 23px; height: 23px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--muted-strong); cursor: pointer; outline: none; }
+.configure { display: grid; place-items: center; width: 23px; height: 23px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--ink-soft); cursor: pointer; outline: none; }
 .resourceRow { height: 32px; gap: 9px; padding: 0 8px; border-radius: 5px; animation: none !important; }
 .resourceIcon { display: block; flex-shrink: 0; width: 16px; height: 16px; color: var(--ink-soft); }
 .resourceName { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 400; line-height: 18px; }
@@ -36,16 +36,16 @@
 .empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 22px 10px 16px; color: var(--muted-strong); text-align: center; }
 .empty > strong { color: var(--ink-soft); font-size: 12px; font-weight: 500; }
 .empty > span { font-size: 11px; }
-.infoCard { width: min(264px, calc(100vw - 24px)); padding: 14px 16px; border-radius: 8px; font-weight: 400; pointer-events: none; }
+.infoCard { width: min(264px, calc(100vw - 24px)); padding: 11px 13px; border-radius: 8px; font-weight: 400; pointer-events: none; }
 .infoHeading { display: flex; align-items: center; gap: 8px; }
 .infoHeading .resourceIcon { width: 17px; height: 17px; color: inherit; }
-.infoHeading h3 { flex: 1; min-width: 0; margin: 0; font-size: 13px; font-weight: 500; line-height: 19px; overflow-wrap: anywhere; }
-.infoDescription { margin: 9px 0 12px; font-size: 12px; line-height: 1.7; color: color-mix(in srgb, var(--tooltip-ink) 86%, transparent); overflow-wrap: anywhere; }
-.infoMeta { display: flex; flex-direction: column; gap: 7px; margin: 0 0 12px; font-size: 11px; }
-.infoMeta > div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.infoHeading h3 { flex: 1; min-width: 0; margin: 0; font-size: 12px; font-weight: 500; line-height: 18px; overflow-wrap: anywhere; }
+.infoDescription { margin: 7px 0 9px; font-size: 11px; line-height: 1.6; color: color-mix(in srgb, var(--tooltip-ink) 86%, transparent); overflow-wrap: anywhere; }
+.infoMeta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 5px 12px; margin: 0 0 8px; font-size: 10px; }
+.infoMeta > div { display: flex; align-items: baseline; gap: 5px; }
 .infoMeta dt { flex-shrink: 0; color: color-mix(in srgb, var(--tooltip-ink) 68%, transparent); }
 .infoMeta dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
-.rating { display: flex; justify-content: space-between; align-items: center; gap: 10px; border-top: 1px solid color-mix(in srgb, var(--tooltip-ink) 18%, transparent); padding-top: 10px; font-size: 11px; color: color-mix(in srgb, var(--tooltip-ink) 68%, transparent); }
+.rating { display: flex; justify-content: space-between; align-items: center; gap: 10px; border-top: 1px solid color-mix(in srgb, var(--tooltip-ink) 18%, transparent); padding-top: 7px; font-size: 10px; color: color-mix(in srgb, var(--tooltip-ink) 68%, transparent); }
 .stars { display: flex; align-items: center; gap: 2px; color: color-mix(in srgb, var(--tooltip-ink) 25%, #c78b25); }
 .stars strong { padding-left: 5px; font-size: 11px; color: var(--tooltip-ink); font-weight: 500; font-variant-numeric: tabular-nums; }
 .unrated { font-size: 11px; }

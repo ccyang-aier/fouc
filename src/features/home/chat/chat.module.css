@@ -29,14 +29,15 @@
 }
 .greeting {
   display: flex;
-  flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 14px;
   margin-bottom: 38px;
   text-align: center;
   animation: arrive 420ms ease both;
 }
 .greeting h1 {
+  min-width: 0;
   margin: 0;
   font-family:
     Georgia, "Times New Roman", "Noto Serif SC", "Source Han Serif SC", serif;

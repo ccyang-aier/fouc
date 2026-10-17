@@ -220,7 +220,7 @@ function ManagedSidebarRow({
   if (editing) {
     return (
       <div className="flex h-[30px] items-center gap-1.5 rounded-[6px] bg-[var(--surface-subtle)] px-2 text-[11.5px] font-normal">
-        <ItemIcon className="size-3.5 shrink-0 text-[var(--muted)]" />
+        <ItemIcon className="sidebar-nav-icon size-3.5 shrink-0" weight="duotone" />
         <input
           autoFocus
           aria-label={uiText('重命名{0}', { '0': entry.name })}
@@ -250,7 +250,7 @@ function ManagedSidebarRow({
         onClick={onSelect}
         className="flex h-full min-w-0 flex-1 items-center gap-2 rounded-[6px] pl-2 pr-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
       >
-        <ItemIcon className="size-3.5 shrink-0 text-[var(--muted)]" weight="duotone" />
+        <ItemIcon className="sidebar-nav-icon size-3.5 shrink-0" weight="duotone" />
         <span className="truncate">{entry.name}</span>
         {entry.time ? (
           <span
@@ -571,7 +571,7 @@ export function NavigationSidebar({
                 defaultOpen={false}
                 label={uiText('项目库')}
                 count={projects.length}
-                icon={<Stack className="size-3.5" weight="duotone" />}
+                icon={<Stack className="sidebar-nav-icon size-4" weight="duotone" />}
                 onNew={() => {
                   setCreatingProject(true);
                   setNewProjectDraft('');
@@ -579,7 +579,7 @@ export function NavigationSidebar({
               >
                 {creatingProject ? (
                   <div className="flex h-[30px] items-center gap-1.5 rounded-[6px] bg-[var(--surface-subtle)] px-2 text-[11.5px] font-normal">
-                    <FolderOpen className="size-3.5 shrink-0 text-[var(--muted)]" />
+                    <FolderOpen className="sidebar-nav-icon size-3.5 shrink-0" weight="duotone" />
                     <input
                       autoFocus
                       aria-label={uiText('新项目名称')}
@@ -611,7 +611,7 @@ export function NavigationSidebar({
             <ProjectNavSection
               label={uiText('最近')}
               count={recentChats.length}
-              icon={<ClockCounterClockwise className="size-3.5" weight="duotone" />}
+              icon={<ClockCounterClockwise className="sidebar-nav-icon size-4" weight="duotone" />}
             >
               {recentChats.map((entry) => renderManagedEntry(entry))}
             </ProjectNavSection>

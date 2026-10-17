@@ -101,7 +101,7 @@ export function ProjectSidebarPane({
                 collapsed ? 'size-8 justify-center' : 'h-12 flex-1 px-2',
               )}
             >
-              <Stack size={20} className="shrink-0 text-[var(--accent-ink)]" />
+              <Stack size={20} className="sidebar-nav-icon shrink-0" weight="duotone" />
               {collapsed ? null : (
                 <>
                   <span className="min-w-0 flex-1">

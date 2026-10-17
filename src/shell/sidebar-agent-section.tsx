@@ -109,7 +109,7 @@ export function SidebarAgentSection({
           className="flex min-w-0 flex-1 items-center gap-1.5 rounded-[5px] text-left outline-none hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
         >
           <span className="flex size-4 shrink-0 items-center justify-center text-[var(--muted)]">
-            <Robot className="size-3.5" weight="duotone" />
+            <Robot className="sidebar-nav-icon size-4" weight="duotone" />
           </span>
           <span className="truncate leading-4">{uiText('Agent 管理')}</span>
           <span className="text-[10.5px] tabular-nums text-[var(--muted)]">({agents.length})</span>

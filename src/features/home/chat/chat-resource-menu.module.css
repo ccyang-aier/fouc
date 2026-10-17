@@ -21,11 +21,11 @@
 .viewport { max-height: min(390px, calc(100dvh - 100px)); padding: 0 12px 0 4px; overscroll-behavior: contain; }
 .section { padding: 1px 0 3px; }
 .section + .section { margin-top: 3px; padding-top: 4px; border-top: 1px solid var(--separator-color); }
-.sectionHeading { display: flex; align-items: center; justify-content: space-between; gap: 6px; height: 27px; padding: 0 4px; }
-.collapse { display: flex; align-items: center; gap: 5px; min-height: 23px; padding: 0 3px; border: 0; border-radius: 4px; background: transparent; color: var(--muted-strong); font-size: 11px; font-weight: 400; cursor: pointer; outline: none; }
+.sectionHeading { display: flex; align-items: center; height: 32px; border-radius: 5px; color: var(--ink-soft); }
+.collapse { display: flex; flex: 1; align-items: center; gap: 5px; min-width: 0; height: 32px; padding: 0 8px; border: 0; border-radius: 5px; background: transparent; color: inherit; font-size: 12px; font-weight: 400; cursor: pointer; outline: none; }
 .collapse svg { transition: transform 140ms ease-out; }
 .collapse svg[data-collapsed="true"] { transform: rotate(-90deg); }
-.configure { display: grid; place-items: center; width: 23px; height: 23px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--ink-soft); cursor: pointer; outline: none; }
+.configure { display: grid; flex-shrink: 0; place-items: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 5px; background: transparent; color: var(--ink-soft); cursor: pointer; outline: none; }
 .resourceRow { height: 32px; gap: 9px; padding: 0 8px; border-radius: 5px; animation: none !important; }
 .resourceIcon { display: block; flex-shrink: 0; width: 16px; height: 16px; color: var(--ink-soft); }
 .resourceName { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 400; line-height: 18px; }
@@ -36,7 +36,8 @@
 .empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 22px 10px 16px; color: var(--muted-strong); text-align: center; }
 .empty > strong { color: var(--ink-soft); font-size: 12px; font-weight: 500; }
 .empty > span { font-size: 11px; }
-.infoCard { width: min(264px, calc(100vw - 24px)); padding: 11px 13px; border-radius: 8px; font-weight: 400; pointer-events: none; }
+/* Radix 在模态菜单中写入内联 pointer-events；资料提示始终允许鼠标穿透。 */
+.infoCard { width: min(264px, calc(100vw - 24px)); padding: 11px 13px; border-radius: 8px; font-weight: 400; pointer-events: none !important; }
 .infoHeading { display: flex; align-items: center; gap: 8px; }
 .infoHeading .resourceIcon { width: 17px; height: 17px; color: inherit; }
 .infoHeading h3 { flex: 1; min-width: 0; margin: 0; font-size: 12px; font-weight: 500; line-height: 18px; overflow-wrap: anywhere; }

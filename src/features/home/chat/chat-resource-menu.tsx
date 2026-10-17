@@ -17,8 +17,6 @@ import { resourceMessages } from './chat-resource-messages';
 import styles from './chat-resource-menu.module.css';
 import addStyles from './chat-add-menu.module.css';
 
-const PREVIEW_SPACE = 180;
-
 export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigure, onOpenMarket }: {
   kind: ComposerResourceKind;
   selected: ComposerResourceReference[];
@@ -37,8 +35,7 @@ export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigu
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [sideOffset, setSideOffset] = useState(8);
   const [alignOffset, setAlignOffset] = useState(0);
-  const [tooltipPlacement, setTooltipPlacement] = useState<{ side: 'top' | 'bottom'; offset: number }>({ side: 'top', offset: 8 });
-  const [maxHeight, setMaxHeight] = useState<number>();
+  const [tooltipPlacement, setTooltipPlacement] = useState<{ side: 'top' | 'bottom'; alignOffset: number }>({ side: 'bottom', alignOffset: 0 });
   const trigger = useRef<HTMLDivElement>(null);
   const menu = useRef<HTMLDivElement>(null);
   const search = useRef<HTMLInputElement>(null);
@@ -73,9 +70,6 @@ export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigu
         // Radix offsets from the inset trigger; the visible menu surfaces need a 6px gap.
         setSideOffset(Math.min(6 + inset, Math.max(bounds.left - 12, window.innerWidth - bounds.right - 12) - Math.min(284, window.innerWidth - 24)));
         setAlignOffset(parent.top - bounds.top);
-        // Reserve an outside preview lane before hovering, so short menus never jump on preview.
-        const reservedBelow = parent.top < PREVIEW_SPACE + 12 ? PREVIEW_SPACE + 12 : 0;
-        setMaxHeight(Math.max(100, Math.min(438, window.innerHeight - parent.top - 12 - reservedBelow)));
       }
     }
     position();
@@ -101,12 +95,14 @@ export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigu
     previewTimer.current = null;
     const bounds = row.getBoundingClientRect();
     const surface = menu.current!.getBoundingClientRect();
-    const above = surface.top - 12;
-    const below = window.innerHeight - surface.bottom - 12;
-    const preferAbove = bounds.top + bounds.height / 2 < surface.top + surface.height / 2;
-    const side = (preferAbove ? above >= PREVIEW_SPACE || above > below : below < PREVIEW_SPACE && above > below) ? 'top' : 'bottom';
-    const offset = 8 + (side === 'top' ? bounds.top - surface.top : surface.bottom - bounds.bottom);
-    setTooltipPlacement({ side, offset });
+    const width = Math.min(264, window.innerWidth - 24);
+    // Keep the card near its row, staggered beyond the menu's edge where space allows.
+    const right = surface.right - 48;
+    const left = surface.left + 48 - width;
+    const preferred = right + width <= window.innerWidth - 12 || surface.left < window.innerWidth - surface.right ? right : left;
+    const x = Math.max(12, Math.min(preferred, window.innerWidth - width - 12));
+    const side = bounds.top + bounds.height / 2 < window.innerHeight / 2 ? 'bottom' : 'top';
+    setTooltipPlacement({ side, alignOffset: x - bounds.left });
     setPreviewId(id);
   }
 
@@ -150,7 +146,7 @@ export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigu
       <Icon className={addStyles.neutralIcon} data-resource-kind={kind} data-static-color aria-hidden="true" /><span>{t(kind)}</span>
       {selectedCount ? <span className={styles.triggerCount} aria-hidden="true">{selectedCount}</span> : null}
     </DropdownMenuSubTrigger>
-    <DropdownMenuSubContent ref={menu} className={styles.menu} style={{ maxHeight }} collisionPadding={12} sideOffset={sideOffset} alignOffset={alignOffset}
+    <DropdownMenuSubContent ref={menu} className={styles.menu} collisionPadding={12} sideOffset={sideOffset} alignOffset={alignOffset}
       aria-label={t(kind)}
       onKeyDownCapture={() => { pointerMode.current = false; hidePreview(); }} onPointerDownCapture={() => { pointerMode.current = true; }}
       onFocusOutside={event => {
@@ -174,18 +170,18 @@ export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigu
       <ScrollArea className={styles.list} viewportClassName={styles.viewport} onScrollCapture={hidePreview}
         onKeyDown={event => { if (event.key === 'Tab') event.stopPropagation(); }}>
         {kind === 'skills' && builtinResults.length ? <section className={styles.section} aria-label={t('builtin')}>
-          <div className={styles.sectionHeading}>
-            <button type="button" className={`fouc-action ${styles.collapse}`} data-variant="collapsible" aria-expanded={!collapsed}
+          <div className={`fouc-menu-item ${styles.sectionHeading}`} data-variant="group" onPointerEnter={hidePreview}>
+            <button type="button" className={`fouc-action ${styles.collapse}`} data-variant="disclosure" aria-expanded={!collapsed}
               onClick={() => { setCollapsed(value => !value); hidePreview(); }}><CaretDown size={10} data-collapsed={collapsed} />{t('builtin')}</button>
-            <button type="button" className={`fouc-action ${styles.configure}`} aria-label={t('configure')} title={t('configure')} onClick={onConfigure}><GearSix size={15} weight="bold" /></button>
+            <button type="button" className={`fouc-action ${styles.configure}`} data-variant="disclosure" aria-label={t('configure')} title={t('configure')} onClick={onConfigure}><GearSix size={15} weight="bold" /></button>
           </div>
           {!collapsed ? builtinResults.map(item => renderResource(item, true)) : null}
         </section> : null}
         {marketResults.length ? <section className={styles.section} aria-label={t(kind === 'skills' ? 'market' : 'mcpMarket')}>
-          {kind === 'skills' ? <div className={styles.sectionHeading}>
-            <button type="button" className={`fouc-action ${styles.collapse}`} data-variant="collapsible" aria-expanded={!marketCollapsed}
+          {kind === 'skills' ? <div className={`fouc-menu-item ${styles.sectionHeading}`} data-variant="group" onPointerEnter={hidePreview}>
+            <button type="button" className={`fouc-action ${styles.collapse}`} data-variant="disclosure" aria-expanded={!marketCollapsed}
               onClick={() => { setMarketCollapsed(value => !value); hidePreview(); }}><CaretDown size={10} data-collapsed={marketCollapsed} />{t('market')}</button>
-            <button type="button" className={`fouc-action ${styles.configure}`} aria-label={t('openMarket')} title={t('openMarket')}
+            <button type="button" className={`fouc-action ${styles.configure}`} data-variant="disclosure" aria-label={t('openMarket')} title={t('openMarket')}
               onClick={onOpenMarket}><ArrowSquareOut size={15} weight="bold" /></button>
           </div> : null}
           {kind === 'mcp' || !marketCollapsed ? marketResults.map(item => renderResource(item)) : null}

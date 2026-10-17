@@ -389,6 +389,11 @@ input {
   background: var(--menu-state-bg);
   color: var(--menu-state-ink);
 }
+/* 分区标题的相邻操作共用整行反馈，键盘进入任一按钮时同样可见。 */
+.fouc-menu-item[data-variant="group"]:focus-within {
+  background: var(--menu-state-bg);
+  color: var(--menu-state-ink);
+}
 .fouc-menu-item:is(:hover, :focus-visible, [data-highlighted], [aria-expanded="true"]):not(:disabled):not([data-disabled]):not([aria-disabled="true"]) svg:not([data-static-color]) {
   color: inherit;
 }

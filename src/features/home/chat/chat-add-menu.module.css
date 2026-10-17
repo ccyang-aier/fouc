@@ -18,7 +18,7 @@
 .modeIcon[data-mode="multitask"] { color: #8770e7; }
 .modeIcon[data-mode="goal"] { color: #29b28a; }
 .neutralIcon { color: var(--muted-strong); }
-.neutralIcon[data-resource-kind="skills"] { color: var(--accent-ink); }
+.neutralIcon[data-resource-kind="skills"] { color: var(--ink-soft); }
 .neutralIcon[data-resource-kind="mcp"] { color: var(--ink-soft); }
 .separator { margin: 4px 6px; }
 .item > svg:last-child:not(:first-child) { width: 12px; height: 12px; margin-left: auto; color: var(--muted); }

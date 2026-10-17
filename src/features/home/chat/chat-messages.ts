@@ -67,7 +67,7 @@ export const chatMessages = {
   autoModelCount: ["{count} 个模型", "{count} models"],
   imageModel: ["图像模型", "Image model"],
   videoModel: ["视频生成模型", "Video generation model"],
-  reasoningEffort: ["思考强度", "Reasoning effort"],
+  reasoningEffort: ["推理强度", "Reasoning effort"],
   reasoningNone: ["关闭", "Off"],
   reasoningMinimal: ["轻量", "Minimal"],
   reasoningLow: ["低", "Low"],

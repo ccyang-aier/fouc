@@ -2,7 +2,6 @@
 
 import { useRef, useState } from "react";
 import { motion } from "motion/react";
-import Image from "next/image";
 import {
   ArrowLeft,
   ChatText as ChatIcon,
@@ -13,6 +12,7 @@ import { useProjectResources } from "@/features/project/project-resources";
 import type { Locale } from "@/lib/i18n";
 import { ChatComposer, type ChatDraft } from "./chat-composer";
 import { ChatConversation } from "./chat-conversation";
+import { ChatGreetingCompanion } from "./chat-greeting-companion";
 import { ChatRecentConversations } from "./chat-recent-conversations";
 import { saveChatConversation, type ChatHistoryEntry } from "./chat-history";
 import type { ChatContext, ChatSubmission } from "./chat-types";
@@ -117,13 +117,7 @@ export function HomeChat({
         <div className={styles.content}>
           {!inConversation ? (
             <header className={styles.greeting}>
-              <Image
-                className={styles.greetingMark}
-                src="/brand/chat/conversation-mark.png"
-                width={36}
-                height={36}
-                alt=""
-              />
+              <ChatGreetingCompanion />
               <h1>{t("greeting")}</h1>
             </header>
           ) : (

@@ -12,6 +12,8 @@ type Surface = {
 export const PROJECT_AVATAR_RENDER_SIZE = 48;
 const SIZE = PROJECT_AVATAR_RENDER_SIZE;
 const FRAME_DURATION = 1000 / 24;
+const FLOW_SPEED = 2.2;
+const MAX_SIMULATION_STEP = 1 / 24;
 const MAX_IDLE_FLUIDS = 24;
 const surfaces = new Map<string, Surface>();
 const fluids = new Map<string, FluidState>();
@@ -81,7 +83,10 @@ function animate(timestamp: number) {
     const activeFluids = new Set<FluidState>();
     for (const surface of surfaces.values()) if (isVisible(surface)) activeFluids.add(surface.fluid);
     for (const fluid of activeFluids) {
-      advanceProjectFluid(fluid.field, Math.max(0, Math.min((timestamp - fluid.lastFrame) / 1000, .075)) * .55);
+      const elapsed = Math.max(0, Math.min((timestamp - fluid.lastFrame) / 1000, .075)) * FLOW_SPEED;
+      // Faster transport still uses small physical steps, keeping curls continuous.
+      const steps = Math.ceil(elapsed / MAX_SIMULATION_STEP);
+      for (let step = 0; step < steps; step++) advanceProjectFluid(fluid.field, elapsed / steps);
       fluid.lastFrame = timestamp;
     }
     for (const surface of surfaces.values()) if (isVisible(surface)) paint(surface);

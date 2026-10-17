@@ -18,7 +18,6 @@ export function SidebarEntryRow({ name, label, icon, pinned, onOpen, onPin, onRe
   return <div className={`sidebar-nav-row ${styles.row}`} data-menu-open={menuOpen} data-pinned={Boolean(pinned)}>
     <button type="button" className={styles.entry} onClick={onOpen} aria-label={label} title={name}>{icon}<span>{name}</span></button>
     <div className={styles.rowActions}>
-      <Tooltip><TooltipTrigger asChild><button type="button" className={`fouc-action ${styles.action}`} data-variant="nested" aria-label={pinLabel} aria-pressed={Boolean(pinned)} onClick={onPin}><PushPin size={14} weight="duotone" aria-hidden /></button></TooltipTrigger><TooltipContent side="top">{t(pinned ? '取消置顶' : '置顶')}</TooltipContent></Tooltip>
       <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
         <DropdownMenuTrigger className={styles.action} data-variant="nested" aria-label={t('条目更多操作', { name })}><DotsThree size={17} weight="bold" aria-hidden /></DropdownMenuTrigger>
         {menuOpen && <DropdownMenuContent side="right" align="start" density="compact"><DropdownMenuGroup>
@@ -26,6 +25,7 @@ export function SidebarEntryRow({ name, label, icon, pinned, onOpen, onPin, onRe
           <DropdownMenuItem variant="destructive" onSelect={onDelete}><Trash weight="duotone" />{t('删除')}</DropdownMenuItem>
         </DropdownMenuGroup></DropdownMenuContent>}
       </DropdownMenu>
+      <Tooltip><TooltipTrigger asChild><button type="button" className={`fouc-action ${styles.action}`} data-variant="nested" aria-label={pinLabel} aria-pressed={Boolean(pinned)} onClick={onPin}><PushPin size={14} weight="duotone" aria-hidden /></button></TooltipTrigger><TooltipContent side="top">{t(pinned ? '取消置顶' : '置顶')}</TooltipContent></Tooltip>
     </div>
   </div>;
 }

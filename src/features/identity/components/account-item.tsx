@@ -4,10 +4,10 @@ import { useTranslation } from '@/lib/i18n/react';
 import { messages } from './i18n/account-item.messages';
 
 import {
-  UserSwitch,
+  Users,
   Check,
   CircleNotch,
-  SignOut,
+  DoorOpen,
   User,
   UserCircle,
 } from '@phosphor-icons/react';
@@ -190,7 +190,7 @@ export function AccountItem({ compact = false }: { compact?: boolean }) {
               openSwitchAccount();
             }}
           >
-            <UserSwitch weight="duotone" />
+            <Users weight="duotone" />
             {uiText('切换账户')}
           </DropdownMenuItem>
           <DropdownMenuSeparator className={styles.separator} />
@@ -202,7 +202,7 @@ export function AccountItem({ compact = false }: { compact?: boolean }) {
               setLogoutOpen(true);
             }}
           >
-            <SignOut />
+            <DoorOpen weight="duotone" />
             {uiText('退出登录')}
           </DropdownMenuItem>
         </DropdownMenuContent>}

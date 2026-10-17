@@ -113,8 +113,8 @@
   --wt-sidebar-identity-hover: #e4e4e4;
   --wt-sidebar-edge: var(--line);
   /* 悬停比激活更轻，避免指针经过时与当前页面混淆。 */
-  --sidebar-row-bg: #f1f1f1;
-  --sidebar-row-hover-bg: #f5f5f5;
+  --sidebar-row-bg: #efefef;
+  --sidebar-row-hover-bg: #f3f3f3;
   --sidebar-row-border: #e3e3e3;
   --sidebar-row-hover-border: var(--sidebar-row-border);
   --sidebar-row-shadow: none;

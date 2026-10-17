@@ -105,7 +105,7 @@
 
   /* ── 侧栏材质令牌（供 sidebar-material.css 消费） ── */
   /* 主侧栏使用浅白灰；知识库目录与社区分类使用内容面板底色。 */
-  --wt-sidebar-standard-panel: #fafafa;
+  --wt-sidebar-standard-panel: #f9f9f9;
   --wt-sidebar-content-panel: var(--panel);
   --wt-sidebar-database-panel: var(--panel);
   --wt-sidebar-identity-panel: #f0f0f0;

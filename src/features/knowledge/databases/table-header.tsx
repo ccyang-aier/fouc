@@ -382,7 +382,7 @@ export function AddColumnPanel({
             type="button"
             onClick={submit}
             disabled={draft.name.trim() === '' || (needsOptions && draft.options.length === 0)}
-            className="flex h-7 items-center rounded-[5px] bg-[var(--accent)] px-2.5 text-[11.5px] font-medium text-white outline-none transition-colors hover:bg-[var(--accent-strong)] disabled:pointer-events-none disabled:opacity-45"
+            className="flex h-7 items-center rounded-[5px] bg-[var(--accent)] px-2.5 text-[11.5px] font-medium text-[var(--accent-foreground)] outline-none transition-colors hover:bg-[var(--accent-strong)] disabled:pointer-events-none disabled:opacity-45"
           >
             {knowledgeT('createColumn')}
           </button>
@@ -435,7 +435,7 @@ export function EditOptionsPanel({
           <button
             type="button"
             onClick={save}
-            className="flex h-7 items-center rounded-[5px] bg-[var(--accent)] px-2.5 text-[11.5px] font-medium text-white outline-none transition-colors hover:bg-[var(--accent-strong)]"
+            className="flex h-7 items-center rounded-[5px] bg-[var(--accent)] px-2.5 text-[11.5px] font-medium text-[var(--accent-foreground)] outline-none transition-colors hover:bg-[var(--accent-strong)]"
           >
             {knowledgeT('saveOptions')}
           </button>

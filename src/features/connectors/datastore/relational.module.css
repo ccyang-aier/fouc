@@ -13,7 +13,7 @@
 }
 .primary {
   background: var(--accent);
-  color: white;
+  color: var(--accent-foreground);
   border: 1px solid transparent;
 }
 .primary:hover:not(:disabled) { background: var(--accent-strong); }

@@ -79,7 +79,7 @@
 .footer { display: flex; align-items: center; gap: 8px; padding: 14px 24px; border-top: 1px solid var(--line, #30333d); }
 .footer span { display: inline-flex; align-items: center; gap: 6px; flex: 1; color: var(--transfer-muted); font-size: 10px; }
 .footer button { font-size: 11px; }
-.panel .primary { background: var(--accent, #8a90ff); color: var(--accent-contrast, #fff); border-color: transparent; }
+.panel .primary { background: var(--accent); color: var(--accent-foreground); border-color: transparent; }
 .panel .cancel { color: var(--err-ink, #ec8a8f); border-color: color-mix(in srgb, var(--err-ink, #ec8a8f) 30%, transparent); }
 @keyframes transfer-loading { from { transform: translateX(-110%); } to { transform: translateX(390%); } }
 @media (prefers-reduced-motion: reduce) { .indeterminate i { animation: none; width: 100%; opacity: .6; } }

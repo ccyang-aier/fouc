@@ -41,7 +41,7 @@ export const initialWorkItems: WorkItem[] = [
   },
   {
     id: 'FEATURE-134',
-    title: '支持多主题色切换',
+    title: '统一黑白灰交互样式',
     status: 'todo',
     priority: 'low',
     assignee: { name: '陈安' },

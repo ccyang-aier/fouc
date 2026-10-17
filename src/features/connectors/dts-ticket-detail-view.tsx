@@ -223,7 +223,7 @@ function WorkflowTimeline({
                 className={cn(
                   'mx-auto flex size-5 items-center justify-center rounded-full border bg-panel text-[8px]',
                   done
-                    ? 'border-[var(--accent)] bg-[var(--accent)] text-white'
+                    ? 'border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)]'
                     : active
                       ? 'border-[var(--accent)] text-[var(--accent-ink)]'
                       : 'border-[var(--line-strong)] text-[var(--muted)]',

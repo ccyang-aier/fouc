@@ -7,36 +7,36 @@
 
 /* ── 浅色主题令牌（默认） ── */
 :root {
-  --shell: #f7f8f9;
+  --shell: #fafafa;
   --panel: #ffffff;
   --elevated: #ffffff;
   --surface-subtle: #fafafa;
   --surface-hover: var(--action-hover-bg);
-  --ink: #202126;
-  --ink-soft: #3f4249;
-  --muted-strong: #6c6e75;
-  --muted: #9699a1;
+  --ink: #202020;
+  --ink-soft: #404040;
+  --muted-strong: #666666;
+  --muted: #767676;
   --separator-width: 1px;
-  --separator-color: rgba(32, 33, 38, 0.1);
+  --separator-color: rgba(32, 32, 32, 0.1);
   --line: var(--separator-color);
   --drag-indicator-width: 2px;
   --drag-indicator-color: #171717;
-  --line-strong: rgba(32, 33, 38, 0.22);
+  --line-strong: rgba(32, 32, 32, 0.22);
   /* 控件与卡片使用不透明描边，圆角与直边保持同一清晰度。 */
-  --control-border: #c3c5c9;
-  --resource-card-border: #d5d7db;
-  --accent: #3e63dd;
-  --accent-strong: #3355c9;
-  --accent-ink: #3a55b0;
-  --accent-soft: #eef1fd;
-  --accent-soft-line: #ccd6f3;
-  --workbench-tab-active-bg: #fafbfc;
-  --workbench-tab-inactive-bg: #f0f1f3;
+  --control-border: #c5c5c5;
+  --resource-card-border: #d7d7d7;
+  /* 固定黑白灰强调角色；不支持彩色预设或自定义主题色。 */
+  --accent: #202020;
+  --accent-strong: #404040;
+  --accent-foreground: #ffffff;
+  --accent-ink: var(--ink);
+  --accent-soft: #f0f0f0;
+  --accent-soft-line: #d9d9d9;
+  --workbench-tab-active-bg: #fafafa;
+  --workbench-tab-inactive-bg: #f1f1f1;
   --sql-completion-function-ink: #8956c7;
   --sql-completion-field-ink: #0e918a;
-  /* 自定义主题色基色（实际值由 JS 按偏好写入，此为兜底） */
-  --accent-custom: #3e63dd;
-  --focus-ring: rgba(62, 99, 221, 0.32);
+  --focus-ring: rgba(32, 32, 32, 0.24);
   /* 中性反馈统一使用浅白灰，避免局部叠加墨色后变深。 */
   --hover-fill: var(--action-hover-bg);
   /* 通用控件的浅灰反馈面；导航行使用独立的 --sidebar-row-*。 */
@@ -44,25 +44,25 @@
   /* 浅白芯片（描边按钮 / 用户卡） */
   --chip: rgba(255, 255, 255, 0.75);
   --chip-strong: rgba(255, 255, 255, 0.95);
-  --switch-off: #d8dbd8;
-  --tooltip-bg: #202124;
+  --switch-off: #d9d9d9;
+  --tooltip-bg: #202020;
   --tooltip-ink: #ffffff;
   /* 浮层层级：清晰边界 + 低扩散阴影，菜单、搜索与模态面板共用。 */
-  --floating-border: rgba(24, 28, 36, 0.13);
+  --floating-border: rgba(24, 24, 24, 0.13);
   --floating-highlight: rgba(255, 255, 255, 0.78);
   --floating-shadow:
-    0 1px 2px rgba(18, 23, 31, 0.06),
-    0 9px 24px -10px rgba(18, 23, 31, 0.22);
+    0 1px 2px rgba(18, 18, 18, 0.06),
+    0 9px 24px -10px rgba(18, 18, 18, 0.22);
   /* 菜单贴近触发位置：短接触阴影 + 紧凑投影，不使用大范围柔光。 */
-  --menu-border: rgba(24, 28, 36, 0.2);
+  --menu-border: rgba(24, 24, 24, 0.2);
   --menu-shadow:
-    0 1px 2px rgba(18, 23, 31, 0.067),
-    0 4px 8px -2px rgba(18, 23, 31, 0.1),
-    0 8px 12px -5px rgba(18, 23, 31, 0.08);
-  --menu-compact-shadow: 0 1px 2px rgba(18, 23, 31, 0.12), 0 4px 10px -2px rgba(18, 23, 31, 0.18);
-  --modal-backdrop: rgba(18, 23, 31, 0.16);
-  --side-panel-shadow: -12px 0 28px -20px rgba(18, 23, 31, 0.32);
-  --side-panel-shadow-left: 12px 0 28px -20px rgba(18, 23, 31, 0.28);
+    0 1px 2px rgba(18, 18, 18, 0.067),
+    0 4px 8px -2px rgba(18, 18, 18, 0.1),
+    0 8px 12px -5px rgba(18, 18, 18, 0.08);
+  --menu-compact-shadow: 0 1px 2px rgba(18, 18, 18, 0.12), 0 4px 10px -2px rgba(18, 18, 18, 0.18);
+  --modal-backdrop: rgba(18, 18, 18, 0.16);
+  --side-panel-shadow: -12px 0 28px -20px rgba(18, 18, 18, 0.32);
+  --side-panel-shadow-left: 12px 0 28px -20px rgba(18, 18, 18, 0.28);
   --ok-ink: #1f8a5f;
   --err-ink: #b3413c;
   --danger-action-bg: #d4383d;
@@ -80,9 +80,9 @@
   --menu-warning-hover-bg: #faedcc;
   --menu-warning-hover-ink: #875510;
   /* 紧凑操作按钮与模态框底栏尺寸；各业务界面只安排内容，不另定高度。 */
-  --action-hover-bg: #f5f6f7;
-  --action-surface-bg: #f7f8fa;
-  --action-surface-hover-bg: #eef0f3;
+  --action-hover-bg: #f5f5f5;
+  --action-surface-bg: #f8f8f8;
+  --action-surface-hover-bg: #eeeeee;
   --action-nested-hover-bg: color-mix(in srgb, var(--ink) 8%, var(--panel));
   --dialog-action-height: 30px;
   --dialog-section-gap: 16px;
@@ -99,58 +99,60 @@
 
   /* ── 侧栏材质令牌（供 sidebar-material.css 消费） ── */
   /* 主侧栏使用浅白灰；知识库目录与社区分类使用内容面板底色。 */
-  --wt-sidebar-standard-panel: #f8f9fa;
+  --wt-sidebar-standard-panel: #fafafa;
   --wt-sidebar-content-panel: var(--panel);
   --wt-sidebar-database-panel: var(--panel);
-  --wt-sidebar-identity-panel: #eef0f1;
+  --wt-sidebar-identity-panel: #f0f0f0;
   --wt-sidebar-edge: var(--line);
   /* 侧栏交互悬停面：浅白色，与标准面板协调 */
   --sidebar-row-bg: #ffffff;
-  --sidebar-row-border: #dfe1e3;
+  --sidebar-row-border: #e3e3e3;
   --sidebar-row-hover-border: var(--sidebar-row-border);
-  --sidebar-row-shadow: 0 1px 2px rgb(20 20 18 / 0.04);
+  --sidebar-row-shadow: 0 1px 2px rgb(20 20 20 / 0.04);
+  --sidebar-icon: #525252;
   --wt-sidebar-hover: rgb(255 255 255 / 0.55);
 }
 
 /* ── 深色主题令牌 ── */
 html[data-theme="dark"] {
-  --shell: #101214;
-  --panel: #17191c;
-  --elevated: #1e2124;
-  --surface-subtle: #1a1d20;
+  --shell: #111111;
+  --panel: #181818;
+  --elevated: #222222;
+  --surface-subtle: #1c1c1c;
   --surface-hover: var(--action-hover-bg);
-  --ink: #e9ecef;
-  --ink-soft: #c7ccd1;
-  --muted-strong: #949ca4;
-  --muted: #707880;
-  --separator-color: rgba(233, 236, 239, 0.14);
+  --ink: #ededed;
+  --ink-soft: #cccccc;
+  --muted-strong: #a3a3a3;
+  --muted: #8a8a8a;
+  --separator-color: rgba(237, 237, 237, 0.14);
   --line: var(--separator-color);
-  --line-strong: rgba(233, 236, 239, 0.24);
-  --control-border: #484b50;
-  --resource-card-border: #3f4348;
-  --accent: #6681f5;
-  --accent-strong: #7f97f8;
-  --accent-ink: #9db2fa;
-  --accent-soft: rgba(102, 129, 245, 0.16);
-  --accent-soft-line: rgba(102, 129, 245, 0.36);
+  --line-strong: rgba(237, 237, 237, 0.24);
+  --control-border: #4b4b4b;
+  --resource-card-border: #434343;
+  --accent: #ededed;
+  --accent-strong: #d4d4d4;
+  --accent-foreground: #181818;
+  --accent-ink: var(--ink);
+  --accent-soft: #292929;
+  --accent-soft-line: #444444;
   --workbench-tab-active-bg: var(--elevated);
   --workbench-tab-inactive-bg: var(--surface-subtle);
   --sql-completion-function-ink: #bb9bea;
   --sql-completion-field-ink: #72c9bd;
-  --focus-ring: rgba(102, 129, 245, 0.42);
+  --focus-ring: rgba(237, 237, 237, 0.36);
   --hover-fill: rgba(255, 255, 255, 0.055);
   --raise: rgba(255, 255, 255, 0.06);
   --chip: rgba(255, 255, 255, 0.045);
   --chip-strong: rgba(255, 255, 255, 0.09);
-  --switch-off: #3a3f45;
-  --tooltip-bg: #eceef0;
-  --tooltip-ink: #17191c;
-  --floating-border: rgba(233, 236, 239, 0.17);
+  --switch-off: #404040;
+  --tooltip-bg: #ededed;
+  --tooltip-ink: #181818;
+  --floating-border: rgba(237, 237, 237, 0.17);
   --floating-highlight: rgba(255, 255, 255, 0.055);
   --floating-shadow:
     0 1px 2px rgba(0, 0, 0, 0.32),
     0 10px 28px -10px rgba(0, 0, 0, 0.62);
-  --menu-border: rgba(233, 236, 239, 0.24);
+  --menu-border: rgba(237, 237, 237, 0.24);
   --menu-shadow:
     0 1px 2px rgba(0, 0, 0, 0.213),
     0 4px 8px -2px rgba(0, 0, 0, 0.253),
@@ -166,11 +168,11 @@ html[data-theme="dark"] {
   --warn-soft-line: rgba(217, 167, 67, 0.28);
   --menu-warning-hover-bg: #4b3920;
   --menu-warning-hover-ink: #f0c979;
-  --action-hover-bg: #303235;
-  --action-surface-bg: #202328;
+  --action-hover-bg: #303030;
+  --action-surface-bg: #222222;
   --action-surface-hover-bg: var(--action-hover-bg);
 
-  --wt-sidebar-standard-panel: #141619;
+  --wt-sidebar-standard-panel: #141414;
   --wt-sidebar-database-panel: var(--surface-subtle);
   --wt-sidebar-identity-panel: var(--surface-subtle);
   --wt-sidebar-edge: var(--line);
@@ -178,6 +180,7 @@ html[data-theme="dark"] {
   --sidebar-row-border: rgb(255 255 255 / 0.08);
   --sidebar-row-hover-border: var(--sidebar-row-border);
   --sidebar-row-shadow: none;
+  --sidebar-icon: #b3b3b3;
   --wt-sidebar-hover: rgb(255 255 255 / 0.06);
 }
 
@@ -199,86 +202,6 @@ html[data-desktop-frame][data-theme="dark"] {
 html[data-desktop-frame][data-window-flat] {
   --win-frame-inset: 0px;
   --win-shadow: none;
-}
-
-/* ── 主题色目录：矿物蓝为默认，外观设置通过 data-accent 即时切换。
-   custom 为任意取色：基色由 JS 写入 --accent-custom，其余派生色实时推导。 ── */
-html[data-accent="custom"] {
-  --accent: var(--accent-custom);
-  --accent-strong: color-mix(in oklab, var(--accent-custom) 87%, #14161a);
-  --accent-ink: color-mix(in oklab, var(--accent-custom) 90%, #14161a);
-  --accent-soft: color-mix(in srgb, var(--accent-custom) 8%, #ffffff);
-  --accent-soft-line: color-mix(in srgb, var(--accent-custom) 22%, #ffffff);
-  --focus-ring: color-mix(in srgb, var(--accent-custom) 34%, transparent);
-}
-html[data-accent="emerald"] {
-  --accent: #2d8c78;
-  --accent-strong: #247662;
-  --accent-ink: #287b6a;
-  --accent-soft: #edf6f3;
-  --accent-soft-line: #cbe2dc;
-  --focus-ring: rgba(45, 140, 120, 0.34);
-}
-html[data-accent="ocean"] {
-  --accent: #3f78a8;
-  --accent-strong: #32658f;
-  --accent-ink: #376d99;
-  --accent-soft: #edf3f8;
-  --accent-soft-line: #cadbe8;
-  --focus-ring: rgba(63, 120, 168, 0.34);
-}
-html[data-accent="violet"] {
-  --accent: #766a9c;
-  --accent-strong: #625783;
-  --accent-ink: #695d90;
-  --accent-soft: #f2eff7;
-  --accent-soft-line: #dbd4e8;
-  --focus-ring: rgba(118, 106, 156, 0.34);
-}
-html[data-accent="amber"] {
-  --accent: #a67535;
-  --accent-strong: #8e622b;
-  --accent-ink: #94692f;
-  --accent-soft: #f8f3ea;
-  --accent-soft-line: #e8dbc3;
-  --focus-ring: rgba(166, 117, 53, 0.34);
-}
-html[data-accent="rose"] {
-  --accent: #9a6269;
-  --accent-strong: #835159;
-  --accent-ink: #89575f;
-  --accent-soft: #f7f0f1;
-  --accent-soft-line: #e5d2d5;
-  --focus-ring: rgba(154, 98, 105, 0.34);
-}
-
-html[data-theme="dark"][data-accent="custom"] {
-  --accent: color-mix(in oklab, var(--accent-custom) 86%, #ffffff);
-  --accent-strong: color-mix(in oklab, var(--accent-custom) 74%, #ffffff);
-  --accent-ink: color-mix(in oklab, var(--accent-custom) 66%, #ffffff);
-  --accent-soft: color-mix(in srgb, var(--accent-custom) 16%, transparent);
-  --accent-soft-line: color-mix(in srgb, var(--accent-custom) 34%, transparent);
-  --focus-ring: color-mix(in srgb, var(--accent-custom) 42%, transparent);
-}
-html[data-theme="dark"][data-accent="emerald"] {
-  --accent: #4ba38f; --accent-strong: #61b4a0; --accent-ink: #78c6b3;
-  --accent-soft: rgba(75, 163, 143, 0.15); --accent-soft-line: rgba(75, 163, 143, 0.34); --focus-ring: rgba(75, 163, 143, 0.42);
-}
-html[data-theme="dark"][data-accent="ocean"] {
-  --accent: #5c91be; --accent-strong: #72a5cf; --accent-ink: #8ab9df;
-  --accent-soft: rgba(92, 145, 190, 0.15); --accent-soft-line: rgba(92, 145, 190, 0.34); --focus-ring: rgba(92, 145, 190, 0.42);
-}
-html[data-theme="dark"][data-accent="violet"] {
-  --accent: #9587bc; --accent-strong: #aa9bcf; --accent-ink: #bdafe0;
-  --accent-soft: rgba(149, 135, 188, 0.15); --accent-soft-line: rgba(149, 135, 188, 0.34); --focus-ring: rgba(149, 135, 188, 0.42);
-}
-html[data-theme="dark"][data-accent="amber"] {
-  --accent: #bd8e4d; --accent-strong: #d0a261; --accent-ink: #dfb875;
-  --accent-soft: rgba(189, 142, 77, 0.15); --accent-soft-line: rgba(189, 142, 77, 0.34); --focus-ring: rgba(189, 142, 77, 0.42);
-}
-html[data-theme="dark"][data-accent="rose"] {
-  --accent: #b47a82; --accent-strong: #c88d95; --accent-ink: #daa2a9;
-  --accent-soft: rgba(180, 122, 130, 0.15); --accent-soft-line: rgba(180, 122, 130, 0.34); --focus-ring: rgba(180, 122, 130, 0.42);
 }
 
 /* ── 字体族目录：默认栈在 @theme 定义并发射到 :root，此处按外观偏好覆盖。
@@ -470,7 +393,7 @@ input {
   color: inherit;
 }
 .fouc-menu-checkbox { display: grid; place-items: center; width: 14px; height: 14px; border: 1px solid var(--line-strong); border-radius: 3px; background: var(--panel); }
-[data-state="checked"] > .fouc-menu-checkbox { border-color: var(--accent); background: var(--accent); color: white; }
+[data-state="checked"] > .fouc-menu-checkbox { border-color: var(--accent); background: var(--accent); color: var(--accent-foreground); }
 .fouc-menu-checkbox svg { width: 11px; height: 11px; }
 /* 原生 dialog、共享 ModalDialog 和显式标记的动作栏使用同一契约。
    选择器覆盖旧局部尺寸，避免懒加载 CSS 的顺序再次改变按钮高度。 */

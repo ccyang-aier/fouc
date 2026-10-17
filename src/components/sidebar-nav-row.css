@@ -1,24 +1,19 @@
-/* ── Kiln 风格侧栏导航行 ──
-   hover / 激活均为白底抬升卡面（1px 描边 + 卡片阴影），
-   激活时图标 duotone→fill 并做弹性缩放，标签做水平微弹。
+/* ── 中性侧栏导航行 ──
+   hover / 激活均为白底卡面（1px 描边 + 紧凑阴影），
+   图标默认清晰描边，激活时为实心墨色，不添加彩色光晕或弹跳。
    消费方：navigation-sidebar / sidebar-project-pane / settings-canvas。 */
 html .sidebar-nav-row {
   --action-state-bg: var(--sidebar-row-bg);
   --action-state-ink: var(--ink);
   border: 1px solid transparent;
   color: var(--muted-strong);
-  transition:
-    color 150ms,
-    transform 150ms;
+  transition: color 150ms ease;
 }
 .sidebar-nav-row:is(:hover, :focus, :focus-within, [data-active="true"]) {
   border-color: var(--sidebar-row-border);
   background: var(--sidebar-row-bg);
   color: var(--ink);
   box-shadow: var(--sidebar-row-shadow);
-}
-.sidebar-nav-row:active {
-  transform: scale(0.995);
 }
 .sidebar-nav-row:hover:not(:focus):not(:focus-within):not([data-active="true"]) {
   border-color: var(--sidebar-row-hover-border);
@@ -27,57 +22,15 @@ html .sidebar-nav-row {
   font-weight: 500;
 }
 .sidebar-nav-icon {
-  transform-origin: center;
-  transition:
-    color 170ms ease,
-    filter 170ms ease,
-    transform 170ms cubic-bezier(0.22, 1, 0.36, 1);
+  color: var(--sidebar-icon);
+  transition: color 150ms ease;
 }
 .sidebar-nav-row[data-active="true"] .sidebar-nav-icon {
-  color: var(--accent-ink);
-  filter: drop-shadow(
-    0 2px 3px color-mix(in srgb, var(--accent) 24%, transparent)
-  );
-  animation: nav-icon-activate 360ms cubic-bezier(0.22, 1, 0.36, 1);
+  color: var(--ink);
 }
-.sidebar-nav-label {
-  transform-origin: left center;
-}
-.sidebar-nav-row[data-active="true"] .sidebar-nav-label {
-  animation: nav-label-activate 340ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-@keyframes nav-icon-activate {
-  0% {
-    opacity: 0.55;
-    transform: scale(0.76) rotate(-7deg);
-  }
-  58% {
-    opacity: 1;
-    transform: scale(1.12) rotate(2deg);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1) rotate(0);
-  }
-}
-
-@keyframes nav-label-activate {
-  0% {
-    opacity: 0.72;
-    transform: translateX(-1.1px);
-  }
-  26% {
-    transform: translateX(0.85px);
-  }
-  50% {
-    transform: translateX(-0.45px);
-  }
-  72% {
-    transform: translateX(0.2px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(0);
+@media (prefers-reduced-motion: reduce) {
+  html .sidebar-nav-row,
+  .sidebar-nav-icon {
+    transition: none;
   }
 }

@@ -80,7 +80,7 @@
 .footer > span { flex:1; }
 .footer button { display:flex; align-items:center; justify-content:center; gap:6px; padding:7px 11px; border:1px solid var(--line-strong); border-radius:5px; font-size:11px; color:var(--ink-soft); }
 .footer button:hover:not(:disabled) { background:var(--surface-hover); }
-.footer .primary { color:#fff; background:var(--accent); border-color:var(--accent); }
+.footer .primary { color: var(--accent-foreground); background:var(--accent); border-color:var(--accent); }
 .footer .primary:hover:not(:disabled) { background:var(--accent-strong); }
 @media(max-width:520px) {
   .dialog.dialog { width:calc(100vw - 16px); max-height:calc(100dvh - 16px); }

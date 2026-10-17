@@ -10,7 +10,7 @@
 .steps li { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 11px; }
 .steps li > span { display: grid; place-items: center; width: 21px; height: 21px; border-radius: 50%; border: 1px solid var(--line-strong); font: 10px var(--font-code); }
 .steps li[data-active="true"] { color: var(--accent-ink); font-weight: 500; }
-.steps li[data-active="true"] > span { color: var(--panel); background: var(--accent); border-color: var(--accent); }
+.steps li[data-active="true"] > span { color: var(--accent-foreground); background: var(--accent); border-color: var(--accent); }
 .steps li[data-complete="true"] > span { color: var(--ok-ink); border-color: color-mix(in srgb, var(--ok-ink) 35%, transparent); background: color-mix(in srgb, var(--ok-ink) 8%, transparent); }
 .content { flex: 1 1 auto; min-height: 240px; overflow: auto; padding: 18px 22px; }
 .sourceTabs { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
@@ -86,7 +86,7 @@
 .footer > span { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 10px; }
 .footer > div { display: flex; align-items: center; gap: 7px; }
 .primary, .secondary { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 30px; border-radius: 5px; padding: 6px 10px; font: 11px var(--font-sans); cursor: pointer; white-space: nowrap; }
-.primary { border: 1px solid var(--accent); background: var(--accent); color: white; }
+.primary { border: 1px solid var(--accent); background: var(--accent); color: var(--accent-foreground); }
 .primary:hover { filter: brightness(.96); }
 .secondary { border: 1px solid var(--line-strong); color: var(--ink-soft); background: var(--panel); }
 .secondary:hover { background: var(--surface-hover); }

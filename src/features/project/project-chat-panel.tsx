@@ -760,7 +760,7 @@ function ConversationRow({
         {fixtureField(item, 'meta', locale).split(' · ')[1] ?? fixtureField(item, 'meta', locale)}
       </span>
       {item.unread ? (
-        <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-[8px] font-semibold tabular-nums text-white">
+        <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-[8px] font-semibold tabular-nums text-[var(--accent-foreground)]">
           {item.unread}
         </span>
       ) : null}

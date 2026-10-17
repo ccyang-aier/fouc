@@ -28,7 +28,7 @@ html .dropdown-menu-trigger:not(.sidebar-nav-row):is(:focus, :focus-visible, :ac
   outline: none;
 }
 
-/* 激活的筛选入口在悬停、回焦和菜单展开时保留主题色。 */
+/* 激活的筛选入口在悬停、回焦和菜单展开时保留中性强调色。 */
 .fouc-action[data-active="true"] {
   --action-state-ink: var(--accent-ink);
 }

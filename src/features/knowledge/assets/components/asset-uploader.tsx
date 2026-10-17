@@ -76,7 +76,7 @@ export function AssetUploader(props: AssetUploaderProps) {
         <span
           className={[
             'flex size-10 items-center justify-center rounded-full transition-colors',
-            dragging ? 'bg-[var(--accent)] text-white' : 'bg-accent-soft text-accent-ink',
+            dragging ? 'bg-[var(--accent)] text-[var(--accent-foreground)]' : 'bg-accent-soft text-accent-ink',
           ].join(' ')}
           aria-hidden="true"
         >

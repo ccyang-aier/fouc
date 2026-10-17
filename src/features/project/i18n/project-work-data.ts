@@ -14,7 +14,7 @@ export const messages = defineMessages({
   已完成: ['已完成', 'Completed'],
   待处理: ['待处理', 'Pending'],
   待评审: ['待评审', 'Awaiting review'],
-  支持多主题色切换: ['支持多主题色切换', 'Support multiple theme colors'],
+  统一黑白灰交互样式: ['统一黑白灰交互样式', 'Unify monochrome interaction styles'],
   支持工作批量移动: ['支持工作批量移动', 'Support bulk work moves'],
   林默: ['林默', 'Lin Mo'],
   补充桌面端使用文档: ['补充桌面端使用文档', 'Add desktop documentation'],

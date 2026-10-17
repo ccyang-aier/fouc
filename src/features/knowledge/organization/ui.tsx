@@ -252,7 +252,7 @@ export function DialogButton({
       className={cn(
         'inline-flex h-8 items-center justify-center gap-1.5 rounded-[6px] px-3 text-[11.5px] font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:pointer-events-none disabled:opacity-45',
         variant === 'primary' &&
-          'bg-[var(--accent)] text-white shadow-[0_4px_12px_color-mix(in_srgb,var(--accent)_22%,transparent)] hover:bg-[var(--accent-strong)]',
+          'bg-[var(--accent)] text-[var(--accent-foreground)] shadow-[0_4px_12px_color-mix(in_srgb,var(--accent)_22%,transparent)] hover:bg-[var(--accent-strong)]',
         variant === 'outline' &&
           'border border-[var(--line)] bg-panel text-[var(--ink-soft)] hover:border-[var(--line-strong)] hover:bg-[var(--surface-subtle)]',
         variant === 'danger' && 'bg-[var(--err-ink)] text-white hover:opacity-90',

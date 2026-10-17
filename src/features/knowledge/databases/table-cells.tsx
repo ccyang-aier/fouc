@@ -109,7 +109,7 @@ export function CellContent({
           className={cn(
             'flex size-[15px] items-center justify-center rounded-[4px] border transition-colors',
             value === true
-              ? 'border-[var(--accent)] bg-[var(--accent)] text-white'
+              ? 'border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)]'
               : 'border-[var(--line-strong)] bg-[var(--panel)]',
           )}
         >
@@ -464,7 +464,7 @@ function SelectionEditor({
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-[5px] bg-[var(--accent)] px-2.5 py-1 text-[11px] font-medium text-white outline-none transition-colors hover:bg-[var(--accent-strong)]"
+            className="rounded-[5px] bg-[var(--accent)] px-2.5 py-1 text-[11px] font-medium text-[var(--accent-foreground)] outline-none transition-colors hover:bg-[var(--accent-strong)]"
           >
             {knowledgeT('done')}
           </button>

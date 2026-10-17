@@ -60,7 +60,7 @@ export function AutomationHeader({
           <button
             type="button"
             onClick={onCreate}
-            className="flex h-9 items-center gap-1.5 rounded-[7px] bg-[var(--accent)] px-3.5 text-[10.5px] font-semibold text-white outline-none transition-[background-color,transform,box-shadow] hover:-translate-y-px hover:bg-[var(--accent-strong)] hover:shadow-[0_5px_14px_color-mix(in_srgb,var(--accent)_20%,transparent)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:translate-y-0"
+            className="flex h-9 items-center gap-1.5 rounded-[7px] bg-[var(--accent)] px-3.5 text-[10.5px] font-semibold text-[var(--accent-foreground)] outline-none transition-[background-color,transform,box-shadow] hover:-translate-y-px hover:bg-[var(--accent-strong)] hover:shadow-[0_5px_14px_color-mix(in_srgb,var(--accent)_20%,transparent)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:translate-y-0"
           >
             <Plus className="size-3.5" weight="bold" />
             {uiText('新建自动化')}

@@ -64,7 +64,7 @@
 .dangerConfirm input { max-width:240px; font-family:var(--font-code),monospace; color:var(--ink); }
 .footer { display:flex; flex-shrink:0; flex-wrap:wrap; align-items:center; gap:8px; border-top:1px solid var(--line); padding:16px 24px; }
 .footer>span { margin-right:auto; color:var(--muted-strong); font-size:10px; }
-.dialog .primary { background:var(--accent); color:white; border-color:var(--accent); }
+.dialog .primary { background:var(--accent); color: var(--accent-foreground); border-color:var(--accent); }
 .dialog .dangerButton { background:var(--err-ink); color:white; border-color:var(--err-ink); }
 .error { margin:0; color:var(--err-ink); line-height:1.6; overflow-wrap:anywhere; }
 .outcome>strong { font-size:15px; font-weight:600; }

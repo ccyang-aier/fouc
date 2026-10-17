@@ -48,7 +48,7 @@ export function ProjectIndexCanvas({ onOpenProject }: { onOpenProject: () => voi
           <button
             type="button"
             onClick={() => setCreating(true)}
-            className="inline-flex h-9 shrink-0 items-center gap-2 rounded-[8px] bg-[var(--accent)] px-3.5 text-[11px] font-semibold text-white transition-[transform,background-color] hover:-translate-y-px hover:bg-[var(--accent-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+            className="inline-flex h-9 shrink-0 items-center gap-2 rounded-[8px] bg-[var(--accent)] px-3.5 text-[11px] font-semibold text-[var(--accent-foreground)] transition-[transform,background-color] hover:-translate-y-px hover:bg-[var(--accent-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
           >
             <Plus size={15} />
             {t('新建项目')}
@@ -98,7 +98,7 @@ export function ProjectIndexCanvas({ onOpenProject }: { onOpenProject: () => voi
             <button
               type="submit"
               disabled={!name.trim() || busy}
-              className="rounded-[7px] bg-[var(--accent)] px-3 py-1.5 text-[11px] text-white disabled:opacity-50"
+              className="rounded-[7px] bg-[var(--accent)] px-3 py-1.5 text-[11px] text-[var(--accent-foreground)] disabled:opacity-50"
             >
               {busy ? t('创建中') : t('创建')}
             </button>

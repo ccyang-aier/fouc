@@ -107,7 +107,7 @@ export function DtsConnectorInspector({ ticket, summary, onClose }: Props) {
           <button
             type="submit"
             aria-label={tu('发送')}
-            className="flex size-7 shrink-0 items-center justify-center rounded-[6px] bg-[var(--accent)] text-white"
+            className="flex size-7 shrink-0 items-center justify-center rounded-[6px] bg-[var(--accent)] text-[var(--accent-foreground)]"
           >
             <PaperPlaneTilt className="size-3.5" weight="fill" />
           </button>

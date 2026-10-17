@@ -64,7 +64,7 @@
 .confirmation input { margin-top:4px; accent-color:var(--accent); }
 .footer { display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding-top:14px; border-top:1px solid var(--line); }
 .footer>span { margin-right:auto; color:var(--muted-strong); font-size:11px; }
-.dialog .primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+.dialog .primary { background:var(--accent); color: var(--accent-foreground); border-color:var(--accent); }
 .dialog .primary:hover { background:var(--accent); opacity:.9; }
 .error { margin:0; color:var(--err-ink); line-height:1.6; overflow-wrap:anywhere; }
 .progress,.result { border:1px solid var(--line); border-radius:9px; padding:14px; display:flex; flex-direction:column; gap:9px; font-variant-numeric:tabular-nums; }

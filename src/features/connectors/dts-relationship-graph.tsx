@@ -526,7 +526,7 @@ function NodeActions({
         }}
         className={cn(
           baseClassName,
-          'border-[var(--accent)] bg-[var(--accent)] text-white hover:brightness-105',
+          'border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)] hover:brightness-105',
         )}
       >
         <Plus className="size-3.5" weight="bold" />
@@ -620,7 +620,7 @@ function CustomNodeEditor({
                     className={cn(
                       'flex size-8 items-center justify-center rounded-[7px] border outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]',
                       (node.icon ?? 'note') === id
-                        ? 'border-[var(--accent)] bg-[var(--accent)] text-white'
+                        ? 'border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)]'
                         : 'border-transparent text-[var(--muted-strong)] hover:border-[var(--line)] hover:bg-[var(--surface-hover)] hover:text-[var(--ink)]',
                     )}
                   >
@@ -635,7 +635,7 @@ function CustomNodeEditor({
             type="button"
             aria-label={tu('完成编辑')}
             onClick={onDone}
-            className="ml-auto flex size-7 items-center justify-center rounded-[7px] bg-[var(--accent)] text-white outline-none transition-[filter,transform] hover:brightness-105 active:scale-90 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+            className="ml-auto flex size-7 items-center justify-center rounded-[7px] bg-[var(--accent)] text-[var(--accent-foreground)] outline-none transition-[filter,transform] hover:brightness-105 active:scale-90 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
           >
             <Check className="size-3.5" weight="bold" />
           </button>

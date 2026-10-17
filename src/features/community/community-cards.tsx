@@ -312,7 +312,7 @@ export function CommunityAssetCard({
         className={cn(
           'absolute right-2.5 top-2.5 flex size-4 items-center justify-center rounded-[4px] border transition-[color,background-color,border-color,opacity]',
           selected
-            ? 'border-[var(--accent)] bg-[var(--accent)] text-white'
+            ? 'border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)]'
             : 'border-[var(--line-strong)] text-transparent opacity-0 group-hover:opacity-100',
         )}
       >

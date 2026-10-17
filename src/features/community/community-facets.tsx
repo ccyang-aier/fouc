@@ -323,7 +323,7 @@ export function CommunityFacets({
                 type="button"
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={addTag}
-                className="flex size-7 items-center justify-center rounded-[5px] bg-[var(--accent)] text-white"
+                className="flex size-7 items-center justify-center rounded-[5px] bg-[var(--accent)] text-[var(--accent-foreground)]"
               >
                 <Plus className="size-3" weight="bold" />
               </button>

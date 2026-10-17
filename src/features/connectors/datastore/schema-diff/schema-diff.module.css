@@ -89,7 +89,7 @@
 .footer > span { flex: 1; color: var(--muted-strong); font-size: 11px; }
 .footer button { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 33px; padding: 0 10px; border: 1px solid var(--line); border-radius: 6px; font-size: 12px; background: var(--panel); cursor: pointer; white-space: nowrap; }
 .footer button:hover { background: var(--surface-hover); }
-.footer button.primary { color: #fff; background: var(--accent); border-color: transparent; }
+.footer button.primary { color: var(--accent-foreground); background: var(--accent); border-color: transparent; }
 .footer button.primary:hover { background: var(--accent-strong); }
 .footer button:disabled { opacity: .5; cursor: default; }
 .feedback { padding: 9px 20px; margin: 0; border-top: 1px solid var(--line); font-size: 12px; color: var(--accent-ink); background: var(--accent-soft); flex-shrink: 0; }

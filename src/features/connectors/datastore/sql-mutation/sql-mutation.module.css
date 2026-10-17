@@ -30,7 +30,7 @@
 .editorActions > span { color: var(--mutation-muted); font-size: 12px; }
 .editorActions > button { margin-left: auto; }
 .panel .primary { background: color-mix(in srgb, var(--accent) 8%, var(--panel)); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 25%, var(--line)); }
-.panel .commit { color: var(--panel); background: var(--accent); border-color: var(--accent); }
+.panel .commit { color: var(--accent-foreground); background: var(--accent); border-color: var(--accent); }
 .panel .commit:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 90%, var(--ink)); }
 .review { border-top: 1px solid var(--line); }
 .reviewHeader { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 20px 23px; background: var(--mutation-wash); }

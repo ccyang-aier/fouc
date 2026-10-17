@@ -34,22 +34,22 @@ const PALETTES: Record<
   }
 > = {
   light: {
-    shell: '#f3f4f4',
-    side: '#fafbfc',
+    shell: '#fafafa',
+    side: '#fafafa',
     panel: '#ffffff',
-    ink: '#202126',
-    line: 'rgba(32,33,38,0.10)',
-    muted: '#d9dbdd',
-    accent: '#647089',
+    ink: '#202020',
+    line: 'rgba(32,32,32,0.10)',
+    muted: '#d9d9d9',
+    accent: '#202020',
   },
   dark: {
-    shell: '#101214',
-    side: '#141619',
-    panel: '#17191c',
-    ink: '#e9ecef',
-    line: 'rgba(233,236,239,0.12)',
-    muted: '#3a3f45',
-    accent: '#8490a9',
+    shell: '#111111',
+    side: '#141414',
+    panel: '#181818',
+    ink: '#ededed',
+    line: 'rgba(237,237,237,0.12)',
+    muted: '#404040',
+    accent: '#ededed',
   },
 };
 
@@ -108,7 +108,7 @@ export function ThemeSection({
                   <MiniWorkbench palette={PALETTES[id]} />
                 )}
                 {selected ? (
-                  <span className="absolute right-2 top-2 flex size-[18px] items-center justify-center rounded-full bg-[var(--accent)] text-white shadow-sm">
+                  <span className="absolute right-2 top-2 flex size-[18px] items-center justify-center rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] shadow-sm">
                     <Check className="size-3" weight="bold" />
                   </span>
                 ) : null}

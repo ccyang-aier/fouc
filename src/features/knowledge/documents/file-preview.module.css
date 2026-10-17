@@ -54,7 +54,7 @@
 .pdfAnnotations { position:absolute; inset:0; z-index:3; pointer-events:none; }
 .pdfAnnotation>span { position:absolute; background:color-mix(in srgb,var(--accent) 16%,transparent); border-bottom:1px solid var(--accent-soft-line); mix-blend-mode:multiply; }
 .pdfAnnotation>button { position:absolute; transform:translateY(-100%); min-width:15px; height:15px; padding:0 3px; border:1px solid var(--accent-soft-line); border-radius:5px; background:var(--panel); color:var(--accent-ink); font:10px/13px var(--font-sans); cursor:pointer; pointer-events:auto; }
-.pdfAnnotation[data-active=true]>button,.pdfAnnotation>button:hover { background:var(--accent); color:white; }
+.pdfAnnotation[data-active=true]>button,.pdfAnnotation>button:hover { background:var(--accent); color: var(--accent-foreground); }
 .pdfAnnotation[data-active=true]>span { border-color:var(--accent); }
 .pdfAnnotation[data-resolved=true] { opacity:.55; }
 .pdfSelectionAction { position:fixed; display:flex; align-items:center; gap:6px; z-index:25; height:30px; padding:0 10px; border:1px solid var(--floating-border); border-radius:6px; background:var(--panel); box-shadow:var(--floating-shadow); color:var(--ink-soft); font-size:12px; cursor:pointer; }

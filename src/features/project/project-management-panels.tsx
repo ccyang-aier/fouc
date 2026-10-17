@@ -602,7 +602,7 @@ export function TasksPanel({ onOpenWork }: { onOpenWork: () => void }) {
       <button
         type="button"
         onClick={onOpenWork}
-        className="flex h-9 w-full items-center justify-center gap-2 rounded-[8px] bg-[var(--accent)] text-[10.5px] font-medium text-white outline-none transition-[background-color,transform] hover:bg-[var(--accent-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-[0.99]"
+        className="flex h-9 w-full items-center justify-center gap-2 rounded-[8px] bg-[var(--accent)] text-[10.5px] font-medium text-[var(--accent-foreground)] outline-none transition-[background-color,transform] hover:bg-[var(--accent-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-[0.99]"
       >
         {t('打开完整任务视图')}
         <ArrowRight className="size-3.5" />
@@ -740,7 +740,7 @@ export function MemberPanel({ member }: { member: RailMember }) {
                   setSent(true);
                 }
               }}
-              className="flex h-7 items-center gap-1.5 rounded-[7px] bg-[var(--accent)] px-2.5 text-[9.5px] font-medium text-white outline-none hover:bg-[var(--accent-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:opacity-35"
+              className="flex h-7 items-center gap-1.5 rounded-[7px] bg-[var(--accent)] px-2.5 text-[9.5px] font-medium text-[var(--accent-foreground)] outline-none hover:bg-[var(--accent-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:opacity-35"
             >
               <PaperPlaneTilt className="size-3" />
               {t('发送')}
@@ -812,7 +812,7 @@ export function InvitePanel() {
       <button
         type="submit"
         disabled={!valid}
-        className="flex h-9 w-full items-center justify-center gap-2 rounded-[8px] bg-[var(--accent)] text-[10.5px] font-medium text-white outline-none transition-[background-color,transform,opacity] hover:bg-[var(--accent-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-35"
+        className="flex h-9 w-full items-center justify-center gap-2 rounded-[8px] bg-[var(--accent)] text-[10.5px] font-medium text-[var(--accent-foreground)] outline-none transition-[background-color,transform,opacity] hover:bg-[var(--accent-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-35"
       >
         <UserPlus className="size-3.5" />
         {t('发送邀请')}

@@ -95,11 +95,11 @@ export function QueryChartCanvas({
     resize.observe(element);
     appearance.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: ['class', 'style', 'data-theme', 'data-accent'],
+      attributeFilter: ['class', 'style', 'data-theme'],
     });
     appearance.observe(document.body, {
       attributes: true,
-      attributeFilter: ['class', 'style', 'data-theme', 'data-accent'],
+      attributeFilter: ['class', 'style', 'data-theme'],
     });
     void loadChartLibrary()
       .then((loaded) => {

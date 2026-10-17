@@ -1,4 +1,4 @@
-.sidebar { --comment-accent:#0667f5; --comment-ink:#637087; --comment-strong:#202838; --comment-muted:#8793a8; --comment-line:var(--separator-color); display:flex; flex:none; flex-direction:column; width:364px; min-width:0; min-height:0; border-inline-start:1px solid var(--comment-line); background:var(--panel); color:var(--comment-strong); container-type:inline-size; }
+.sidebar { --comment-accent:var(--accent); --comment-ink:var(--ink-soft); --comment-strong:var(--ink); --comment-muted:var(--muted); --comment-line:var(--separator-color); display:flex; flex:none; flex-direction:column; width:364px; min-width:0; min-height:0; border-inline-start:1px solid var(--comment-line); background:var(--panel); color:var(--comment-strong); container-type:inline-size; }
 .header { display:flex; align-items:center; gap:10px; flex:none; height:40px; padding:0 12px; }
 .heading { margin:0; font-size:18px; font-weight:650; line-height:1.4; letter-spacing:-.4px; }
 .count { color:var(--comment-ink); font-size:13px; font-variant-numeric:tabular-nums; }
@@ -104,7 +104,7 @@
 .issueChoice input { width:13px; height:13px; margin:0; accent-color:var(--comment-accent); cursor:pointer; }
 .issueChoice input:disabled { cursor:default; }
 .sendHint { margin-inline-start:auto; color:var(--muted-strong); font-size:9.5px; white-space:nowrap; }
-.sendButton { display:inline-flex; align-items:center; justify-content:center; flex:none; gap:5px; height:26px; padding:3px 9px; border:0; border-radius:5px; background:var(--comment-accent,var(--accent)); color:#fff; font-size:11.5px; cursor:pointer; }
+.sendButton { display:inline-flex; align-items:center; justify-content:center; flex:none; gap:5px; height:26px; padding:3px 9px; border:0; border-radius:5px; background:var(--comment-accent,var(--accent)); color:var(--accent-foreground); font-size:11.5px; cursor:pointer; }
 .sendButton:disabled { opacity:.45; cursor:default; }
 .sendButton:hover:enabled { background:color-mix(in srgb,var(--comment-accent,var(--accent)) 90%,#000); }
 .composerError { display:flex; align-items:center; gap:4px; margin:0; color:var(--err-ink); font-size:11px; line-height:1.6; }

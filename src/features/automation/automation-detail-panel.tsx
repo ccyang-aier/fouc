@@ -198,7 +198,7 @@ function DetailContent({
           type="button"
           disabled={running}
           onClick={onRun}
-          className="flex h-9 items-center justify-center gap-2 rounded-[7px] bg-[var(--accent)] text-[10.5px] font-semibold text-white outline-none transition-[background-color,transform] hover:-translate-y-px hover:bg-[var(--accent-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:pointer-events-none disabled:opacity-60"
+          className="flex h-9 items-center justify-center gap-2 rounded-[7px] bg-[var(--accent)] text-[10.5px] font-semibold text-[var(--accent-foreground)] outline-none transition-[background-color,transform] hover:-translate-y-px hover:bg-[var(--accent-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:pointer-events-none disabled:opacity-60"
         >
           {running ? (
             <CircleNotch className="size-4 animate-spin" />
@@ -324,7 +324,7 @@ function CreatePanel({
         <button
           type="button"
           onClick={submit}
-          className="h-9 w-full rounded-[7px] bg-[var(--accent)] text-[10.5px] font-semibold text-white outline-none transition-colors hover:bg-[var(--accent-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+          className="h-9 w-full rounded-[7px] bg-[var(--accent)] text-[10.5px] font-semibold text-[var(--accent-foreground)] outline-none transition-colors hover:bg-[var(--accent-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
         >
           {uiText('创建并启用')}
         </button>

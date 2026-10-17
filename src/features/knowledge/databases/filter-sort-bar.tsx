@@ -370,7 +370,7 @@ function FilterPanel({
             onClick={() => {
               if (built?.ok) onConfirm(built.filter);
             }}
-            className="flex h-7 items-center rounded-[5px] bg-[var(--accent)] px-2.5 text-[11.5px] font-medium text-white outline-none transition-colors hover:bg-[var(--accent-strong)] disabled:pointer-events-none disabled:opacity-45"
+            className="flex h-7 items-center rounded-[5px] bg-[var(--accent)] px-2.5 text-[11.5px] font-medium text-[var(--accent-foreground)] outline-none transition-colors hover:bg-[var(--accent-strong)] disabled:pointer-events-none disabled:opacity-45"
           >
             {initial ? knowledgeT('updateFilter') : knowledgeT('addFilter')}
           </button>
@@ -545,7 +545,7 @@ function SortPanel({
             type="button"
             disabled={propertyId === ''}
             onClick={() => onPick({ propertyId, direction })}
-            className="flex h-7 items-center rounded-[5px] bg-[var(--accent)] px-2.5 text-[11.5px] font-medium text-white outline-none transition-colors hover:bg-[var(--accent-strong)] disabled:pointer-events-none disabled:opacity-45"
+            className="flex h-7 items-center rounded-[5px] bg-[var(--accent)] px-2.5 text-[11.5px] font-medium text-[var(--accent-foreground)] outline-none transition-colors hover:bg-[var(--accent-strong)] disabled:pointer-events-none disabled:opacity-45"
           >
             {existing ? knowledgeT('updateSort') : knowledgeT('addSort')}
           </button>

@@ -18,7 +18,7 @@
 .view footer { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; border-top: 1px solid var(--line); padding: 8px 16px; flex-shrink: 0; }
 .view footer > span { margin-right: auto; font-size: 10px; color: var(--muted-strong); line-height: 1.7; }
 .view footer button { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--line); }
-.view footer button:last-child { background: var(--accent); border-color: var(--accent); color: white; }
+.view footer button:last-child { background: var(--accent); border-color: var(--accent); color: var(--accent-foreground); }
 .error, .feedback { padding: 8px 16px; font-size: 11px; overflow-wrap: anywhere; flex-shrink: 0; }
 .error { color: #b73340; background: #ffeded; }
 .feedback { color: var(--muted-strong); background: var(--surface); }

@@ -123,6 +123,10 @@
   color: var(--foreground);
 }
 
+.row[data-selected="true"] > svg {
+  color: var(--ink);
+}
+
 .iconButton[data-selected="true"] {
   background: var(--sidebar-row-selected);
 }

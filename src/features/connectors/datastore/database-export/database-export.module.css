@@ -58,7 +58,7 @@
 .footerNote { font-size:10px; line-height:1.7; color:var(--muted-strong); max-width:320px; }
 .footerActions { display:flex; align-items:center; gap:8px; flex-shrink:0; }
 .primary,.secondary { display:inline-flex; align-items:center; justify-content:center; gap:7px; font-size:11px!important; font-weight:550!important; border-radius:6px; padding:8px 12px; white-space:nowrap; }
-.primary { border:1px solid var(--accent); background:var(--accent); color:white; }
+.primary { border:1px solid var(--accent); background:var(--accent); color: var(--accent-foreground); }
 .primary:hover:not(:disabled) { background:var(--accent-strong); }
 .secondary { border:1px solid var(--line); background:var(--panel); color:var(--ink-soft); }
 .secondary:hover:not(:disabled) { background:var(--surface-hover); border-color:var(--line-strong); }

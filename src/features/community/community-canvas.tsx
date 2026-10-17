@@ -423,7 +423,7 @@ export function CommunityCanvas() {
               <button
                 type="button"
                 onClick={() => notify('info', uiText('作品提交通道即将开放'))}
-                className="flex h-[30px] items-center gap-1.5 rounded-[6px] bg-[var(--accent)] px-3.5 text-[11px] font-semibold text-white shadow-[0_3px_9px_color-mix(in_srgb,var(--accent)_18%,transparent)] outline-none hover:bg-[var(--accent-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                className="flex h-[30px] items-center gap-1.5 rounded-[6px] bg-[var(--accent)] px-3.5 text-[11px] font-semibold text-[var(--accent-foreground)] shadow-[0_3px_9px_color-mix(in_srgb,var(--accent)_18%,transparent)] outline-none hover:bg-[var(--accent-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
               >
                 <Plus className="size-3.5" weight="bold" />
                 {uiText('提交资源')}
@@ -885,7 +885,7 @@ export function CommunityCanvas() {
                     type="button"
                     disabled={selectedItem.installed}
                     onClick={() => acquireItem(selectedItem)}
-                    className="flex h-9 items-center justify-center gap-1.5 rounded-[7px] bg-[var(--accent)] px-3 text-[11px] font-semibold text-white outline-none transition-colors hover:bg-[var(--accent-strong)] disabled:bg-[var(--surface-hover)] disabled:text-[var(--ok-ink)]"
+                    className="flex h-9 items-center justify-center gap-1.5 rounded-[7px] bg-[var(--accent)] px-3 text-[11px] font-semibold text-[var(--accent-foreground)] outline-none transition-colors hover:bg-[var(--accent-strong)] disabled:bg-[var(--surface-hover)] disabled:text-[var(--ok-ink)]"
                   >
                     {selectedItem.installed ? (
                       <CheckCircle className="size-3.5" weight="fill" />

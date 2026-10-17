@@ -90,7 +90,7 @@ function DisconnectedState({ onConnect }: { onConnect: () => void }) {
         <button
           type="button"
           onClick={onConnect}
-          className="mt-5 h-9 rounded-[7px] bg-[var(--accent)] px-5 text-[10.5px] font-semibold text-white outline-none transition hover:brightness-105 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+          className="mt-5 h-9 rounded-[7px] bg-[var(--accent)] px-5 text-[10.5px] font-semibold text-[var(--accent-foreground)] outline-none transition hover:brightness-105 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
         >
           {tu('打开 DTS 登录')}
         </button>

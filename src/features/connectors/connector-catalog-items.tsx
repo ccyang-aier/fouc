@@ -68,7 +68,7 @@ function ConnectorAction({ connector, onConnect, onDisconnect }: ConnectorItemPr
         event.stopPropagation();
         onConnect();
       }}
-      className="relative z-10 flex h-[29px] min-w-[66px] items-center justify-center rounded-[6px] border border-[var(--accent-soft-line)] bg-[var(--accent-soft)] px-3 text-[10.5px] font-semibold text-[var(--accent-ink)] outline-none transition-[background-color,border-color,color,transform] hover:border-[var(--accent)] hover:bg-[var(--accent)] hover:text-white active:translate-y-px focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+      className="relative z-10 flex h-[29px] min-w-[66px] items-center justify-center rounded-[6px] border border-[var(--accent-soft-line)] bg-[var(--accent-soft)] px-3 text-[10.5px] font-semibold text-[var(--accent-ink)] outline-none transition-[background-color,border-color,color,transform] hover:border-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] active:translate-y-px focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
     >
       {tConnector('connect')}
     </button>

@@ -10,6 +10,8 @@ export function createKnowledgeCatalogRoutes(auth: FoucAuth, service: KnowledgeC
   app.post(base, async (context) => context.json(await service.createKnowledgeBase(context.get('identity'), await bodyWithPath(context)), 201));
   app.get(`${base}/:knowledgeBaseId`, async (context) => context.json(await service.getKnowledgeBase(context.get('identity'), context.req.param())));
   app.patch(`${base}/:knowledgeBaseId`, async (context) => context.json(await service.renameKnowledgeBase(context.get('identity'), await bodyWithPath(context, context.req.param()))));
+  app.get(`${base}/:knowledgeBaseId/projects`, async (context) => context.json(await service.getKnowledgeBaseProjects(context.get('identity'), context.req.param())));
+  app.patch(`${base}/:knowledgeBaseId/projects`, async (context) => context.json(await service.updateKnowledgeBaseProjects(context.get('identity'), await bodyWithPath(context, context.req.param()))));
   app.get(`${base}/:knowledgeBaseId/teamspaces`, async (context) => context.json(await service.listTeamspaces(context.get('identity'), { ...pagination(context), ...context.req.param() })));
   app.post(`${base}/:knowledgeBaseId/teamspaces`, async (context) => context.json(await service.createTeamspace(context.get('identity'), await bodyWithPath(context, context.req.param())), 201));
   app.get(`${base}/:knowledgeBaseId/teamspaces/:teamspaceId`, async (context) => context.json(await service.getTeamspace(context.get('identity'), context.req.param())));

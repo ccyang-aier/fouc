@@ -3,7 +3,7 @@ import { knowledgeMessages } from './knowledge-catalog-client.messages';
 
 import { authenticatedFetch } from '@/lib/authenticated-fetch';
 import { getFoucApiOrigin } from '@/lib/fouc-api-endpoint';
-import type { KnowledgeBase, Teamspace } from '@fouc/shared/knowledge/contracts';
+import type { KnowledgeBase, KnowledgeBaseProjectScope, Teamspace } from '@fouc/shared/knowledge/contracts';
 import {
   createOrganizationRequest,
   listQuery,
@@ -39,19 +39,30 @@ function requireAccess(value: TeamspaceAccess): TeamspaceAccess {
 export function createKnowledgeCatalogClient(deps: OrganizationClientDeps) {
   const request = createOrganizationRequest(deps);
   return {
-    listKnowledgeBases(options: OrganizationListOptions = {}) {
+    listKnowledgeBases(options: OrganizationListOptions & { projectId?: string } = {}) {
       return request<OrganizationPage<KnowledgeBase>>({
         method: 'GET',
         path: '/api/knowledge-bases',
-        query: listQuery(options),
+        query: { ...listQuery(options), projectId: options.projectId === undefined ? undefined : requireUuid(options.projectId, 'projectId') },
         signal: options.signal,
       });
     },
-    createKnowledgeBase(input: { name: string }) {
+    createKnowledgeBase(input: { name: string; projectIds?: string[] }) {
       return request<KnowledgeBase>({
         method: 'POST',
         path: '/api/knowledge-bases',
-        body: { name: requireName(input.name) },
+        body: { name: requireName(input.name), ...(input.projectIds ? { projectIds: input.projectIds.map((id) => requireUuid(id, 'projectId')) } : {}) },
+      });
+    },
+    getKnowledgeBaseProjects(knowledgeBaseId: string, signal?: AbortSignal) {
+      const scope = requireUuid(knowledgeBaseId, 'knowledgeBaseId');
+      return request<KnowledgeBaseProjectScope>({ method: 'GET', path: `/api/knowledge-bases/${scope}/projects`, signal });
+    },
+    setKnowledgeBaseProjects(knowledgeBaseId: string, projectIds: string[]) {
+      const scope = requireUuid(knowledgeBaseId, 'knowledgeBaseId');
+      return request<KnowledgeBaseProjectScope>({
+        method: 'PATCH', path: `/api/knowledge-bases/${scope}/projects`,
+        body: { projectIds: projectIds.map((id) => requireUuid(id, 'projectId')) },
       });
     },
     listTeamspaces(knowledgeBaseId: string, options: OrganizationListOptions = {}) {

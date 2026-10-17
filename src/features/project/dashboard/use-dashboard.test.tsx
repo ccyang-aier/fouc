@@ -190,6 +190,22 @@ test('creating and removing tasks leave the shared dashboard seed unchanged for 
   expect(dashboard.state).toEqual(seed);
 });
 
+test('different principals never restore each other’s edits for the same source and project ID', async () => {
+  await render('user:alice:local:A');
+  await act(async () => {
+    dashboard.saveTask({ ...wireframe(), title: 'Alice project draft' });
+  });
+  await render('user:bob:local:A');
+  expect(dashboard.state).toEqual(initialDashboardState);
+  await act(async () => {
+    dashboard.saveTask({ ...wireframe(), title: 'Bob project draft' });
+  });
+  await render('user:alice:local:A');
+  expect(wireframe().title).toBe('Alice project draft');
+  expect(localStorage.getItem('fouc.project-dashboard.user:alice:local:A')).not.toContain('Bob project draft');
+  expect(localStorage.getItem('fouc.project-dashboard.user:bob:local:A')).not.toContain('Alice project draft');
+});
+
 test('StrictMode effect replay and remount restore one copy of each created task and activity', async () => {
   await render('local:A', true);
   await act(async () => {

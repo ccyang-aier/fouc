@@ -13,6 +13,8 @@ import {
 export type KnowledgeBaseSummary = { id: string; name: string; source?: 'local' | 'server' };
 import { IconButton } from './dense-sidebar/icon-button';
 import styles from './navigation/knowledge-sidebar.module.css';
+import { useState } from 'react';
+import { KnowledgeBaseProjectsDialog, KnowledgeBaseProjectsMenuItem } from './organization/knowledge-base-projects';
 
 export function KnowledgeBaseHeader({
   knowledgeBases,
@@ -33,6 +35,7 @@ export function KnowledgeBaseHeader({
 }) {
   const { t: knowledgeT } = useTranslation(knowledgeMessages);
   const createLabel = providedCreateLabel ?? knowledgeT('newKnowledgeBase');
+  const [configuringProjects, setConfiguringProjects] = useState(false);
 
   const activeKnowledgeBase = knowledgeBases.find((base) => base.id === activeKnowledgeBaseId);
   const knowledgeBaseName =
@@ -97,6 +100,7 @@ export function KnowledgeBaseHeader({
             {createLabel}
           </DropdownMenuItem>
           <DropdownMenuSeparator className={styles.knowledgeMenuSeparator} />
+          {activeKnowledgeBase ? <KnowledgeBaseProjectsMenuItem base={activeKnowledgeBase} onOpen={() => setConfiguringProjects(true)} /> : null}
           <DropdownMenuItem
             className={styles.knowledgeMenuItem}
             disabled={!activeKnowledgeBase}
@@ -107,6 +111,7 @@ export function KnowledgeBaseHeader({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      {configuringProjects && activeKnowledgeBase ? <KnowledgeBaseProjectsDialog key={activeKnowledgeBase.id} base={activeKnowledgeBase} onClose={() => setConfiguringProjects(false)} /> : null}
       <IconButton
         className={styles.knowledgeCollapse}
         label={knowledgeT('collapseKnowledgeBaseSidebar')}

@@ -24,12 +24,14 @@ export function HomeChat({
   t,
   locale = "zh-CN",
   onOpenConnectors,
+  conversation,
 }: {
   t: ChatText;
   locale?: Locale;
   onOpenConnectors: () => void;
+  conversation?: ChatHistoryEntry;
 }) {
-  const { selectedProject } = useProjectResources();
+  const { selectedProject, scopeKey } = useProjectResources();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const conversationViewport = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState<ChatDraft>({ text: "", attachments: [], mode: null });
@@ -38,15 +40,17 @@ export function HomeChat({
     autoRules: { modelIds: null, reasoningEffort: autoReasoning.defaultLevel },
     projectId: selectedProject?.id ?? null,
     projectName: selectedProject?.name ?? null,
-    knowledgeIncluded: true,
+    knowledgeBaseId: null,
+    knowledgeBaseName: null,
     localEnvironment: { createWorktree: false },
+    ...conversation?.submissions.at(-1)?.context,
   });
-  const [submissions, setSubmissions] = useState<ChatSubmission[]>([]);
-  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [submissions, setSubmissions] = useState<ChatSubmission[]>(conversation?.submissions ?? []);
+  const [conversationId, setConversationId] = useState<string | null>(conversation?.id ?? null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const inConversation = submissions.length > 0;
   function updateContext(change: Partial<ChatContext>) {
-    setContext((current) => ({ ...current, ...change }));
+    setContext((current) => ({ ...current, ...change, projectId: selectedProject?.id ?? null, projectName: selectedProject?.name ?? null }));
   }
   function submit(submission: ChatSubmission) {
     const next = editingId
@@ -55,7 +59,7 @@ export function HomeChat({
     const id = conversationId ?? crypto.randomUUID();
     setSubmissions(next);
     setConversationId(id);
-    saveChatConversation({ id, submissions: next, updatedAt: submission.createdAt });
+    if (scopeKey) saveChatConversation(scopeKey, { id, submissions: next, updatedAt: submission.createdAt });
     setEditingId(null);
     requestAnimationFrame(() => {
       conversationViewport.current?.scrollTo({

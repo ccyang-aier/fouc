@@ -7,29 +7,18 @@ import { messages } from './i18n/system-bar.messages';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  BellSimple,
-  ArrowRight,
-  CheckCircle,
-  Circle,
   ClipboardText,
-  Clock,
-  ListChecks,
   MagnifyingGlass,
   Minus,
   Square,
   X,
 } from '@phosphor-icons/react';
 
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { performWindowAction } from '@/lib/tauri-window';
 import { cn } from '@/lib/utils';
 
 import { KnowledgeNotificationBell } from '@/features/knowledge/notifications/components/notification-bell';
-import type { WorkbenchView } from './navigation-sidebar';
+import type { WorkbenchView } from './workbench-view';
 
 const SEARCH_ITEMS: Array<{
   label: keyof typeof messages;
@@ -37,9 +26,13 @@ const SEARCH_ITEMS: Array<{
   view: WorkbenchView;
 }> = [
   { label: '新对话', detail: '开始一项新任务', view: 'home' },
-  { label: '项目', detail: '浏览项目文件夹', view: 'project-home' },
+  { label: '工作台', detail: '查看项目工作台', view: 'workbench' },
+  { label: '任务', detail: '查看项目任务', view: 'tasks' },
+  { label: '成员', detail: '管理项目成员', view: 'members' },
+  { label: '资产', detail: '查看项目资产', view: 'assets' },
+  { label: '聊天', detail: '查看项目对话', view: 'chats' },
+  { label: 'Agents', detail: '管理本机 Agent', view: 'agents' },
   { label: '社区', detail: '发现 Agent 与技能', view: 'community' },
-  { label: '自动化', detail: '管理自动执行任务', view: 'automation' },
   { label: '知识库', detail: '查看沉淀的知识', view: 'knowledge' },
   { label: '连接器', detail: '管理外部服务', view: 'connectors' },
   { label: '设置', detail: '调整 Fouc 偏好', view: 'settings' },
@@ -155,29 +148,7 @@ export function SystemBar({ onNavigate }: { onNavigate: (view: WorkbenchView) =>
       <div className="ml-auto flex items-center gap-0.5" data-tauri-drag-region="false">
         {/* 通知铃铛：知识库工作台在线时经桥接快照实时显示真实收件箱，未在线时点击进入知识库 */}
         <KnowledgeNotificationBell onOpenWorkbench={() => onNavigate('knowledge')} />
-        <QuickPanel
-          label={uiText('任务')}
-          icon={ClipboardText}
-          panelIcon={ListChecks}
-          title={uiText('任务')}
-          subtitle={uiText('1 项进行中')}
-          footer={uiText('查看全部任务')}
-          onFooter={() => onNavigate('project-home')}
-        >
-          <PanelRow
-            title={uiText('完善桌面端通知中心')}
-            detail={uiText('产品研发 · 今天')}
-            time={uiText('进行中')}
-            tone="accent"
-            progress={68}
-          />
-          <PanelRow
-            title={uiText('复核连接器权限')}
-            detail={uiText('连接器 · 明天')}
-            time={uiText('待处理')}
-            tone="neutral"
-          />
-        </QuickPanel>
+<button type="button" aria-label={uiText('任务')} title={uiText('任务')} onClick={() => onNavigate('tasks')} className="fouc-action grid size-7 cursor-pointer place-items-center rounded-md text-[var(--muted-strong)]"><ClipboardText size={15} weight="duotone" /></button>
         <span aria-hidden className="mx-1.5 h-5 w-px bg-[var(--line-strong)]" />
         <WindowControl
           label={uiText('最小化')}
@@ -198,136 +169,6 @@ export function SystemBar({ onNavigate }: { onNavigate: (view: WorkbenchView) =>
         />
       </div>
     </div>
-  );
-}
-
-function QuickPanel({
-  label,
-  icon: Icon,
-  panelIcon: PanelIcon,
-  title,
-  subtitle,
-  footer,
-  onFooter,
-  badge = false,
-  children,
-}: {
-  label: string;
-  icon: typeof BellSimple;
-  panelIcon: typeof BellSimple;
-  title: string;
-  subtitle: string;
-  footer: string;
-  onFooter?: () => void;
-  badge?: boolean;
-  children: React.ReactNode;
-}) {
-  const uiText = useTranslation(messages).t;
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          aria-label={label}
-          title={label}
-          className="relative flex size-7 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-wash hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] data-[state=open]:bg-wash data-[state=open]:text-[var(--ink)]"
-        >
-          <Icon className="size-[15px]" weight="duotone" aria-hidden />
-          {badge ? (
-            <span
-              aria-hidden
-              className="absolute right-[5px] top-[5px] size-1.5 rounded-full border border-panel bg-[var(--accent)]"
-            />
-          ) : null}
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" sideOffset={8} className="w-[320px] rounded-[7px] p-0">
-        <div className="flex items-center gap-2.5 border-b border-[var(--line)] px-3.5 py-3">
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-[9px] border border-[var(--accent-soft-line)] bg-[var(--accent-soft)] text-[var(--accent-ink)]">
-            <PanelIcon aria-hidden className="size-4" weight="duotone" />
-          </span>
-          <div className="min-w-0">
-            <p className="text-[12px] font-semibold tracking-[-0.01em] text-[var(--ink)]">
-              {title}
-            </p>
-            <p className="mt-0.5 text-[9.5px] text-[var(--muted)]">{subtitle}</p>
-          </div>
-          <span className="ml-auto rounded-full border border-[var(--line)] bg-[var(--surface-subtle)] px-2 py-0.5 text-[9px] font-medium text-[var(--muted-strong)]">
-            {uiText('最近')}
-          </span>
-        </div>
-        <div className="p-1.5">{children}</div>
-        <button
-          type="button"
-          onClick={onFooter}
-          className="flex h-9 w-full items-center justify-center gap-1.5 border-t border-[var(--line)] bg-[var(--surface-subtle)] text-[10.5px] font-medium text-[var(--accent-ink)] outline-none transition-colors hover:bg-[var(--accent-soft)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)]"
-        >
-          {footer}
-          <ArrowRight aria-hidden className="size-3" weight="bold" />
-        </button>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
-function PanelRow({
-  title,
-  detail,
-  time,
-  tone,
-  unread = false,
-  progress,
-}: {
-  title: string;
-  detail: string;
-  time: string;
-  tone: 'accent' | 'success' | 'neutral';
-  unread?: boolean;
-  progress?: number;
-}) {
-  const Icon = tone === 'success' ? CheckCircle : tone === 'neutral' ? Circle : Clock;
-  return (
-    <button
-      type="button"
-      className={cn(
-        'group relative flex w-full items-start gap-2.5 rounded-[8px] px-2.5 py-2.5 text-left outline-none transition-colors hover:bg-wash focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]',
-        unread && 'bg-[color-mix(in_srgb,var(--accent-soft)_45%,transparent)]',
-      )}
-    >
-      {unread ? (
-        <span
-          aria-hidden
-          className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-[var(--accent)]"
-        />
-      ) : null}
-      <span
-        className={cn(
-          'mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-[7px]',
-          tone === 'success'
-            ? 'bg-[#edf7f2] text-[var(--ok-ink)]'
-            : tone === 'neutral'
-              ? 'bg-[var(--surface-subtle)] text-[var(--muted)]'
-              : 'bg-[var(--accent-soft)] text-[var(--accent-ink)]',
-        )}
-      >
-        <Icon aria-hidden className="size-3.5" weight={tone === 'neutral' ? 'regular' : 'fill'} />
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-baseline gap-2">
-          <p className="truncate text-[11px] font-medium text-[var(--ink)]">{title}</p>
-          <span className="ml-auto shrink-0 text-[9px] text-[var(--muted)]">{time}</span>
-        </div>
-        <p className="mt-0.5 truncate text-[9.5px] text-[var(--muted)]">{detail}</p>
-        {progress !== undefined ? (
-          <span className="mt-2 block h-1 overflow-hidden rounded-full bg-[var(--line)]">
-            <span
-              className="block h-full rounded-full bg-[var(--accent)]"
-              style={{ width: `${progress}%` }}
-            />
-          </span>
-        ) : null}
-      </div>
-    </button>
   );
 }
 

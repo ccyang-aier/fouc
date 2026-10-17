@@ -14,6 +14,7 @@ import { MembersSection } from './members-section';
 import { TeamspacesSection } from './teamspaces-section';
 import { ListStateShell, RoleBadge, flattenPages, queryListState } from './ui';
 import { useAppAlert } from '@/components/app-alert-provider';
+import { useProjectResources } from '@/features/project/project-resources';
 
 type SectionId = 'members' | 'groups' | 'teamspaces';
 function sections(locale?: Locale): readonly { id: SectionId; label: string }[] {
@@ -38,6 +39,7 @@ function OrganizationPanelBody() {
   const { locale, t: knowledgeT } = useTranslation(knowledgeMessages);
 
   const { session } = useIdentity();
+  const { selectedProject } = useProjectResources();
   const basesQuery = useKnowledgeBasesQuery(session.status === 'authenticated');
   const bases = flattenPages(basesQuery.data);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -144,7 +146,7 @@ function OrganizationPanelBody() {
         </>
       ) : (
         <ListStateShell
-          state={session.status === 'anonymous' ? 'unauthenticated' : queryListState(basesQuery)}
+          state={selectedProject?.source !== 'server' ? 'empty' : session.status === 'anonymous' ? 'unauthenticated' : queryListState(basesQuery)}
           error={basesQuery.error}
           onRetry={() => void basesQuery.refetch()}
           emptyIcon={<FolderOpen className="size-6" aria-hidden />}

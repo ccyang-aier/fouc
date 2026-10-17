@@ -6,10 +6,10 @@
   border: 0;
   border-radius: 13px;
   padding: 0;
-  color: #171719;
-  background: #fff;
+  color: var(--ink);
+  background: var(--panel);
   box-shadow: 0 12px 80px rgb(0 0 0 / 10%);
-  font-family: 'Dashboard Inter', Arial, sans-serif;
+  font-family: inherit;
   font-size: 13px;
 }
 .dialog[data-wide] {
@@ -77,16 +77,15 @@
   display: grid;
   gap: 7px;
   font-size: 12px;
-  color: #626570;
+  color: var(--muted-strong);
 }
-.fields :is(input, textarea, select),
-.textInput {
+.fields :is(input, textarea, select), .textInput {
   width: 100%;
   border: 1px solid var(--control-border);
   border-radius: 6px;
   padding: 9px 10px;
-  background: #fff;
-  color: #202125;
+  background: var(--panel);
+  color: var(--ink);
   font: inherit;
   box-shadow: none;
   outline: none;
@@ -95,9 +94,8 @@
 .fields select {
   min-height: 35px;
 }
-.fields :is(input, textarea, select):focus,
-.textInput:focus {
-  border-color: #7e8692;
+.fields :is(input, textarea, select):focus, .textInput:focus {
+  border-color: var(--ink);
   outline: none;
   box-shadow: none;
 }
@@ -117,19 +115,19 @@
 }
 .error {
   margin: 0;
-  color: #bd3c42;
+  color: light-dark(#bd3c42, color-mix(in srgb, #bd3c42 68%, white));
   font-size: 12px;
 }
 .helpContent {
   padding: 10px 22px 22px;
-  color: #656771;
+  color: var(--muted-strong);
   line-height: 1.7;
 }
 .helpContent h3 {
   margin: 0 0 8px;
   font-size: 13px;
   font-weight: 500;
-  color: #1c1c20;
+  color: var(--ink);
 }
 .helpContent p {
   margin: 0;
@@ -144,7 +142,7 @@
 }
 .memberField legend {
   margin-bottom: 5px;
-  color: #626570;
+  color: var(--muted-strong);
   font-size: 12px;
 }
 .memberList {
@@ -158,7 +156,7 @@
   padding: 9px 0;
   cursor: pointer;
   border-bottom: 1px solid var(--separator-color);
-  color: #25272d;
+  color: var(--ink);
 }
 .memberRow:last-child {
   border: 0;
@@ -173,11 +171,11 @@
   font-weight: 400;
 }
 .memberRow small {
-  color: #898b94;
+  color: var(--muted-strong);
   font-size: 11px;
 }
 .memberRow input {
-  accent-color: #111;
+  accent-color: var(--ink);
   width: 15px;
   min-height: 15px;
   height: 15px;
@@ -187,66 +185,6 @@
 .memberRow input:disabled {
   cursor: default;
 }
-.notificationList {
-  padding: 3px 15px 14px;
-}
-.notification {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  border-radius: 7px;
-}
-.notification[data-unread] {
-  background: #f6f8fb;
-}
-.notificationTarget {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  flex: 1;
-  min-width: 0;
-  padding: 13px 10px;
-  border: 0;
-  border-radius: 7px;
-  text-align: left;
-  background: transparent;
-  color: #70737d;
-  font-size: 12px;
-  line-height: 1.6;
-}
-.notificationTarget svg {
-  margin-top: 2px;
-  flex-shrink: 0;
-}
-.notificationTarget strong,
-.notificationTarget b {
-  font-weight: 500;
-  color: #25272d;
-}
-.notificationTarget time {
-  display: block;
-  margin-top: 4px;
-  color: #999ca5;
-  font-size: 10px;
-}
-.readButton {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  margin-right: 7px;
-  padding: 0;
-  border: 0;
-  border-radius: 5px;
-  color: #555f71;
-  background: transparent;
-}
-.empty {
-  margin: 0;
-  padding: 26px 7px;
-  color: #898c95;
-  font-size: 12px;
-}
 .danger {
   background: var(--danger-action-bg);
   color: #fff;
@@ -255,19 +193,17 @@
   background: var(--danger-action-bg);
   color: #fff;
 }
-@media (prefers-reduced-motion: no-preference) {
-  .dialog[open] {
-    animation: enter 160ms ease-out;
+.dialog[open] {
+  animation: enter 160ms ease-out;
+}
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
   }
-  @keyframes enter {
-    from {
-      opacity: 0;
-      transform: translateY(5px);
-    }
-    to {
-      opacity: 1;
-      transform: none;
-    }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 @media (max-width: 500px) {

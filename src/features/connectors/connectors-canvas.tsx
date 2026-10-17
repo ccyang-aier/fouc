@@ -97,7 +97,7 @@ export function ConnectorsCanvas({
     notify(
       'success',
       connected
-        ? tConnector('isConnectedAndAvailableToTasksAndAutomations', { p0: String(item.name) })
+        ? tConnector('isConnectedAndAvailableToTasks', { p0: String(item.name) })
         : tConnector('disconnected', { p0: String(item.name) }),
     );
   }

@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import { randomUUID } from 'node:crypto';
 import { acceptKnowledgeBaseInvitationInputSchema, createKnowledgeBaseInputSchema, createKnowledgeBaseInvitationInputSchema, changeMemberRoleInputSchema, listOrganizationInputSchema } from './organization';
 import { createTeamspaceInputSchema, teamspaceScopeSchema, updateTeamspaceInputSchema } from './organization';
+import { listKnowledgeBasesInputSchema, updateKnowledgeBaseProjectsInputSchema } from './organization';
 
 
 test('organization mutations reject injected actor identity and owner invitations', () => {
@@ -28,4 +29,14 @@ test('teamspace inputs preserve null defaults, explicit patches and server-owned
   assert.equal(updateTeamspaceInputSchema.safeParse({ knowledgeBaseId, teamspaceId, defaultAccess: 'owner' }).success, false);
   assert.equal(updateTeamspaceInputSchema.safeParse({ knowledgeBaseId, teamspaceId, name: ' ' }).success, false);
   assert.equal(teamspaceScopeSchema.safeParse({ knowledgeBaseId, teamspaceId: 'invalid' }).success, false);
+});
+
+test('project visibility uses explicit real project IDs and rejects duplicate or injected scope', () => {
+  const knowledgeBaseId = randomUUID(), projectId = randomUUID();
+  assert.deepEqual(createKnowledgeBaseInputSchema.parse({ name: 'Research' }).projectIds, []);
+  assert.deepEqual(createKnowledgeBaseInputSchema.parse({ name: 'Research', projectIds: [projectId] }).projectIds, [projectId]);
+  assert.equal(listKnowledgeBasesInputSchema.parse({ projectId }).projectId, projectId);
+  assert.equal(listKnowledgeBasesInputSchema.safeParse({ projectId: 'global' }).success, false);
+  assert.equal(updateKnowledgeBaseProjectsInputSchema.safeParse({ knowledgeBaseId, projectIds: [projectId, projectId] }).success, false);
+  assert.equal(updateKnowledgeBaseProjectsInputSchema.safeParse({ knowledgeBaseId, projectIds: [], userId: randomUUID() }).success, false);
 });

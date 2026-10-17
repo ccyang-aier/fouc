@@ -1,357 +1,363 @@
-import { afterAll, beforeAll, expect, mock, test } from 'bun:test';
+import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 import { Window } from 'happy-dom';
-import { act, StrictMode, useEffect } from 'react';
+import { act, StrictMode, useEffect, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import type { Project } from '@fouc/shared/projects';
 import type { useProjectResources as ReadResources } from './project-resources';
 
 type ResourceState = ReturnType<typeof ReadResources>;
+type Session = { status: 'anonymous' } | { status: 'authenticated'; user: { id: string } };
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (error: Error) => void;
+  const promise = new Promise<T>((accept, fail) => { resolve = accept; reject = fail; });
+  return { promise, resolve, reject };
+}
+
 let browser: Window;
 let root: Root;
 let resources: ResourceState;
-let session: { status: 'anonymous' } | { status: 'authenticated'; user: { id: string } } = {
-  status: 'anonymous',
-};
-let listCalls = 0;
-let completeList: (projects: { id: string; name: string }[]) => void;
-let completeCreate: ((project: { id: string; name: string }) => void) | undefined;
-let delayCreate = false;
-let completeRename: ((project: { id: string; name: string }) => void) | undefined;
-let delayRename = false;
-let completeRemove: (() => void) | undefined;
-let delayRemove = false;
-let renameFailure: Error | null = null;
-let removeFailure: Error | null = null;
-let renderResources: () => React.ReactNode;
+let session: Session;
+let listRequests: ReturnType<typeof deferred<Project[]>>[];
+let pendingCreate: ReturnType<typeof deferred<Project>> | null;
+let pendingRename: ReturnType<typeof deferred<Project>> | null;
+let pendingRemove: ReturnType<typeof deferred<void>> | null;
+let createFailure: Error | null;
+let renameFailure: Error | null;
+let removeFailure: Error | null;
+let mutationCalls: { create: number; rename: number; remove: number };
+let renderResources: () => ReactNode;
 
 beforeAll(async () => {
   browser = new Window({ url: 'http://localhost:3000/' });
   const globals = globalThis as Record<string, unknown>;
-  for (const name of [
-    'document',
-    'navigator',
-    'HTMLElement',
-    'Element',
-    'Node',
-    'Event',
-    'MutationObserver',
-    'getComputedStyle',
-    'localStorage',
-  ])
+  for (const name of ['document', 'navigator', 'HTMLElement', 'Element', 'Node', 'Event', 'MutationObserver', 'getComputedStyle', 'localStorage']) {
     globals[name] = (browser as unknown as Record<string, unknown>)[name];
+  }
   globals.window = browser;
   globals.IS_REACT_ACT_ENVIRONMENT = true;
-  mock.module('@/features/identity/identity-provider', () => ({
-    useIdentity: () => ({ session }),
-  }));
-  mock.module('./project-client', () => ({
-    projectClient: {
-      list: () => {
-        listCalls++;
-        return new Promise((resolve) => {
-          completeList = resolve;
-        });
-      },
-      create: async (name: string) =>
-        delayCreate
-          ? new Promise((resolve) => {
-              completeCreate = resolve;
-            })
-          : { id: 'cloud-created', name },
-      rename: async (id: string, name: string) => {
-        if (renameFailure) throw renameFailure;
-        return delayRename
-          ? new Promise((resolve) => {
-              completeRename = resolve;
-            })
-          : { id, name };
-      },
-      remove: async () => {
-        if (removeFailure) throw removeFailure;
-        if (delayRemove)
-          await new Promise<void>((resolve) => {
-            completeRemove = resolve;
-          });
-      },
+  mock.module('@/features/identity/identity-provider', () => ({ useIdentity: () => ({ session }) }));
+  mock.module('./project-client', () => ({ projectClient: {
+    // Intentionally ignore abort: the provider must also reject stale results.
+    list: () => { const request = deferred<Project[]>(); listRequests.push(request); return request.promise; },
+    create: async (name: string) => {
+      mutationCalls.create++;
+      if (createFailure) throw createFailure;
+      return pendingCreate ? pendingCreate.promise : { id: 'created-cloud', name };
     },
-  }));
+    rename: async (id: string, name: string) => {
+      mutationCalls.rename++;
+      if (renameFailure) throw renameFailure;
+      return pendingRename ? pendingRename.promise : { id, name };
+    },
+    remove: async () => {
+      mutationCalls.remove++;
+      if (removeFailure) throw removeFailure;
+      if (pendingRemove) await pendingRemove.promise;
+    },
+  } }));
   const { ProjectResourceProvider, useProjectResources } = await import('./project-resources');
   function Capture() {
     const value = useProjectResources();
-    useEffect(() => {
-      resources = value;
-    }, [value]);
+    useEffect(() => { resources = value; }, [value]);
     return null;
   }
-  renderResources = () => (
-    <ProjectResourceProvider>
-      <Capture />
-    </ProjectResourceProvider>
-  );
+  renderResources = () => <ProjectResourceProvider><Capture /></ProjectResourceProvider>;
   const host = document.createElement('div');
   document.body.append(host);
   root = createRoot(host);
 });
+
+beforeEach(async () => {
+  await act(async () => root.render(null));
+  localStorage.clear();
+  session = { status: 'anonymous' };
+  listRequests = [];
+  pendingCreate = pendingRename = null;
+  pendingRemove = null;
+  createFailure = renameFailure = removeFailure = null;
+  mutationCalls = { create: 0, rename: 0, remove: 0 };
+});
+
 afterAll(async () => {
   await act(async () => root.unmount());
   await browser.happyDOM.abort();
 });
 
-async function render() {
+const localProjects = [{ id: 'local-a', name: '本机 A' }, { id: 'local-b', name: '本机 B' }];
+function seedLocal(projects: Project[] = localProjects) { localStorage.setItem('fouc.local-projects', JSON.stringify(projects)); }
+async function render(strict = false) {
   await act(async () => {
-    root.render(renderResources());
-    await Promise.resolve();
+    root.render(strict ? <StrictMode>{renderResources()}</StrictMode> : renderResources());
   });
 }
-
-test('local projects and selection survive identity changes and a late server directory response', async () => {
-  localStorage.setItem(
-    'fouc.local-projects',
-    JSON.stringify([
-      { id: 'local-a', name: '本机 A' },
-      { id: 'local-b', name: '本机 B' },
-    ]),
-  );
+async function switchUser(id: string | null) {
+  session = id ? { status: 'authenticated', user: { id } } : { status: 'anonymous' };
   await render();
-  expect(listCalls).toBe(0);
-  expect(resources.projects.map((project) => project.source)).toEqual(['local', 'local']);
-  await act(async () => resources.selectProject('local-b'));
-  expect(resources.selectedProject?.id).toBe('local-b');
+}
+async function publish(projects: Project[], request = listRequests.at(-1)!) {
+  await act(async () => { request.resolve(projects); });
+}
+async function select(id: string) { await act(async () => resources.selectProject(id)); }
 
-  session = { status: 'authenticated', user: { id: 'user-a' } };
+test('local projects stay local and a delayed directory does not replace a newly created project', async () => {
+  seedLocal();
   await render();
-  expect(listCalls).toBe(1);
-  expect(resources.selectedProject?.id).toBe('local-b');
-  let createdId: string | undefined;
-  await act(async () => {
-    createdId = (await resources.createProject('新本机项目', 'local'))?.id;
-  });
-  await act(async () => {
-    completeList([{ id: 'cloud-a', name: '私有项目 A' }]);
-    await Promise.resolve();
-  });
-  expect(resources.projects.map((project) => project.id)).toEqual([
-    'local-a',
-    'local-b',
-    createdId!,
-    'cloud-a',
-  ]);
-  expect(resources.selectedProject?.id).toBe(createdId);
-  expect(resources.projects.find((project) => project.id === 'cloud-a')?.source).toBe('server');
-
-  await act(async () => resources.selectProject('cloud-a'));
-  session = { status: 'anonymous' };
-  await render();
-  expect(listCalls).toBe(1);
-  expect(resources.projects.map((project) => project.id)).toEqual([
-    'local-a',
-    'local-b',
-    createdId!,
-  ]);
-  expect(resources.selectedProject).toBeNull();
+  expect(listRequests).toHaveLength(0);
+  expect(resources.principal).toBe('guest');
+  await select('local-b');
+  expect(resources.scopeKey).toBe('guest:local:local-b');
+  await switchUser('user-a');
+  let created!: Project;
+  await act(async () => { created = (await resources.createProject('新本机项目', 'local'))!; });
+  await publish([{ id: 'cloud-a', name: '私有项目 A' }]);
+  expect(resources.projects.map((project) => project.id)).toEqual(['local-a', 'local-b', created.id, 'cloud-a']);
+  expect(resources.selectedProject?.id).toBe(created.id);
+  expect(resources.scopeKey).toBe(`user-a:local:${created.id}`);
   expect(localStorage.getItem('fouc.local-projects')).not.toContain('私有项目 A');
-  await act(async () => resources.selectProject(createdId!));
-  expect(resources.selectedProject?.name).toBe('新本机项目');
 });
 
-test('a pending server creation preserves the directory that arrived while it was saving', async () => {
-  session = { status: 'authenticated', user: { id: 'user-b' } };
-  await render();
-  delayCreate = true;
-  let creating: Promise<unknown>;
-  await act(async () => {
-    creating = resources.createProject('新服务端项目', 'server');
-  });
-  await act(async () => {
-    completeList([{ id: 'existing-cloud', name: '已有服务端项目' }]);
-    await Promise.resolve();
-  });
-  expect(resources.projects.some((project) => project.id === 'existing-cloud')).toBe(true);
-  await act(async () => {
-    completeCreate!({ id: 'new-cloud', name: '新服务端项目' });
-    await creating;
-  });
-  expect(
-    resources.projects
-      .filter((project) => project.source === 'server')
-      .map((project) => project.id),
-  ).toEqual(['existing-cloud', 'new-cloud']);
-  expect(resources.selectedProject?.id).toBe('new-cloud');
-  expect(localStorage.getItem('fouc.local-projects')).not.toContain('服务端项目');
-  delayCreate = false;
-});
-
-test('local renaming persists the real project name and invalid mutations report failure', async () => {
-  session = { status: 'anonymous' };
-  localStorage.setItem(
-    'fouc.local-projects',
-    JSON.stringify([{ id: 'local-rename', name: '原名称' }]),
-  );
-  localStorage.setItem('fouc.project.active', JSON.stringify('local-rename'));
-  await render();
-  let renamed = false;
-  await act(async () => {
-    renamed = await resources.renameProject('local-rename', '  新名称  ');
-  });
-  expect(renamed).toBe(true);
-  expect(resources.selectedProject).toEqual({
-    id: 'local-rename',
-    name: '新名称',
-    source: 'local',
-  });
-  expect(JSON.parse(localStorage.getItem('fouc.local-projects')!)).toEqual([
-    { id: 'local-rename', name: '新名称' },
-  ]);
-  await act(async () => {
-    expect(await resources.renameProject('local-rename', '   ')).toBe(false);
-    expect(await resources.renameProject('missing-project', '新名称')).toBe(false);
-    expect(await resources.removeProject('missing-project')).toBe(false);
-  });
-  expect(resources.selectedProject?.name).toBe('新名称');
-  expect(resources.error).toBeNull();
-});
-
-test('forbidden server mutations report failure and preserve the project, selection, favorite and panel', async () => {
-  session = { status: 'authenticated', user: { id: 'user-member' } };
-  localStorage.setItem('fouc.local-projects', JSON.stringify([]));
-  localStorage.setItem('fouc.project.active', JSON.stringify('shared-project'));
-  await render();
-  await act(async () => {
-    completeList([{ id: 'shared-project', name: '团队项目' }]);
-    await Promise.resolve();
-  });
-  await act(async () => {
-    resources.setFavorite('shared-project', true);
-    resources.setManagementPanel('settings');
-  });
-  const persisted = localStorage.getItem('fouc.local-projects');
-  const forbidden = Object.assign(new Error('Resource management permission is required.'), {
-    status: 403,
-  });
-  renameFailure = forbidden;
-  removeFailure = forbidden;
-  let renamed = true;
-  let removed = true;
-  await act(async () => {
-    renamed = await resources.renameProject('shared-project', '被拒绝的名称');
-  });
-  expect(renamed).toBe(false);
-  expect(resources.error).toBe(forbidden.message);
-  expect(resources.projects).toEqual([
-    { id: 'shared-project', name: '团队项目', source: 'server' },
-  ]);
-  await act(async () => {
-    removed = await resources.removeProject('shared-project');
-  });
-  expect(removed).toBe(false);
-  expect(resources.error).toBe(forbidden.message);
-  expect(resources.selectedProject?.id).toBe('shared-project');
-  expect(resources.projects).toEqual([
-    { id: 'shared-project', name: '团队项目', source: 'server' },
-  ]);
-  expect(resources.favorites).toEqual(['shared-project']);
-  expect(resources.managementPanel).toBe('settings');
-  expect(localStorage.getItem('fouc.local-projects')).toBe(persisted);
-  expect(JSON.parse(localStorage.getItem('fouc.project.active')!)).toBe('shared-project');
-
-  renameFailure = null;
-  removeFailure = null;
-  await act(async () => {
-    renamed = await resources.renameProject('shared-project', '已保存的名称');
-  });
-  expect(renamed).toBe(true);
-  expect(resources.selectedProject?.name).toBe('已保存的名称');
-  expect(resources.error).toBeNull();
-  expect(localStorage.getItem('fouc.local-projects')).not.toContain('已保存的名称');
-  await act(async () => {
-    removed = await resources.removeProject('shared-project');
-  });
-  expect(removed).toBe(true);
+test('an old identity directory response cannot appear in the next identity', async () => {
+  seedLocal([]);
+  await switchUser('user-a');
+  const oldRequest = listRequests.at(-1)!;
+  await switchUser('user-b');
+  const currentRequest = listRequests.at(-1)!;
   expect(resources.projects).toEqual([]);
+  expect(resources.scopeKey).toBeNull();
+  await publish([{ id: 'a-private', name: 'A 私有项目' }], oldRequest);
+  expect(resources.projects).toEqual([]);
+  await publish([{ id: 'b-private', name: 'B 私有项目' }], currentRequest);
+  expect(resources.projects).toEqual([{ id: 'b-private', name: 'B 私有项目', source: 'server' }]);
+  expect(resources.scopeKey).toBe('user-b:server:b-private');
+  await switchUser('user-a');
+  expect(resources.projects).toEqual([]);
+  await publish([{ id: 'a-private', name: 'A 私有项目' }]);
+  expect(resources.projects.map((project) => project.id)).toEqual(['a-private']);
+});
+
+test('logout removes private projects immediately and ignores the old pending directory', async () => {
+  seedLocal();
+  await switchUser('user-a');
+  const oldRequest = listRequests.at(-1)!;
+  await switchUser(null);
+  await select('local-b');
+  await publish([{ id: 'private-cloud', name: '迟到的私有项目' }], oldRequest);
+  expect(resources.projects.map((project) => project.id)).toEqual(['local-a', 'local-b']);
+  expect(resources.scopeKey).toBe('guest:local:local-b');
+  expect(resources.error).toBeNull();
+});
+
+test('guest and two account identities remember their selected projects independently', async () => {
+  seedLocal();
+  await render();
+  await select('local-b');
+  await switchUser('user-a');
+  await publish([{ id: 'a-1', name: 'A1' }, { id: 'a-2', name: 'A2' }]);
+  await select('a-2');
+  await switchUser('user-b');
+  await publish([{ id: 'b-1', name: 'B1' }, { id: 'b-2', name: 'B2' }]);
+  await select('b-1');
+  await switchUser(null);
+  expect(resources.selectedProject?.id).toBe('local-b');
+  await switchUser('user-a');
+  await publish([{ id: 'a-1', name: 'A1' }, { id: 'a-2', name: 'A2' }]);
+  expect(resources.selectedProject?.id).toBe('a-2');
+  expect(resources.scopeKey).toBe('user-a:server:a-2');
+  await switchUser('user-b');
+  await publish([{ id: 'b-1', name: 'B1' }, { id: 'b-2', name: 'B2' }]);
+  expect(resources.selectedProject?.id).toBe('b-1');
+  expect(resources.scopeKey).toBe('user-b:server:b-1');
+});
+
+test('an unavailable saved selection falls back to the first real visible project', async () => {
+  seedLocal();
+  localStorage.setItem('fouc.project.active.guest', JSON.stringify('deleted-project'));
+  await render();
+  expect(resources.selectedProject).toEqual({ ...localProjects[0], source: 'local' });
+  await select('invisible-project');
+  expect(resources.selectedProject?.id).toBe('local-a');
+  seedLocal([]);
+  localStorage.setItem('fouc.project.active.user-a', JSON.stringify('unavailable-cloud'));
+  await switchUser('user-a');
   expect(resources.selectedProject).toBeNull();
-  expect(resources.favorites).toEqual([]);
-  expect(resources.managementPanel).toBeNull();
+  await publish([{ id: 'first-real-cloud', name: '真实项目' }]);
+  expect(resources.scopeKey).toBe('user-a:server:first-real-cloud');
+});
+
+test('local renaming trims and persists names while invalid mutations preserve the directory', async () => {
+  seedLocal();
+  await render();
+  await act(async () => { expect(await resources.renameProject('local-a', '  新名称  ')).toBe(true); });
+  expect(resources.selectedProject?.name).toBe('新名称');
+  expect(JSON.parse(localStorage.getItem('fouc.local-projects')!)[0]).toEqual({ id: 'local-a', name: '新名称' });
+  const directory = resources.projects;
+  await act(async () => {
+    expect(await resources.renameProject('local-a', '  ')).toBe(false);
+    expect(await resources.renameProject('missing', '新名称')).toBe(false);
+    expect(await resources.removeProject('missing')).toBe(false);
+  });
+  expect(resources.projects).toEqual(directory);
+  expect(resources.error).toBeNull();
+});
+
+test('failed server create, rename, delete and refresh retain the directory and selected scope', async () => {
+  seedLocal([]);
+  await switchUser('user-member');
+  await publish([{ id: 'shared-project', name: '团队项目' }]);
+  await select('shared-project');
+  const directory = resources.projects;
+  const localData = localStorage.getItem('fouc.local-projects');
+  const failure = new Error('Resource management permission is required.');
+  createFailure = renameFailure = removeFailure = failure;
+  await act(async () => { expect(await resources.createProject('被拒绝的新项目', 'server')).toBeNull(); });
+  expect(resources.projects).toEqual(directory);
+  await act(async () => { expect(await resources.renameProject('shared-project', '被拒绝的名称')).toBe(false); });
+  expect(resources.projects).toEqual(directory);
+  await act(async () => { expect(await resources.removeProject('shared-project')).toBe(false); });
+  expect(resources.projects).toEqual(directory);
+  let refreshing!: Promise<boolean>;
+  await act(async () => { refreshing = resources.refreshProjects(); });
+  await act(async () => { listRequests.at(-1)!.reject(new Error('Directory unavailable')); expect(await refreshing).toBe(false); });
+  expect(resources.projects).toEqual(directory);
+  expect(resources.scopeKey).toBe('user-member:server:shared-project');
+  expect(resources.error).toBe('Directory unavailable');
+  expect(localStorage.getItem('fouc.local-projects')).toBe(localData);
+  expect(JSON.parse(localStorage.getItem('fouc.project.active.user-member')!)).toBe('shared-project');
+  renameFailure = null;
+  await act(async () => { expect(await resources.renameProject('shared-project', '已保存名称')).toBe(true); });
+  expect(resources.selectedProject?.name).toBe('已保存名称');
+  expect(resources.error).toBeNull();
+});
+
+test('a pending server creation preserves a directory received while it was saving', async () => {
+  seedLocal([]);
+  await switchUser('user-a');
+  pendingCreate = deferred<Project>();
+  let creating!: Promise<unknown>;
+  await act(async () => { creating = resources.createProject('新项目', 'server'); });
+  await publish([{ id: 'existing-cloud', name: '已有项目' }]);
+  await act(async () => { pendingCreate!.resolve({ id: 'new-cloud', name: '新项目' }); await creating; });
+  expect(resources.projects.map((project) => project.id)).toEqual(['existing-cloud', 'new-cloud']);
+  expect(resources.scopeKey).toBe('user-a:server:new-cloud');
+});
+
+test('failed local directory storage rejects local create, rename and delete without changing the active project', async () => {
+  seedLocal();
+  await render();
+  await select('local-b');
+  const directory = resources.projects;
+  const selected = resources.selectedProject;
+  const savedDirectory = localStorage.getItem('fouc.local-projects');
+  const savedSelection = localStorage.getItem('fouc.project.active.guest');
+  const storage = localStorage;
+  const originalSetItem = storage.setItem;
+  Object.defineProperty(storage, 'setItem', { configurable: true, value: (key: string, value: string) => {
+    if (key === 'fouc.local-projects') throw new Error('Local project storage is full');
+    originalSetItem.call(storage, key, value);
+  } });
+  try {
+    await act(async () => { expect(await resources.createProject('无法保存的新项目', 'local')).toBeNull(); });
+    expect(resources.projects).toEqual(directory);
+    expect(resources.selectedProject).toEqual(selected);
+    await act(async () => { expect(await resources.renameProject('local-b', '无法保存的名称')).toBe(false); });
+    expect(resources.projects).toEqual(directory);
+    expect(resources.selectedProject).toEqual(selected);
+    await act(async () => { expect(await resources.removeProject('local-b')).toBe(false); });
+    expect(resources.projects).toEqual(directory);
+    expect(resources.selectedProject).toEqual(selected);
+    expect(resources.scopeKey).toBe('guest:local:local-b');
+    expect(resources.error).toBe('Local project storage is full');
+    expect(localStorage.getItem('fouc.local-projects')).toBe(savedDirectory);
+    expect(localStorage.getItem('fouc.project.active.guest')).toBe(savedSelection);
+  } finally { Object.defineProperty(storage, 'setItem', { configurable: true, value: originalSetItem }); }
+});
+
+test('server mutations remain successful once each when local directory and selection storage are unavailable', async () => {
+  seedLocal();
+  await switchUser('user-a');
+  await publish([{ id: 'existing-cloud', name: '已有项目' }]);
+  await select('existing-cloud');
+  const savedDirectory = localStorage.getItem('fouc.local-projects');
+  const savedSelection = localStorage.getItem('fouc.project.active.user-a');
+  const storage = localStorage;
+  const originalSetItem = storage.setItem;
+  let directoryWrites = 0;
+  let preferenceWrites = 0;
+  Object.defineProperty(storage, 'setItem', { configurable: true, value: (key: string, value: string) => {
+    if (key === 'fouc.local-projects') {
+      directoryWrites++;
+      throw new Error('Local project storage is full');
+    }
+    if (key.startsWith('fouc.project.active.')) {
+      preferenceWrites++;
+      throw new Error('Selection storage is unavailable');
+    }
+    originalSetItem.call(storage, key, value);
+  } });
+  try {
+    await act(async () => {
+      expect(await resources.createProject('新服务端项目', 'server')).toEqual({ id: 'created-cloud', name: '新服务端项目', source: 'server' });
+    });
+    expect(resources.selectedProject?.id).toBe('created-cloud');
+    await act(async () => { expect(await resources.renameProject('created-cloud', '已保存的服务端名称')).toBe(true); });
+    expect(resources.selectedProject?.name).toBe('已保存的服务端名称');
+    await act(async () => { expect(await resources.removeProject('created-cloud')).toBe(true); });
+    expect(resources.projects).toEqual([
+      ...localProjects.map(project => ({ ...project, source: 'local' })),
+      { id: 'existing-cloud', name: '已有项目', source: 'server' },
+    ]);
+    expect(resources.scopeKey).toBe('user-a:local:local-a');
+    expect(mutationCalls).toEqual({ create: 1, rename: 1, remove: 1 });
+    expect(directoryWrites).toBe(0);
+    expect(preferenceWrites).toBeGreaterThan(0);
+    expect(localStorage.getItem('fouc.local-projects')).toBe(savedDirectory);
+    expect(localStorage.getItem('fouc.project.active.user-a')).toBe(savedSelection);
+  } finally { Object.defineProperty(storage, 'setItem', { configurable: true, value: originalSetItem }); }
 });
 
 for (const mutation of ['rename', 'remove', 'create'] as const) {
-  test(`a late server ${mutation} after logout cannot overwrite the new identity's local projects`, async () => {
-    session = { status: 'authenticated', user: { id: `user-pending-${mutation}` } };
-    localStorage.setItem('fouc.local-projects', JSON.stringify([]));
-    localStorage.setItem('fouc.project.active', JSON.stringify('old-cloud'));
-    localStorage.setItem('fouc.project.selection.guest', JSON.stringify([]));
-    await render();
-    await act(async () => {
-      completeList([{ id: 'old-cloud', name: '旧身份项目' }]);
-      await Promise.resolve();
-    });
-    const oldResources = resources;
-    delayRename = mutation === 'rename';
-    delayRemove = mutation === 'remove';
-    delayCreate = mutation === 'create';
+  test(`a late server ${mutation} cannot update a different signed-in identity`, async () => {
+    seedLocal([]);
+    await switchUser('user-a');
+    await publish([{ id: 'old-cloud', name: '旧身份项目' }]);
+    if (mutation === 'rename') pendingRename = deferred<Project>();
+    if (mutation === 'remove') pendingRemove = deferred<void>();
+    if (mutation === 'create') pendingCreate = deferred<Project>();
     let pending!: Promise<unknown>;
     await act(async () => {
-      pending =
-        mutation === 'rename'
-          ? oldResources.renameProject('old-cloud', '迟到的名称')
-          : mutation === 'remove'
-            ? oldResources.removeProject('old-cloud')
-            : oldResources.createProject('迟到的服务端项目', 'server');
+      pending = mutation === 'rename' ? resources.renameProject('old-cloud', '迟到名称')
+        : mutation === 'remove' ? resources.removeProject('old-cloud')
+          : resources.createProject('迟到项目', 'server');
     });
-
-    session = { status: 'anonymous' };
-    await render();
-    let localId: string | undefined;
+    await switchUser('user-b');
+    await publish([{ id: 'current-cloud', name: '当前身份项目' }]);
+    await select('current-cloud');
+    const currentDirectory = resources.projects;
+    const currentSelection = localStorage.getItem('fouc.project.active.user-b');
     await act(async () => {
-      localId = (await resources.createProject('退出后新建的本机项目', 'local'))?.id;
+      if (mutation === 'rename') pendingRename!.resolve({ id: 'old-cloud', name: '迟到名称' });
+      else if (mutation === 'remove') pendingRemove!.resolve();
+      else pendingCreate!.resolve({ id: 'late-cloud', name: '迟到项目' });
+      expect(await pending).toBe(mutation === 'create' ? null : false);
     });
-    await act(async () => {
-      resources.setFavorite(localId!, true);
-      resources.setManagementPanel('settings');
-    });
-    const localProjects = localStorage.getItem('fouc.local-projects');
-    const activeProject = localStorage.getItem('fouc.project.active');
-    const favorites = localStorage.getItem('fouc.project.selection.guest');
-    let result: unknown;
-    await act(async () => {
-      if (mutation === 'rename') completeRename!({ id: 'old-cloud', name: '迟到的名称' });
-      else if (mutation === 'remove') completeRemove!();
-      else completeCreate!({ id: 'late-cloud', name: '迟到的服务端项目' });
-      result = await pending;
-    });
-
-    expect(result).toBe(mutation === 'create' ? null : false);
-    expect(resources.projects).toEqual([
-      { id: localId!, name: '退出后新建的本机项目', source: 'local' },
-    ]);
-    expect(resources.selectedProject?.id).toBe(localId);
-    expect(resources.favorites).toEqual([localId!]);
-    expect(resources.managementPanel).toBe('settings');
+    expect(resources.projects).toEqual(currentDirectory);
+    expect(resources.scopeKey).toBe('user-b:server:current-cloud');
     expect(resources.error).toBeNull();
-    expect(localStorage.getItem('fouc.local-projects')).toBe(localProjects);
-    expect(localStorage.getItem('fouc.project.active')).toBe(activeProject);
-    expect(localStorage.getItem('fouc.project.selection.guest')).toBe(favorites);
-    delayRename = false;
-    delayRemove = false;
-    delayCreate = false;
+    expect(localStorage.getItem('fouc.project.active.user-b')).toBe(currentSelection);
+    expect(localStorage.getItem('fouc.local-projects')).not.toContain('迟到');
   });
 }
 
-test('StrictMode effect replay leaves the current project scope available for mutations', async () => {
-  session = { status: 'authenticated', user: { id: 'user-strict-mode' } };
-  localStorage.setItem('fouc.local-projects', JSON.stringify([]));
-  localStorage.setItem('fouc.project.active', JSON.stringify('strict-cloud'));
-  await act(async () => {
-    root.render(<StrictMode>{renderResources()}</StrictMode>);
-    await Promise.resolve();
-  });
-  await act(async () => {
-    completeList([{ id: 'strict-cloud', name: '原名称' }]);
-    await Promise.resolve();
-  });
-  let renamed = false;
-  await act(async () => {
-    renamed = await resources.renameProject('strict-cloud', 'StrictMode 保存成功');
-  });
-  expect(renamed).toBe(true);
-  expect(resources.selectedProject?.name).toBe('StrictMode 保存成功');
+test('StrictMode replay leaves the active directory usable and rejects its old directory response', async () => {
+  seedLocal([]);
+  session = { status: 'authenticated', user: { id: 'user-strict' } };
+  await render(true);
+  expect(listRequests.length).toBeGreaterThanOrEqual(2);
+  await publish([{ id: 'strict-cloud', name: '原名称' }]);
+  await act(async () => { expect(await resources.renameProject('strict-cloud', 'StrictMode 保存成功')).toBe(true); });
+  await publish([{ id: 'stale-cloud', name: '旧目录' }], listRequests[0]!);
+  expect(resources.projects).toEqual([{ id: 'strict-cloud', name: 'StrictMode 保存成功', source: 'server' }]);
+  expect(resources.scopeKey).toBe('user-strict:server:strict-cloud');
   expect(resources.error).toBeNull();
 });

@@ -5,12 +5,13 @@ import { knowledgeMessages } from './knowledge-page.messages';
 
 /** Identity controls access; each knowledge base owns its resource scope. */
 
-import { useCallback, useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { LockSimple, XCircle } from '@phosphor-icons/react';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { useIdentity } from '@/features/identity/identity-provider';
+import { useProjectResources } from '@/features/project/project-resources';
 import { getFoucApiOrigin } from '@/lib/fouc-api-endpoint';
 import { authErrorCopyFor } from '../identity/auth-errors';
 import {
@@ -24,7 +25,6 @@ import { KnowledgeQueryProvider } from './data/provider';
 import { invalidateKnowledgeQueries } from './data/query-client';
 import {
   flattenKnowledgeBaseList,
-  useKnowledgeBasesQuery,
   useKnowledgeTeamspacesQuery,
 } from './data/catalog-queries';
 import {
@@ -47,10 +47,6 @@ import { CreateKnowledgeBaseDialog } from './organization/create-knowledge-base-
 import { LibraryCanvas } from './navigation/library-canvas';
 import { KnowledgePageEditor } from './editor';
 import { KnowledgeWorkbench } from './knowledge-workbench';
-import {
-  createBrowserKnowledgeResourceSelection,
-  type KnowledgeResource,
-} from './resource-selection';
 import { useKnowledgeBaseSelection } from './use-knowledge-base-selection';
 import { CreateDocumentDialog, type DocumentCreation } from './navigation/create-document-dialog';
 import { NavigationDialogPortal } from './navigation/navigation-dialog-portal';
@@ -58,125 +54,66 @@ import { usePageTreeOperations } from './navigation/page-operations';
 import { canEditTree } from './navigation/tree-actions';
 import { useCreateTeamspaceMutation } from './organization/hooks';
 import { currentDocumentLinkTarget, documentLink, readDocumentLink } from './editor/document-link';
-import { createLocalLibraryStore, emptyLocalLibrary } from './local/local-library';
+import { useProjectKnowledgeDirectory } from './data/use-project-knowledge-directory';
 import type { KnowledgeBaseSummary } from './knowledge-base-header';
 import { KnowledgeEmptyState } from './knowledge-empty-state';
 
 const knowledgeT = createTranslator(knowledgeMessages);
 
-type LocalStore = ReturnType<typeof createLocalLibraryStore>;
 const LocalKnowledgeResource = dynamic(
   () => import('./local/local-knowledge-resource').then((module) => module.LocalKnowledgeResource),
   { ssr: false, loading: () => <CanvasSpinner label={knowledgeT('loadingKnowledgeResources')} /> },
 );
 
 export function KnowledgePage({ onOpenSettings }: { onOpenSettings: () => void }) {
+  const { selectedProject, scopeKey } = useProjectResources();
   const { t: knowledgeT } = useTranslation(knowledgeMessages);
-
-  const { session } = useIdentity();
-  const [selection] = useState(() => {
-    const store = createBrowserKnowledgeResourceSelection('local');
-    const target = typeof window === 'undefined' ? null : readDocumentLink(window.location.href);
-    if (target) store.select(target.source);
-    return store;
-  });
-  const resource = useSyncExternalStore(
-    selection.subscribe,
-    selection.getSnapshot,
-    selection.getServerSnapshot,
-  );
-  const target = typeof window === 'undefined' ? null : readDocumentLink(window.location.href);
-  const [chosenBaseId, setChosenBaseId] = useKnowledgeBaseSelection(
-    'resources',
-    target?.knowledgeBaseId,
-  );
-  const [{ localStore, localError }] = useState(() => {
-    try {
-      return {
-        localStore:
-          typeof window === 'undefined' ? null : createLocalLibraryStore(window.localStorage),
-        localError: null,
-      };
-    } catch {
-      return {
-        localStore: null,
-        localError: knowledgeT('unableToReadLocalDocumentsCheckYourBrowser'),
-      };
-    }
-  });
-  if (!resource) return <CanvasSpinner label={knowledgeT('loadingKnowledgeResources')} />;
+  if (!selectedProject) return <CanvasState title={knowledgeT('selectProjectFirst')} />;
   return (
-    <KnowledgeQueryProvider key={session.status === 'authenticated' ? session.user.id : 'guest'}>
-      <KnowledgeResources
-        resource={resource}
-        onSelectSource={selection.select}
-        chosenBaseId={chosenBaseId}
-        onSelectBase={setChosenBaseId}
-        localStore={localStore}
-        localError={localError}
-        onOpenSettings={onOpenSettings}
-      />
+    <KnowledgeQueryProvider key={scopeKey}>
+      <KnowledgeResources onOpenSettings={onOpenSettings} />
     </KnowledgeQueryProvider>
   );
 }
 
 function KnowledgeResources({
-  resource,
-  onSelectSource,
-  chosenBaseId,
-  onSelectBase,
-  localStore,
-  localError,
   onOpenSettings,
 }: {
-  resource: KnowledgeResource;
-  onSelectSource: (source: KnowledgeResource) => void;
-  chosenBaseId: string | null;
-  onSelectBase: (id: string) => void;
-  localStore: LocalStore | null;
-  localError: string | null;
   onOpenSettings: () => void;
 }) {
   const { t: knowledgeT } = useTranslation(knowledgeMessages);
 
-  const { session } = useIdentity();
-  const local = useSyncExternalStore(
-    localStore?.subscribe ?? (() => () => {}),
-    localStore?.getSnapshot ?? (() => emptyLocalLibrary),
-    () => emptyLocalLibrary,
-  );
-  const basesQuery = useKnowledgeBasesQuery(session.status === 'authenticated');
-  const serverBases = flattenKnowledgeBaseList(basesQuery.data);
-  const directory: KnowledgeBaseSummary[] = [
-    ...local.bases.map((base) => ({ ...base, source: 'local' as const })),
-    ...serverBases.map((base) => ({ ...base, source: 'server' as const })),
-  ];
+  const { selectedProject } = useProjectResources();
+  const target = typeof window === 'undefined' ? null : readDocumentLink(window.location.href);
+  const [chosenBaseId, onSelectBase] = useKnowledgeBaseSelection(`project:${selectedProject!.id}`, target?.knowledgeBaseId);
+  const { knowledgeBases: directory, basesQuery, localStore, localError } = useProjectKnowledgeDirectory();
+  const serverBases = directory.filter((base) => base.source === 'server');
   const activeBaseId =
-    chosenBaseId ?? directory.find((base) => base.source === resource)?.id ?? null;
+    directory.find((base) => base.id === chosenBaseId)?.id ?? directory[0]?.id ?? null;
+  const activeResource = directory.find((base) => base.id === activeBaseId)?.source ?? selectedProject!.source;
   const [creating, setCreating] = useState(false);
   const select = useCallback(
     (id: string) => {
-      const source = localStore?.getSnapshot().bases.some((base) => base.id === id)
-        ? 'local'
-        : 'server';
+      const source = directory.find((base) => base.id === id)?.source;
+      if (!source) return;
       onSelectBase(id);
-      onSelectSource(source);
     },
-    [localStore, onSelectBase, onSelectSource],
+    [directory, onSelectBase],
   );
   useEffect(
     () =>
       subscribeOpenPageTarget((target) => {
+        if (!directory.some((base) => base.id === target.knowledgeBaseId)) return;
         if (target.knowledgeBaseId === activeBaseId) return;
         // Keep the requested page across the knowledge-base component remount.
         window.history.replaceState(
           window.history.state,
           '',
-          documentLink(window.location.href, { ...target, source: resource }),
+          documentLink(window.location.href, { ...target, source: activeResource }),
         );
         onSelectBase(target.knowledgeBaseId);
       }),
-    [activeBaseId, onSelectBase, resource],
+    [activeBaseId, onSelectBase, activeResource, directory],
   );
   const shared = {
     knowledgeBases: directory,
@@ -186,7 +123,7 @@ function KnowledgeResources({
   };
   return (
     <>
-      {resource === 'local' ? (
+      {activeResource === 'local' ? (
         localStore ? (
           <LocalKnowledgeResource
             key={`local:${activeBaseId ?? 'empty'}`}
@@ -195,7 +132,7 @@ function KnowledgeResources({
             {...shared}
           />
         ) : (
-          <UnavailableLocalResource detail={localError} {...shared} />
+          <UnavailableLocalResource detail={localError ? knowledgeT('unableToReadLocalDocumentsCheckYourBrowser') : null} {...shared} />
         )
       ) : (
         <ServerKnowledgeResource
@@ -217,20 +154,18 @@ function KnowledgeResources({
         />
       )}
       <CreateKnowledgeBaseDialog
-        key={resource}
+        key={activeResource}
         open={creating}
-        initialSource={session.status === 'authenticated' ? resource : 'local'}
+        initialSource={selectedProject?.source ?? 'local'}
+        projectId={selectedProject?.id ?? null}
         onClose={() => setCreating(false)}
         onCreateLocal={(name) => {
-          if (!localStore) throw new Error(knowledgeT('localStorageUnavailable'));
+          if (!localStore || !selectedProject) throw new Error(knowledgeT('localStorageUnavailable'));
           const id = crypto.randomUUID();
-          localStore.update((library) => ({ ...library, bases: [...library.bases, { id, name }] }));
+          localStore.update((library) => ({ ...library, bases: [...library.bases, { id, name, projectIds: [selectedProject.id] }] }));
           return id;
         }}
-        onCreated={(id, source) => {
-          onSelectBase(id);
-          onSelectSource(source);
-        }}
+        onCreated={(id) => onSelectBase(id)}
       />
     </>
   );

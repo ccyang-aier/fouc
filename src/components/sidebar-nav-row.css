@@ -1,7 +1,7 @@
 /* ── 中性侧栏导航行 ──
    hover / 激活均为白底卡面（1px 描边 + 紧凑阴影），
    图标默认深灰轮廓与浅灰局部填充，激活时保持相同造型与灰度。
-   消费方：navigation-sidebar / sidebar-project-pane / settings-canvas。 */
+   消费方：navigation-sidebar / settings-canvas。 */
 html .sidebar-nav-row {
   --action-state-bg: var(--sidebar-row-bg);
   --action-state-ink: var(--ink);

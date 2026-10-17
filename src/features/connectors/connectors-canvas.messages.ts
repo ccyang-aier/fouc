@@ -4,9 +4,9 @@ export const messages = defineMessages({
   defaultOrder: ['默认排序', 'Default order'],
   recentlyUpdated: ['最近更新', 'Recently updated'],
   sortByName: ['名称排序', 'Sort by name'],
-  isConnectedAndAvailableToTasksAndAutomations: [
-    '{p0} 已连接，可在任务与自动化中引用',
-    '{p0} is connected and available to tasks and automations',
+  isConnectedAndAvailableToTasks: [
+    '{p0} 已连接，可在任务中引用',
+    '{p0} is connected and available to tasks',
   ],
   disconnected: ['{p0} 已断开', '{p0} disconnected'],
   disconnectingDtsClearsTheLocalConnectionSessionAndDedicatedLogin: [

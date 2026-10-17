@@ -9,7 +9,7 @@ import { DotsThree } from '@phosphor-icons/react';
 import { DashboardMenu, DashboardMenuContent } from './dashboard-menu';
 import type { DashboardDocumentKind, DashboardState } from './dashboard-model';
 import { selectStats } from './dashboard-selectors';
-import type { DashboardSection } from './dashboard-sidebar';
+import type { ProjectDashboardDestination } from './project-dashboard';
 import { ReferenceIcon } from './dashboard-ui';
 import styles from './dashboard.module.css';
 
@@ -23,11 +23,11 @@ const shortcuts: { label: string; kind: DashboardDocumentKind }[] = [
 export function DashboardOverview({
   state,
   onCreateDocument,
-  onViewStat,
+  onNavigate,
 }: {
   state: DashboardState;
   onCreateDocument: (kind: DashboardDocumentKind) => void;
-  onViewStat: (section: DashboardSection, status?: 'On Progress' | 'Completed') => void;
+  onNavigate: (view: ProjectDashboardDestination) => void;
 }) {
   const { t, locale } = useTranslation(messages);
   const uiLabel = (value: string) => translateFixed(value, locale);
@@ -35,30 +35,28 @@ export function DashboardOverview({
   const totals = selectStats(state);
   const stats = [
     {
-      label: uiLabel('Total Projects'),
-      value: totals.projects,
-      detail: uiLabel('Active Projects'),
-      section: 'Portfolio',
+      label: t('Total assets'),
+      value: state.documents.length,
+      detail: t('Project assets'),
+      view: 'assets',
     },
     {
       label: uiLabel('Total Task'),
       value: totals.tasks,
       detail: uiLabel('Tasks Created'),
-      section: 'My Task',
+      view: 'tasks',
     },
     {
       label: uiLabel('In Progress'),
       value: totals.inProgress,
       detail: uiLabel('Task'),
-      section: 'My Task',
-      status: 'On Progress',
+      view: 'tasks',
     },
     {
       label: uiLabel('Completed'),
       value: totals.completed,
       detail: uiLabel('Task'),
-      section: 'My Task',
-      status: 'Completed',
+      view: 'tasks',
     },
   ] as const;
 
@@ -96,11 +94,9 @@ export function DashboardOverview({
                 </DropdownMenuTrigger>
                 <DashboardMenuContent align="end">
                   <DropdownMenuItem
-                    onSelect={() =>
-                      onViewStat(stat.section, 'status' in stat ? stat.status : undefined)
-                    }
+                    onSelect={() => onNavigate(stat.view)}
                   >
-                    {t('View')}
+                    {t('View')}{' '}
                     {fixtureField(stat, 'label', locale).toLowerCase()}
                   </DropdownMenuItem>
                 </DashboardMenuContent>

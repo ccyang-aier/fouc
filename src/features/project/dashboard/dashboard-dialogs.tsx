@@ -4,7 +4,7 @@ import { useLocale } from '@/lib/i18n';
 import { translateFixed } from '../i18n/display';
 import { DashboardActionDialog, type DashboardAction } from './dashboard-actions';
 import { DashboardDocumentDialog } from './dashboard-document-dialog';
-import { DashboardFavoritesDialog, DashboardMilestoneDialog } from './dashboard-management-dialogs';
+import { DashboardMilestoneDialog } from './dashboard-management-dialogs';
 import { DashboardMeetingDialog } from './dashboard-meeting-dialog';
 import type {
   DashboardDocument,
@@ -22,7 +22,6 @@ export type DashboardDialog =
   | { kind: 'document'; id: string | null; documentKind: DashboardDocumentKind }
   | { kind: 'meeting'; id: string | null }
   | { kind: 'action'; action: DashboardAction; projectId?: string }
-  | { kind: 'favorites' }
   | { kind: 'milestones' };
 
 export function DashboardDialogs({
@@ -129,20 +128,6 @@ export function DashboardDialogs({
           onCreateTask={store.createTask}
           onCreateProject={store.createProject}
           onInvite={store.saveMembers}
-          onRead={store.markRead}
-          onReadAll={store.markAllRead}
-          onOpenTarget={onOpenTarget}
-        />
-      );
-    case 'favorites':
-      return (
-        <DashboardFavoritesDialog
-          state={state}
-          onClose={onClose}
-          onSave={(targets) => {
-            store.saveFavorites(targets);
-            onSaved(translateFixed('Favourites saved', locale));
-          }}
         />
       );
     case 'milestones':

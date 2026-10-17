@@ -1,8 +1,8 @@
 .panel {
   min-width: 0;
   padding: 20px;
-  background: #fff;
-  border: 1px solid #e6e6e8;
+  background: var(--panel);
+  border: 1px solid var(--line);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgb(0 0 0 / 6%);
   container-type: inline-size;
@@ -21,7 +21,7 @@
   font-size: 16px;
   font-weight: 500;
   line-height: 22px;
-  color: #111;
+  color: var(--ink);
   white-space: nowrap;
 }
 
@@ -40,9 +40,9 @@
   align-items: center;
   gap: 1px;
   padding: 2px;
-  border: 1px solid #e7e7e9;
+  border: 1px solid var(--line);
   border-radius: 6px;
-  background: #fff;
+  background: var(--panel);
 }
 
 .dateNavigation {
@@ -53,11 +53,11 @@
   padding: 0;
   border: 0;
   border-radius: 3px;
-  color: #696971;
+  color: var(--muted-strong);
   cursor: pointer;
 }
 .dateNavigation:focus-visible {
-  outline: 1px solid #111;
+  outline: 1px solid var(--ink);
   outline-offset: -1px;
 }
 .timelineDates input {
@@ -67,7 +67,7 @@
   border: 1px solid transparent;
   border-radius: 3px;
   background: transparent;
-  color: #696971;
+  color: var(--muted-strong);
   font: inherit;
   font-size: 10px;
   line-height: 20px;
@@ -75,7 +75,7 @@
   box-shadow: none;
 }
 .timelineDates input:focus {
-  border-color: #111;
+  border-color: var(--ink);
   outline: none;
   box-shadow: none;
 }
@@ -106,7 +106,7 @@
   width: 88px;
   min-height: 28px;
   align-items: center;
-  color: #51515d;
+  color: var(--muted-strong);
   font-size: 12px;
   line-height: 16px;
 }
@@ -122,7 +122,7 @@
   top: 14px;
   width: 100%;
   height: 1px;
-  background: #e5e5e8;
+  background: var(--accent-soft);
   content: '';
 }
 
@@ -139,7 +139,7 @@
   padding: 3px 8px 3px 3px;
   border: 0;
   border-radius: 16px;
-  color: #43434e;
+  color: var(--ink);
   font-size: 10px;
   line-height: 14px;
   cursor: pointer;
@@ -161,7 +161,7 @@
 }
 .timelineTask strong {
   margin-left: auto;
-  color: #121212;
+  color: var(--ink);
   font-size: 10px;
   font-weight: 600;
   white-space: nowrap;
@@ -188,16 +188,16 @@
   opacity: 0.8;
 }
 .mint {
-  background: #e6f8ec !important;
+  background: light-dark(#e6f8ec, color-mix(in srgb, #e6f8ec 18%, var(--panel))) !important;
 }
 .peach {
-  background: #f7ece5 !important;
+  background: light-dark(#f7ece5, color-mix(in srgb, #f7ece5 18%, var(--panel))) !important;
 }
 .lavender {
-  background: #e0dffd !important;
+  background: light-dark(#e0dffd, color-mix(in srgb, #e0dffd 18%, var(--panel))) !important;
 }
 .purple {
-  background: #dcd0fa !important;
+  background: light-dark(#dcd0fa, color-mix(in srgb, #dcd0fa 18%, var(--panel))) !important;
 }
 
 .currentTime {
@@ -209,7 +209,7 @@
   );
   width: 2px;
   height: var(--timeline-height);
-  background: #111;
+  background: var(--accent);
   pointer-events: none;
 }
 
@@ -219,7 +219,7 @@
   left: -4px;
   width: 0;
   height: 0;
-  border-top: 5px solid #111;
+  border-top: 5px solid var(--ink);
   border-right: 5px solid transparent;
   border-left: 5px solid transparent;
   content: '';
@@ -230,7 +230,7 @@
   height: 16px;
   margin-top: 22px;
   margin-left: var(--timeline-label-width);
-  color: #51515d;
+  color: var(--muted-strong);
   font-size: 12px;
   line-height: 16px;
   white-space: nowrap;
@@ -245,7 +245,7 @@
   transform: translateX(-12px);
 }
 .timeAxis span[data-current='true'] {
-  color: #111;
+  color: var(--ink);
   font-weight: 600;
 }
 .timelineEmpty {
@@ -256,8 +256,8 @@
   z-index: 3;
   margin: 0;
   padding: 8px;
-  color: #85858e;
-  background: rgb(255 255 255 / 90%);
+  color: var(--muted-strong);
+  background: color-mix(in srgb, var(--panel) 90%, transparent);
   font-size: 12px;
   line-height: 18px;
   text-align: center;
@@ -323,29 +323,19 @@
   max-width: 210px;
   transform: translateX(-50%);
   padding: 9px 8px;
-  border: 1px solid #363636;
+  border: 1px solid color-mix(in srgb, var(--tooltip-ink) 14%, transparent);
   border-radius: 9px;
-  background: #222;
+  background: var(--tooltip-bg);
   box-shadow: 0 2px 5px rgb(0 0 0 / 18%);
-  color: #ddd;
+  color: var(--tooltip-ink);
   font-size: 12px;
   line-height: 16px;
   pointer-events: none;
 }
 
-.chartTooltip::after {
-  position: absolute;
-  bottom: -6px;
-  left: calc(50% - 6px);
-  border-top: 6px solid #222;
-  border-right: 6px solid transparent;
-  border-left: 6px solid transparent;
-  content: '';
-}
-
 .tooltipDate {
   margin-bottom: 10px;
-  color: #adadb0;
+  color: color-mix(in srgb, var(--tooltip-ink) 68%, transparent);
   font-size: 12px;
   white-space: nowrap;
 }
@@ -379,13 +369,13 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  color: #73737b;
+  color: var(--muted-strong);
   font-size: 12px;
 }
 
 .chartStatus button {
   padding: 4px 8px;
-  border: 1px solid #e6e6e8;
+  border: 1px solid var(--line);
   border-radius: 5px;
   cursor: pointer;
 }
@@ -397,7 +387,7 @@
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: #a8a8ae;
+  background: var(--line-strong);
   animation: pulse 1.2s ease-in-out infinite;
 }
 .loadingDots i:nth-child(2) {
@@ -499,12 +489,5 @@
   .milestoneActions {
     width: 100%;
     justify-content: space-between;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .loadingDots i {
-    animation: none;
-    opacity: 0.6;
   }
 }

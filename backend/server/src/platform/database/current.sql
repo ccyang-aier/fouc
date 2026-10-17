@@ -294,6 +294,12 @@ CREATE TABLE "resources"."knowledge_base_invitation" (
 	CONSTRAINT "knowledge_base_invitation_state" CHECK (("resources"."knowledge_base_invitation"."accepted_at" IS NULL OR "resources"."knowledge_base_invitation"."revoked_at" IS NULL) AND ("resources"."knowledge_base_invitation"."accepted_by" IS NULL OR "resources"."knowledge_base_invitation"."accepted_at" IS NOT NULL))
 );
 
+CREATE TABLE "resources"."knowledge_base_project" (
+	"knowledge_base_id" uuid NOT NULL,
+	"project_id" uuid NOT NULL,
+	CONSTRAINT "knowledge_base_project_knowledge_base_id_project_id_pk" PRIMARY KEY("knowledge_base_id","project_id")
+);
+
 CREATE TABLE "resources"."knowledge_base_member" (
 	"knowledge_base_id" uuid NOT NULL,
 	"user_id" uuid NOT NULL,
@@ -503,6 +509,8 @@ ALTER TABLE "resources"."group_member" ADD CONSTRAINT "group_member_membership_f
 ALTER TABLE "resources"."knowledge_base_invitation" ADD CONSTRAINT "knowledge_base_invitation_invited_by_user_id_fk" FOREIGN KEY ("invited_by") REFERENCES "auth"."user"("id") ON DELETE no action ON UPDATE no action;
 ALTER TABLE "resources"."knowledge_base_invitation" ADD CONSTRAINT "knowledge_base_invitation_accepted_by_user_id_fk" FOREIGN KEY ("accepted_by") REFERENCES "auth"."user"("id") ON DELETE set null ON UPDATE no action;
 ALTER TABLE "resources"."knowledge_base_invitation" ADD CONSTRAINT "knowledge_base_invitation_library_fk" FOREIGN KEY ("knowledge_base_id") REFERENCES "resources"."knowledge_base"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "resources"."knowledge_base_project" ADD CONSTRAINT "knowledge_base_project_knowledge_base_id_knowledge_base_id_fk" FOREIGN KEY ("knowledge_base_id") REFERENCES "resources"."knowledge_base"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "resources"."knowledge_base_project" ADD CONSTRAINT "knowledge_base_project_project_id_project_id_fk" FOREIGN KEY ("project_id") REFERENCES "resources"."project"("id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "resources"."knowledge_base_member" ADD CONSTRAINT "knowledge_base_member_knowledge_base_id_knowledge_base_id_fk" FOREIGN KEY ("knowledge_base_id") REFERENCES "resources"."knowledge_base"("id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "resources"."knowledge_base_member" ADD CONSTRAINT "knowledge_base_member_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "resources"."model_credential" ADD CONSTRAINT "model_credential_knowledge_base_id_knowledge_base_id_fk" FOREIGN KEY ("knowledge_base_id") REFERENCES "resources"."knowledge_base"("id") ON DELETE cascade ON UPDATE no action;
@@ -548,6 +556,7 @@ CREATE INDEX "doc_checkpoint_page_time_idx" ON "resources"."doc_checkpoint" USIN
 CREATE INDEX "group_member_user_idx" ON "resources"."group_member" USING btree ("knowledge_base_id","user_id");
 CREATE UNIQUE INDEX "knowledge_base_invitation_pending_email_idx" ON "resources"."knowledge_base_invitation" USING btree ("knowledge_base_id","email") WHERE "resources"."knowledge_base_invitation"."accepted_at" IS NULL AND "resources"."knowledge_base_invitation"."revoked_at" IS NULL;
 CREATE INDEX "knowledge_base_invitation_expiry_idx" ON "resources"."knowledge_base_invitation" USING btree ("knowledge_base_id","expires_at");
+CREATE INDEX "knowledge_base_project_project_idx" ON "resources"."knowledge_base_project" USING btree ("project_id","knowledge_base_id");
 CREATE INDEX "member_user_idx" ON "resources"."knowledge_base_member" USING btree ("user_id","knowledge_base_id");
 CREATE INDEX "model_credential_user_idx" ON "resources"."model_credential" USING btree ("user_id");
 CREATE INDEX "notification_user_time_idx" ON "resources"."notification" USING btree ("knowledge_base_id","user_id","created_at");

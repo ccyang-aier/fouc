@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { getTableConfig } from 'drizzle-orm/pg-core';
-import { resourceTables, project, projectMember, knowledgeBase } from './schema';
+import { resourceTables, project, projectMember, knowledgeBase, knowledgeBaseProject } from './schema';
 import { resourceRlsSql, resourcePoliciesForTable } from './rls';
 
 describe('resource RLS installation definition', () => {
@@ -26,5 +26,13 @@ describe('resource RLS installation definition', () => {
     }
     const root = resourcePoliciesForTable(knowledgeBase).find((policy) => policy.name === 'knowledge_base_scope')!;
     expect(root.using).toMatch(/^"id" =/);
+  });
+
+  test('project scope visibility requires both project and library membership', () => {
+    const read = resourcePoliciesForTable(knowledgeBaseProject).find((policy) => policy.name === 'own_identity')!;
+    expect(read.command).toBe('SELECT');
+    expect(read.using).toContain('resources.project_member');
+    expect(read.using).toContain('resources.knowledge_base_member');
+    expect(read.using).toContain("app.auth_session_id");
   });
 });

@@ -11,7 +11,7 @@ function notify() {
 export function openSettings(section: SettingsSection = 'general') {
   const url = new URL(window.location.href);
   if (url.searchParams.get('view') !== 'settings') {
-    url.searchParams.set('returnView', url.searchParams.get('view') ?? 'home');
+    url.searchParams.set('returnView', url.searchParams.get('view') ?? 'workbench');
   }
   url.searchParams.set('view', 'settings');
   url.searchParams.set('section', section);
@@ -29,7 +29,7 @@ export function setSettingsSection(section: SettingsSection) {
 export function closeSettings() {
   const url = new URL(window.location.href);
   const target = url.searchParams.get('returnView');
-  if (target && target !== 'home' && target !== 'settings') url.searchParams.set('view', target);
+  if (target && target !== 'workbench' && target !== 'settings') url.searchParams.set('view', target);
   else url.searchParams.delete('view');
   url.searchParams.delete('returnView');
   url.searchParams.delete('section');

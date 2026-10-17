@@ -1,13 +1,13 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
-import type { WorkbenchView } from './navigation-sidebar';
 import { WORKBENCH_VIEW_CHANGED } from '@/lib/settings-navigation';
 
-const views: readonly WorkbenchView[] = ['home', 'settings', 'help', 'project-home', 'projects', 'community', 'automation', 'knowledge', 'connectors'];
+export type WorkbenchView = 'home' | 'workbench' | 'tasks' | 'members' | 'assets' | 'chats' | 'agents' | 'settings' | 'help' | 'community' | 'knowledge' | 'connectors';
+const views: readonly WorkbenchView[] = ['home', 'workbench', 'tasks', 'members', 'assets', 'chats', 'agents', 'settings', 'help', 'community', 'knowledge', 'connectors'];
 const viewChanged = WORKBENCH_VIEW_CHANGED;
 function resolveView(value: string | null): WorkbenchView {
-  return views.includes(value as WorkbenchView) ? value as WorkbenchView : 'home';
+  return views.includes(value as WorkbenchView) ? value as WorkbenchView : 'workbench';
 }
 function subscribe(listener: () => void) {
   window.addEventListener('popstate', listener);
@@ -19,13 +19,13 @@ export function useWorkbenchView() {
   const params = new URLSearchParams(search);
   const settingsOpen = params.get('view') === 'settings';
   const requestedView = resolveView(params.get(settingsOpen ? 'returnView' : 'view'));
-  const view = requestedView === 'settings' ? 'home' : requestedView;
+  const view = requestedView === 'settings' ? 'workbench' : requestedView;
   return [view, (next: WorkbenchView) => {
     const url = new URL(window.location.href);
     if (next === 'settings' && url.searchParams.get('view') !== 'settings') {
       url.searchParams.set('returnView', resolveView(url.searchParams.get('view')));
     }
-    if (next === 'home') url.searchParams.delete('view');
+    if (next === 'workbench') url.searchParams.delete('view');
     else url.searchParams.set('view', next);
     if (next !== 'settings') { url.searchParams.delete('section'); url.searchParams.delete('returnView'); }
     window.history.replaceState(null, '', url);

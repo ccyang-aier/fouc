@@ -59,7 +59,7 @@ function isDashboardState(value: unknown): value is DashboardState {
   );
 }
 
-/** The parent keys the canvas by source:projectId, keeping each resource's local state isolated. */
+/** The keyed canvas receives the current principal, source and project scope from the shell. */
 export function useDashboard(projectKey: string) {
   const storageKey = `fouc.project-dashboard.${projectKey}`;
   const [state, setState] = useState<DashboardState>(initialDashboardState);

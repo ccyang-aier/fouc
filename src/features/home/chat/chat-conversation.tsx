@@ -100,12 +100,12 @@ export function ChatConversation({
                 </div> : null}
                 <div>
                   <dt>{t("project")}</dt>
-                  <dd>{submission.context.projectName ?? t("noProject")}</dd>
+                  <dd>{submission.context.projectName ?? t("project")}</dd>
                 </div>
-                {submission.context.knowledgeIncluded ? (
+                {submission.context.knowledgeBaseId ? (
                   <div>
                     <dt>{t("knowledge")}</dt>
-                    <dd>{t("teamKnowledge")}</dd>
+                    <dd>{submission.context.knowledgeBaseName}</dd>
                   </div>
                 ) : null}
                 {submission.context.localEnvironment?.createWorktree ? <div>

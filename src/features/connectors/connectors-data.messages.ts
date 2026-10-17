@@ -41,9 +41,9 @@ export const messages = defineMessages({
     'Connect group messages, documents and calendar events; mention the bot to assign work.',
   ],
   daysAgo48: ['2 天前', '2 days ago'],
-  triggerAutomationsFromApprovalAndAttendanceEventsPostResultsBack: [
-    '审批与考勤事件驱动的自动化，结果回传群卡片。',
-    'Trigger automations from approval and attendance events; post results back to group cards.',
+  connectApprovalAndAttendanceEventsPostTaskResultsBack: [
+    '接入审批与考勤事件，将任务结果回传群卡片。',
+    'Connect approval and attendance events; post task results back to group cards.',
   ],
   daysAgo50: ['5 天前', '5 days ago'],
   connectCustomerGroupsAndInternalAppMessagesForExternalCollaboration: [

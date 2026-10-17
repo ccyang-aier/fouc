@@ -102,6 +102,24 @@ describe('route contract', () => {
     expect(call.credentials).toBe('include');
   });
 
+  test('project directories and owner scope updates send real project identities', async () => {
+    const { calls, impl } = recordingFetch(200, { knowledgeBaseId: ws, projectIds: [cursor] });
+    const client = clientWith(impl as unknown as typeof fetch);
+    await client.listKnowledgeBases({ projectId: cursor });
+    expect(lastCall(calls).url).toBe(`${BASE}?projectId=${cursor}`);
+    await client.createKnowledgeBase({ name: 'Project library', projectIds: [cursor] });
+    expect(lastCall(calls).body).toBe(JSON.stringify({ name: 'Project library', projectIds: [cursor] }));
+    await client.getKnowledgeBaseProjects(ws);
+    expect(lastCall(calls).url).toBe(`${BASE}/${ws}/projects`);
+    expect(lastCall(calls).method).toBe('GET');
+    await client.setKnowledgeBaseProjects(ws, [cursor]);
+    expect(lastCall(calls).url).toBe(`${BASE}/${ws}/projects`);
+    expect(lastCall(calls).method).toBe('PATCH');
+    expect(lastCall(calls).body).toBe(JSON.stringify({ projectIds: [cursor] }));
+    await expectInvalidInput(() => client.listKnowledgeBases({ projectId: 'invented-space' }));
+    await expectInvalidInput(() => client.setKnowledgeBaseProjects(ws, ['invented-space']));
+  });
+
   test('member role change PATCHes the member path with the role body', async () => {
     const { calls, impl } = recordingFetch(200, {
       knowledgeBaseId: ws,

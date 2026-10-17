@@ -3,7 +3,7 @@
 /**
  * 通用侧栏导航行（展开 30px / 折叠 32px 图标态）：hover 白底抬升，
  * 图标默认采用深灰轮廓与浅灰局部填充，激活时保留同一造型和灰度。
- * 消费方：navigation-sidebar / sidebar-project-pane / settings-canvas。
+ * 消费方：navigation-sidebar / settings-canvas。
  */
 
 import type { ReactNode } from "react"

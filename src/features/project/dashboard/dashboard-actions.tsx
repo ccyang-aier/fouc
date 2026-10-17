@@ -6,7 +6,6 @@ import { fixtureField } from '../i18n/display';
 import { messages } from './i18n/dashboard-actions';
 
 import { useAppAlert } from '@/components/app-alert-provider';
-import { Bell, Check } from '@phosphor-icons/react';
 import { useState } from 'react';
 import styles from './dashboard-actions.module.css';
 import { DashboardMemberPicker, DashboardModal } from './dashboard-modal';
@@ -15,13 +14,12 @@ import type {
   DashboardPriority,
   DashboardProject,
   DashboardState,
-  DashboardTarget,
   DashboardTask,
 } from './dashboard-model';
 import { DashboardButton } from './dashboard-ui';
 
 export type DashboardAction =
-  'Create Task' | 'New Project' | 'Invite' | 'Help Center' | 'Notifications';
+  'Create Task' | 'New Project' | 'Invite';
 interface DashboardActionProps {
   action: DashboardAction;
   state: DashboardState;
@@ -30,9 +28,6 @@ interface DashboardActionProps {
   onCreateTask: (task: DashboardTask) => void;
   onCreateProject: (project: DashboardProject) => void;
   onInvite: (ids: DashboardPersonId[]) => void;
-  onRead: (id: string) => void;
-  onReadAll: () => void;
-  onOpenTarget: (target: DashboardTarget) => void;
 }
 
 function CreateTaskForm({
@@ -393,80 +388,6 @@ function InviteForm({
   );
 }
 
-function Notifications({
-  state,
-  onRead,
-  onReadAll,
-  onOpenTarget,
-  onClose,
-}: Pick<DashboardActionProps, 'state' | 'onRead' | 'onReadAll' | 'onOpenTarget' | 'onClose'>) {
-  const { t, locale } = useTranslation(messages);
-
-  const { notify } = useAppAlert();
-  const unread = state.activities.filter((activity) => !activity.read).length;
-  return (
-    <>
-      <div className={styles.scrollBody}>
-        <div className={styles.notificationList}>
-          {state.activities.length ? (
-            state.activities.map((activity) => (
-              <article
-                key={activity.id}
-                className={styles.notification}
-                data-unread={!activity.read || undefined}
-              >
-                <button
-                  type="button"
-                  className={`${styles.notificationTarget} fouc-action`}
-                  onClick={() => {
-                    onRead(activity.id);
-                    onClose();
-                    onOpenTarget(activity.target);
-                  }}
-                >
-                  <Bell size={18} />
-                  <span>
-                    <strong>{activity.actor}</strong> {fixtureField(activity, 'text', locale)}{' '}
-                    <b>{fixtureField(activity, 'subject', locale)}</b>
-                    <time>{fixtureField(activity, 'time', locale)}</time>
-                  </span>
-                </button>
-                {!activity.read ? (
-                  <button
-                    type="button"
-                    className={`${styles.readButton} fouc-action`}
-                    aria-label={t('Mark {v0} as read', {
-                      v0: fixtureField(activity, 'subject', locale),
-                    })}
-                    onClick={() => onRead(activity.id)}
-                  >
-                    <Check size={15} />
-                  </button>
-                ) : null}
-              </article>
-            ))
-          ) : (
-            <p className={styles.empty}>{t('No notifications yet.')}</p>
-          )}
-        </div>
-      </div>
-      <footer>
-        <DashboardButton
-          tone="neutral"
-          disabled={!unread}
-          onClick={() => {
-            onReadAll();
-            notify('success', t('Notifications marked as read'));
-          }}
-        >
-          {t('Mark all as read')}
-        </DashboardButton>
-        <DashboardButton onClick={onClose}>{t('Done')}</DashboardButton>
-      </footer>
-    </>
-  );
-}
-
 export function DashboardActionDialog(props: DashboardActionProps) {
   const { t } = useTranslation(messages);
 
@@ -489,37 +410,6 @@ export function DashboardActionDialog(props: DashboardActionProps) {
       ) : null}
       {action === 'Invite' ? (
         <InviteForm memberIds={state.memberIds} onInvite={props.onInvite} onClose={onClose} />
-      ) : null}
-      {action === 'Notifications' ? <Notifications {...props} /> : null}
-      {action === 'Help Center' ? (
-        <>
-          <div className={styles.scrollBody}>
-            <div className={styles.helpContent}>
-              <h3>{t('Working with your projects')}</h3>
-              <p>
-                {t(
-                  'Projects group tasks. Create a task, choose its project and schedule, then open it to update details or add a comment.',
-                )}
-              </p>
-              <p>
-                {t(
-                  'Use the four document shortcuts for invoices, proposals, contracts and forms. Save drafts, download their content, or collect form responses on this device.',
-                )}
-              </p>
-              <p>
-                {t(
-                  'Meetings have their own agenda, attendees and calendar export. Notifications open the item that changed.',
-                )}
-              </p>
-              <p>
-                {t('Dashboard changes are saved on this device for the selected Fouc project.')}
-              </p>
-            </div>
-          </div>
-          <footer>
-            <DashboardButton onClick={onClose}>{t('Got it')}</DashboardButton>
-          </footer>
-        </>
       ) : null}
     </DashboardModal>
   );

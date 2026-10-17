@@ -164,7 +164,6 @@ interface TodayProjectsProps extends Omit<ProjectCardProps, 'summary'> {
   projects: DashboardProjectSummary[];
   onCreate: () => void;
   onExpand: () => void;
-  expanded?: boolean;
 }
 
 export function TodayProjects({
@@ -175,21 +174,20 @@ export function TodayProjects({
   onDelete,
   onCreate,
   onExpand,
-  expanded = false,
 }: TodayProjectsProps) {
   const { t } = useTranslation(messages);
 
   return (
     <section className={`${styles.panel} ${styles.today}`} aria-label={t('Today Projects')}>
       <header className={styles.panelHeader}>
-        <h2>{expanded ? t('Projects') : t('Today Projects')}</h2>
+        <h2>{t('Today Projects')}</h2>
         <div className={styles.headerActions}>
           <DashboardButton className={styles.newProject} onClick={onCreate}>
             <Plus size={14} />
             {t('New Project')}
           </DashboardButton>
           <IconButton
-            label={expanded ? t('Show Dashboard') : t('Expand Today Projects')}
+            label={t('View all tasks')}
             onClick={onExpand}
           >
             <ArrowsOutSimple size={16} />
@@ -224,21 +222,20 @@ export function TodayProjects({
 export function TeamPanel({
   memberIds,
   onInvite,
-  expanded = false,
+  onViewAll,
 }: {
   memberIds: DashboardPersonId[];
   onInvite: () => void;
-  expanded?: boolean;
+  onViewAll: () => void;
 }) {
   const { t, locale } = useTranslation(messages);
   const uiLabel = (value: string) => translateFixed(value, locale);
 
-  const visibleIds = expanded ? memberIds : memberIds.slice(0, 4);
+  const visibleIds = memberIds.slice(0, 4);
 
   return (
     <section
       className={`${styles.panel} ${styles.team}`}
-      data-expanded={expanded}
       aria-label={t('Team')}
     >
       <header className={styles.panelHeader}>
@@ -250,6 +247,10 @@ export function TeamPanel({
             </IconButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={onViewAll}>
+              <ArrowsOutSimple />
+              {t('View all members')}
+            </DropdownMenuItem>
             <DropdownMenuItem onSelect={onInvite}>
               <Plus />
               {t('Manage collaborators')}
@@ -401,39 +402,27 @@ export function ActivityPanel({
   activities,
   onOpen,
   onExport,
-  onReadAll,
-  inbox = false,
 }: {
   activities: DashboardActivity[];
   onOpen: (activity: DashboardActivity) => void;
   onExport: () => void;
-  onReadAll?: () => void;
-  inbox?: boolean;
 }) {
   const { t, locale } = useTranslation(messages);
 
-  const unreadCount = activities.filter((activity) => !activity.read).length;
-
   return (
     <section
-      className={`${styles.panel} ${styles.activity} ${inbox ? panelStyles.inbox : ''}`}
-      aria-label={inbox ? t('Inbox') : t('Activity')}
+      className={`${styles.panel} ${styles.activity}`}
+      aria-label={t('Activity')}
     >
       <header className={styles.panelHeader}>
-        <h2>{inbox ? t('Inbox') : t('Activity')}</h2>
+        <h2>{t('Activity')}</h2>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <IconButton label={inbox ? t('Inbox options') : t('Activity options')}>
+            <IconButton label={t('Activity options')}>
               <DotsThree weight="bold" />
             </IconButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            {onReadAll ? (
-              <DropdownMenuItem disabled={unreadCount === 0} onSelect={onReadAll}>
-                <Check />
-                {t('Mark all as read')}
-              </DropdownMenuItem>
-            ) : null}
             <DropdownMenuItem disabled={!activities.length} onSelect={onExport}>
               <Export />
               {t('Export activity')}
@@ -441,26 +430,9 @@ export function ActivityPanel({
           </DropdownMenuContent>
         </DropdownMenu>
       </header>
-      {inbox ? (
-        <div className={panelStyles.inboxStatus} role="status">
-          {unreadCount ? t('{v0} unread updates', { v0: unreadCount }) : t('All updates read')}
-          {onReadAll && unreadCount ? (
-            <button type="button" className="fouc-action" onClick={onReadAll}>
-              {t('Mark all as read')}
-            </button>
-          ) : null}
-        </div>
-      ) : null}
       <div className={styles.activityList}>
         {activities.map((activity) => (
-          <div
-            className={inbox ? panelStyles.inboxItem : undefined}
-            data-unread={inbox && !activity.read}
-            key={activity.id}
-          >
-            {inbox && !activity.read ? (
-              <span className={panelStyles.unreadDot} aria-label={t('Unread')} />
-            ) : null}
+          <div key={activity.id}>
             <p>
               <span className={activity.actor.includes('@') ? styles.email : undefined}>
                 {activity.actor}
@@ -476,7 +448,7 @@ export function ActivityPanel({
         ))}
         {!activities.length ? (
           <div className={panelStyles.emptyCompact}>
-            <p>{inbox ? t('No updates yet') : t('No activity yet')}</p>
+            <p>{t('No activity yet')}</p>
           </div>
         ) : null}
       </div>

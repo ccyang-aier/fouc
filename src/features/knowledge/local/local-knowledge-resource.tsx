@@ -4,7 +4,7 @@ import { formatDate, useTranslation } from '@/lib/i18n';
 import { knowledgeMessages } from './local-knowledge-resource.messages';
 /** Local storage is a resource capability, independent of account identity. */
 
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { FilePlus } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { AppAlert } from '@/components/app-alert';
@@ -68,9 +68,8 @@ export function LocalKnowledgeResource({
   const library = useSyncExternalStore(store.subscribe, store.getSnapshot, () => emptyLocalLibrary);
   const { session, openSignIn } = useIdentity();
   const { t } = useI18n();
-  const base =
-    library.bases.find((item) => item.id === selectedKnowledgeBaseId) ??
-    (selectedKnowledgeBaseId ? undefined : library.bases[0]);
+  const visibleIds = useMemo(() => new Set(knowledgeBases.filter((item) => item.source === 'local').map((item) => item.id)), [knowledgeBases]);
+  const base = library.bases.find((item) => item.id === selectedKnowledgeBaseId && visibleIds.has(item.id));
   const knowledgeBaseId = base?.id ?? '';
   const [view, setView] = useState<View>('all-documents');
   const [folderId, setFolderId] = useState<string | null>(null);
@@ -91,12 +90,12 @@ export function LocalKnowledgeResource({
             (item) =>
               item.baseId === target.knowledgeBaseId && item.id === target.pageId && !item.deleted,
           );
-        if (!page || page.baseId !== target.knowledgeBaseId) return;
+        if (!page || !visibleIds.has(page.baseId)) return;
         setBaseId(page.baseId);
         setSelectedId(page.id);
         setEditorSidebarOpen(false);
       }),
-    [store, setBaseId],
+    [store, setBaseId, visibleIds],
   );
   const documents = library.documents.filter((item) => item.baseId === base?.id);
   const folders = library.folders.filter((folder) => folder.knowledgeBaseId === base?.id);

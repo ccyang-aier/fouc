@@ -1,10 +1,10 @@
 'use client';
 
-import { useTranslation } from '@/lib/i18n';
+import { useLocale } from '@/lib/i18n';
 import { translateFixed } from '../i18n/display';
-import { messages } from './i18n/dashboard-sidebar';
 
 import { Button } from '@/components/ui/button';
+import { ClipboardText, FileText, Receipt, Scroll, StackSimple } from '@phosphor-icons/react';
 import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from 'react';
 import { dashboardPeople, type DashboardPersonId } from './dashboard-model';
 import styles from './dashboard-ui.module.css';
@@ -13,18 +13,22 @@ export function ReferenceIcon({
   name,
   size = 20,
 }: {
-  name: 'dashboard' | 'invoice' | 'proposal' | 'contract' | 'form' | 'project';
+  name: 'invoice' | 'proposal' | 'contract' | 'form' | 'project';
   size?: number;
 }) {
-  // Original artwork from the supplied video keeps its distinctive icon geometry.
+  const Icon = {
+    invoice: Receipt,
+    proposal: Scroll,
+    contract: FileText,
+    form: ClipboardText,
+    project: StackSimple,
+  }[name];
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
+    <Icon
       className={styles.referenceIcon}
-      src={`/project-dashboard/icons/${name}.webp`}
-      alt=""
-      width={size}
-      height={size}
+      aria-hidden="true"
+      size={size}
+      weight="duotone"
     />
   );
 }
@@ -100,7 +104,7 @@ export function DashboardButton({
   return (
     <Button
       variant={tone === 'neutral' ? 'outline' : 'default'}
-      className={`${styles.button} ${tone === 'primary' ? styles.primary : styles.neutral} ${className}`}
+      className={`${styles.button} ${className}`}
       {...props}
     >
       {children}
@@ -119,7 +123,7 @@ export function SegmentedControl<T extends string>({
   onChange: (value: T) => void;
   label: string;
 }) {
-  const { locale } = useTranslation(messages);
+  const locale = useLocale();
   const uiLabel = (value: string) => translateFixed(value, locale);
 
   return (

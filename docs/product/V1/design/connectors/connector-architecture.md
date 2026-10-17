@@ -21,7 +21,7 @@
 ### 2.1 目标
 
 - 以统一方式管理连接、断开、重新认证、健康检查和诊断；
-- 让 Work Room、Agent、Automation 和 Project 通过稳定接口调用外部能力；
+- 让 Agent 和 Project 通过稳定接口调用外部能力；
 - 将具体平台的认证、API、Cookie、Token 和错误封装在对应 Provider 内；
 - 区分读取、写入和破坏性操作，并统一执行策略、审批和审计；
 - 支持连接器运行在桌面端、云端或客户网络 Relay 等不同位置；
@@ -52,7 +52,7 @@ Provider 与外部平台一一对应是默认原则；只有同一平台的部�
 
 ```text
 ┌────────────────────────────── Fouc Domain ──────────────────────────────┐
-│ WorkObject · Project · Context · Agent · Automation                    │
+│ Project · Context · Agent                    │
 └──────────────────────────────────┬──────────────────────────────────────┘
                                    │
                          Connector Service API
@@ -201,7 +201,7 @@ Capability 是 Agent 和工作流可见的最小调用单元。输入必须经�
 一次能力调用的审计对象，记录：
 
 - Instance、Provider 和 Capability；
-- 发起用户、AgentRun、Automation 或系统任务；
+- 发起用户、AgentRun 或系统任务；
 - 输入摘要与敏感字段脱敏结果；
 - 策略决策和审批引用；
 - 实际执行位置与身份；

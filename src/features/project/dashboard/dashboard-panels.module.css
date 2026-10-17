@@ -12,7 +12,7 @@
   align-items: center;
   justify-content: center;
   gap: 14px;
-  color: #858690;
+  color: var(--muted-strong);
   font-size: 12px;
 }
 
@@ -21,53 +21,6 @@
   margin-top: 12px;
   padding: 7px;
   border-radius: 5px;
-  color: #696b76;
+  color: var(--muted-strong);
   font-size: 12px;
-}
-
-.inbox {
-  height: auto;
-  min-height: 300px;
-}
-
-.inbox > div:last-child {
-  max-height: none;
-  gap: 0;
-}
-
-.inboxStatus {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--separator-color);
-  color: #81828b;
-  font-size: 12px;
-}
-
-.inboxStatus button {
-  padding: 4px 8px;
-  border-radius: 5px;
-  color: #26272f;
-}
-
-.inboxItem {
-  position: relative;
-  padding: 18px 20px;
-  border-bottom: 1px solid var(--separator-color);
-}
-
-.inboxItem:last-child {
-  border-bottom: 0;
-}
-
-.unreadDot {
-  position: absolute;
-  top: 25px;
-  left: 0;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #25252a;
 }

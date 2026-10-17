@@ -9,7 +9,7 @@ const targetParameters = {
 
 export function dashboardLink(currentUrl: string, scope: string, target?: DashboardTarget) {
   const url = new URL(currentUrl);
-  url.searchParams.set('view', 'projects');
+  url.searchParams.set('view', 'workbench');
   url.searchParams.set('dashboardScope', scope);
   for (const parameter of Object.values(targetParameters)) url.searchParams.delete(parameter);
   if (target) url.searchParams.set(targetParameters[target.kind], target.id);

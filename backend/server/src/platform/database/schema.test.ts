@@ -20,6 +20,7 @@ import {
   resourceTables,
   identityTables,
   knowledgeBase,
+  knowledgeBaseProject,
   memberRole,
   modelTier,
   page,
@@ -46,7 +47,7 @@ describe('knowledgeBase-owned current Drizzle schema', () => {
   test('covers resource tables and keeps identity separate', () => {
     const names = resourceTables.map((table) => getTableConfig(table).name);
     for (const name of [
-      'knowledge_base', 'knowledge_base_member', 'knowledge_base_invitation', 'group', 'group_member', 'project', 'project_member', 'teamspace', 'page',
+      'knowledge_base', 'knowledge_base_member', 'knowledge_base_invitation', 'knowledge_base_project', 'group', 'group_member', 'project', 'project_member', 'teamspace', 'page',
       'database_definition', 'doc_state', 'doc_checkpoint', 'page_acl', 'page_effective_acl', 'block_index', 'backlink', 'asset', 'comment_thread',
       'comment', 'comment_like', 'outbox', 'ai_task', 'ai_usage', 'notification', 'personal_access_token', 'share_link', 'model_credential', 'block_embedding_staging',
     ]) expect(names).toContain(name);
@@ -55,7 +56,7 @@ describe('knowledgeBase-owned current Drizzle schema', () => {
   });
 
   test('knowledge-base children carry the real library key and consistent composite relations', () => {
-    for (const table of resourceTables.filter((item) => !new Set<object>([project, projectMember, knowledgeBase]).has(item))) {
+    for (const table of resourceTables.filter((item) => !new Set<object>([project, projectMember, knowledgeBase, knowledgeBaseProject]).has(item))) {
       const config = getTableConfig(table);
       expect(config.columns.find((column) => column.name === 'knowledge_base_id')?.notNull, config.name).toBe(true);
       for (const foreignKey of config.foreignKeys) {
@@ -76,6 +77,14 @@ describe('knowledgeBase-owned current Drizzle schema', () => {
     expect(relation?.columns.map((column) => column.name)).toEqual(['knowledge_base_id']);
     expect(relation?.foreignColumns.map((column) => column.name)).toEqual(['id']);
     expect(getTableConfig(teamspace).columns.filter((column) => column.name === 'knowledge_base_id')).toHaveLength(1);
+  });
+
+  test('knowledge-base project visibility is a many-to-many scope association between independent roots', () => {
+    const config = getTableConfig(knowledgeBaseProject);
+    expect(config.primaryKeys[0]?.columns.map((column) => column.name)).toEqual(['knowledge_base_id', 'project_id']);
+    expect(config.foreignKeys.map((key) => key.reference().foreignTable)).toEqual([knowledgeBase, project]);
+    expect(config.foreignKeys.every((key) => key.onDelete === 'cascade')).toBe(true);
+    expect(config.columns.map((column) => column.name)).toEqual(['knowledge_base_id', 'project_id']);
   });
 
   test('SQL enum values derive from the shared domain contracts', () => {

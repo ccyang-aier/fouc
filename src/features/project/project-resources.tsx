@@ -4,7 +4,6 @@ import { useTranslation } from '@/lib/i18n';
 import { messages } from './i18n/project-resources';
 
 import { useIdentity } from '@/features/identity/identity-provider';
-import { developmentId } from '@fouc/shared/development-workbench';
 import type { Project } from '@fouc/shared/projects';
 import {
   createContext,
@@ -16,19 +15,16 @@ import {
   type ReactNode,
 } from 'react';
 import { projectClient } from './project-client';
-import type { ProjectManagementPanelId } from './project-management-model';
 
-export const demonstrationProjectId = developmentId(0x50000000, 1);
 export type ProjectResource = Project & { source: 'local' | 'server' };
-type ProjectState = { projects: ProjectResource[]; selectedId: string | null; favorites: string[] };
+type ProjectState = { projects: ProjectResource[]; selectedId: string | null };
 type ResourceContext = {
   projects: ProjectResource[];
   selectedProject: ProjectResource | null;
-  favorites: readonly string[];
+  principal: string;
+  scopeKey: string | null;
   status: 'loading' | 'ready' | 'error';
   error: string | null;
-  managementPanel: ProjectManagementPanelId | null;
-  setManagementPanel: (panel: ProjectManagementPanelId | null) => void;
   selectProject: (id: string) => void;
   refreshProjects: (selectId?: string) => Promise<boolean>;
   createProject: (
@@ -37,13 +33,11 @@ type ResourceContext = {
   ) => Promise<ProjectResource | null>;
   renameProject: (id: string, name: string) => Promise<boolean>;
   removeProject: (id: string) => Promise<boolean>;
-  setFavorite: (id: string, favorite: boolean) => void;
 };
 const Context = createContext<ResourceContext | null>(null);
 
 const projectStorageKey = 'fouc.local-projects';
-const activeProjectKey = 'fouc.project.active';
-const preferenceKey = (principal: string) => `fouc.project.selection.${principal}`;
+const activeProjectKey = (principal: string) => `fouc.project.active.${principal}`;
 function readStorage<T>(key: string, fallback: T): T {
   try {
     const saved = window.localStorage.getItem(key);
@@ -53,11 +47,7 @@ function readStorage<T>(key: string, fallback: T): T {
   }
 }
 function saveStorage(key: string, value: unknown) {
-  try {
-    window.localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    /* In-memory state remains usable. */
-  }
+  window.localStorage.setItem(key, JSON.stringify(value));
 }
 
 export function ProjectResourceProvider({ children }: { children: ReactNode }) {
@@ -76,7 +66,6 @@ function ProjectResourceScope({ children, principal }: { children: ReactNode; pr
   const [state, setState] = useState<ProjectState>({
     projects: [],
     selectedId: null,
-    favorites: [],
   });
   const snapshot = useRef(state);
   const scope = useRef<AbortController | null>(null);
@@ -88,21 +77,19 @@ function ProjectResourceScope({ children, principal }: { children: ReactNode; pr
   }, []);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [error, setError] = useState<string | null>(null);
-  const [managementPanel, setManagementPanel] = useState<ProjectManagementPanelId | null>(null);
-  const prefs = preferenceKey(principal);
+  const selectionKey = activeProjectKey(principal);
 
   useEffect(() => {
     const controller = new AbortController();
     scope.current = controller;
-    const selectedId = readStorage<string | null>(activeProjectKey, null);
-    const favorites = readStorage<string[]>(prefs, []);
+    const selectedId = readStorage<string | null>(selectionKey, null);
     const local = readStorage<Project[]>(projectStorageKey, []).map((project) => ({
       ...project,
       source: 'local' as const,
     }));
     const publish = (projects: ProjectResource[]) => {
       if (controller.signal.aborted) return;
-      updateState(() => ({ projects, selectedId, favorites }));
+      updateState(() => ({ projects, selectedId }));
       if (principal === 'guest' || projects.length > 0) setStatus('ready');
     };
     queueMicrotask(() => publish(local));
@@ -127,34 +114,26 @@ function ProjectResourceScope({ children, principal }: { children: ReactNode; pr
         });
     }
     return () => controller.abort();
-  }, [principal, prefs, updateState]);
+  }, [principal, selectionKey, updateState]);
 
-  const selectedProject = state.selectedId
-    ? (state.projects.find((project) => project.id === state.selectedId) ?? null)
-    : (state.projects[0] ?? null);
-  const persist = (change: (current: ProjectState) => ProjectState) => {
-    const next = updateState(change);
-    saveStorage(activeProjectKey, next.selectedId);
-    saveStorage(prefs, next.favorites);
-    saveStorage(
-      projectStorageKey,
-      next.projects
-        .filter((project) => project.source === 'local')
-        .map(({ id, name }) => ({ id, name })),
-    );
+  const selectedProject = state.projects.find((project) => project.id === state.selectedId) ?? state.projects[0] ?? null;
+  const persist = (change: (current: ProjectState) => ProjectState, saveLocal = false) => {
+    const next = change(snapshot.current);
+    if (saveLocal) saveStorage(projectStorageKey, next.projects.filter(project => project.source === 'local').map(({ id, name }) => ({ id, name })));
+    updateState(() => next);
+    try { saveStorage(selectionKey, next.selectedId); } catch { setError(t('项目选择仅在当前会话生效')); }
   };
   const value: ResourceContext = {
     projects: state.projects,
     selectedProject,
-    favorites: state.favorites,
+    scopeKey: selectedProject ? `${principal}:${selectedProject.source}:${selectedProject.id}` : null,
+    principal,
     status,
     error,
-    managementPanel,
-    setManagementPanel,
+
     selectProject: (id) => {
       if (state.projects.some((item) => item.id === id)) {
         persist((current) => ({ ...current, selectedId: id }));
-        setManagementPanel(null);
       }
     },
     refreshProjects: async (selectId) => {
@@ -202,7 +181,7 @@ function ProjectResourceScope({ children, principal }: { children: ReactNode; pr
           ...current,
           projects: [...current.projects.filter((project) => project.id !== created.id), created],
           selectedId: created.id,
-        }));
+        }), source === 'local');
         setError(null);
         return created;
       } catch (cause) {
@@ -225,7 +204,7 @@ function ProjectResourceScope({ children, principal }: { children: ReactNode; pr
         persist((current) => ({
           ...current,
           projects: current.projects.map((project) => (project.id === id ? updated : project)),
-        }));
+        }), resource.source === 'local');
         setError(null);
         return true;
       } catch (cause) {
@@ -245,25 +224,14 @@ function ProjectResourceScope({ children, principal }: { children: ReactNode; pr
           return {
             projects,
             selectedId: current.selectedId === id ? (projects[0]?.id ?? null) : current.selectedId,
-            favorites: current.favorites.filter((favorite) => favorite !== id),
           };
-        });
-        setManagementPanel(null);
+        }, resource.source === 'local');
         setError(null);
         return true;
       } catch (cause) {
         if (!signal.aborted) setError(cause instanceof Error ? cause.message : '项目删除失败');
         return false;
       }
-    },
-    setFavorite: (id, favorite) => {
-      if (!state.projects.some((project) => project.id === id)) return;
-      persist((current) => ({
-        ...current,
-        favorites: favorite
-          ? [...new Set([...current.favorites, id])]
-          : current.favorites.filter((entry) => entry !== id),
-      }));
     },
   };
   return <Context.Provider value={value}>{children}</Context.Provider>;

@@ -1,123 +1,67 @@
 'use client';
-import { translateFixed } from '../i18n/display';
 
-import { fixtureField } from '../i18n/display';
-
-import { useTranslation } from '@/lib/i18n';
-import { messages } from './i18n/project-dashboard';
-
+import { useEffect, useRef, useState } from 'react';
 import { useAppAlert } from '@/components/app-alert-provider';
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useTranslation } from '@/lib/i18n';
+import { fixtureField, translateFixed } from '../i18n/display';
 import { DashboardDeleteDialog } from './dashboard-actions';
-import {
-  DashboardContent,
-  type DashboardContentActions,
-  type DashboardPortfolioTab,
-} from './dashboard-content';
+import { DashboardContent, type DashboardContentActions } from './dashboard-content';
 import { DashboardDialogs, type DashboardDialog } from './dashboard-dialogs';
 import { csvCell, downloadFile } from './dashboard-download';
-import { dashboardLink, readDashboardLink } from './dashboard-links';
-import type {
-  DashboardActivity,
-  DashboardDocument,
-  DashboardDocumentKind,
-  DashboardStatus,
-  DashboardTarget,
-} from './dashboard-model';
-import { selectFavorites } from './dashboard-selectors';
-import { DashboardSidebar, type DashboardSection } from './dashboard-sidebar';
-import { DashboardToolbar, type DashboardSearchResult } from './dashboard-toolbar';
+import { readDashboardLink } from './dashboard-links';
+import type { DashboardActivity, DashboardDocument, DashboardProject, DashboardTarget } from './dashboard-model';
+import { messages } from './i18n/project-dashboard';
 import styles from './dashboard.module.css';
 import { useDashboard } from './use-dashboard';
 
-function subscribeCompactNavigation(listener: () => void) {
-  const query = window.matchMedia('(max-width: 1060px)');
-  query.addEventListener('change', listener);
-  return () => query.removeEventListener('change', listener);
-}
-const compactNavigation = () => window.matchMedia('(max-width: 1060px)').matches;
+export type ProjectDashboardDestination = 'tasks' | 'members' | 'assets';
 
 interface ProjectDashboardProps {
-  projectId: string;
   projectName: string;
-  source: 'local' | 'server';
-  onBack: () => void;
-}
-interface Deletion {
-  target: DashboardTarget;
+  scopeKey: string;
+  onNavigate: (view: ProjectDashboardDestination) => void;
 }
 
-export function ProjectDashboard({
-  projectId,
-  projectName,
-  source,
-  onBack,
-}: ProjectDashboardProps) {
+/** Remount local interaction state when the principal or selected project changes. */
+export function ProjectDashboard(props: ProjectDashboardProps) {
+  return <ProjectDashboardCanvas key={props.scopeKey} {...props} />;
+}
+
+function ProjectDashboardCanvas({ projectName, scopeKey, onNavigate }: ProjectDashboardProps) {
   const { t, locale } = useTranslation(messages);
-
-  const scopeKey = `${source}:${projectId}`;
   const store = useDashboard(scopeKey);
   const { state, storageError } = store;
   const { notify } = useAppAlert();
-  const [section, setSection] = useState<DashboardSection>('Dashboard');
-  const autoCollapsed = useSyncExternalStore(
-    subscribeCompactNavigation,
-    compactNavigation,
-    () => false,
-  );
-  const [collapsedPreference, setCollapsedPreference] = useState<boolean | null>(null);
-  const [query, setQuery] = useState('');
-  const [status, setStatus] = useState<DashboardStatus | 'All'>('All');
-  const [portfolioTab, setPortfolioTab] = useState<DashboardPortfolioTab>('Projects');
-  const [documentKind, setDocumentKind] = useState<DashboardDocumentKind>('invoice');
   const [dialog, setDialog] = useState<DashboardDialog | null>(null);
-  const [deletion, setDeletion] = useState<Deletion | null>(null);
-  const scrollArea = useRef<HTMLDivElement>(null);
+  const [deletion, setDeletion] = useState<DashboardProject | null>(null);
   const restoredLink = useRef(false);
-  const unreadCount = state.activities.filter((activity) => !activity.read).length;
-  const favorites = selectFavorites(state, locale);
-
-  function changeSection(next: DashboardSection, nextStatus?: DashboardStatus) {
-    setSection(next);
-    setQuery('');
-    setStatus(nextStatus ?? 'All');
-    setPortfolioTab('Projects');
-    scrollArea.current?.scrollTo({ top: 0 });
-  }
 
   function openProject(id: string) {
-    const projectTasks = state.tasks.filter((task) => task.projectId === id);
-    // The reference's single-task cards open the original task modal directly.
-    setDialog(
-      projectTasks.length === 1
-        ? { kind: 'task', id: projectTasks[0].id }
-        : { kind: 'project', id },
-    );
+    const tasks = state.tasks.filter((task) => task.projectId === id);
+    setDialog(tasks.length === 1 ? { kind: 'task', id: tasks[0].id } : { kind: 'project', id });
   }
 
   function openTarget(target: DashboardTarget) {
-    switch (target.kind) {
-      case 'project':
-        if (state.projects.some((item) => item.id === target.id)) openProject(target.id);
-        else notify('warning', t('This project is no longer available'));
-        break;
-      case 'task':
-        if (state.tasks.some((item) => item.id === target.id))
-          setDialog({ kind: 'task', id: target.id });
-        else notify('warning', t('This task is no longer available'));
-        break;
-      case 'document': {
-        const document = state.documents.find((item) => item.id === target.id);
-        if (document) setDialog({ kind: 'document', id: document.id, documentKind: document.kind });
-        else notify('warning', t('This document is no longer available'));
-        break;
-      }
-      case 'meeting':
-        if (state.meetings.some((item) => item.id === target.id))
-          setDialog({ kind: 'meeting', id: target.id });
-        else notify('warning', t('This meeting is no longer available'));
-        break;
+    if (target.kind === 'project' && state.projects.some((item) => item.id === target.id)) {
+      openProject(target.id);
+      return;
     }
+    if (target.kind === 'task' && state.tasks.some((item) => item.id === target.id)) {
+      setDialog({ kind: 'task', id: target.id });
+      return;
+    }
+    if (target.kind === 'meeting' && state.meetings.some((item) => item.id === target.id)) {
+      setDialog({ kind: 'meeting', id: target.id });
+      return;
+    }
+    if (target.kind === 'document') {
+      const document = state.documents.find((item) => item.id === target.id);
+      if (document) {
+        setDialog({ kind: 'document', id: document.id, documentKind: document.kind });
+        return;
+      }
+    }
+    notify('warning', t('This item is no longer available in this dashboard'));
   }
 
   useEffect(() => {
@@ -142,63 +86,28 @@ export function ProjectDashboard({
       next = { kind: 'project', id: target.id };
     if (next) queueMicrotask(() => setDialog(next));
     else notify('warning', t('This item is no longer available in this dashboard'));
-  }, [
-    store.hydrated,
-    t,
-    scopeKey,
-    state.tasks,
-    state.documents,
-    state.meetings,
-    state.projects,
-    notify,
-  ]);
+  }, [store.hydrated, t, scopeKey, state.tasks, state.documents, state.meetings, state.projects, notify]);
 
   function closeDialog() {
     setDialog(null);
     const url = new URL(window.location.href);
-    for (const key of [
-      'dashboardTask',
-      'dashboardProject',
-      'dashboardDocument',
-      'dashboardMeeting',
-      'dashboardScope',
-    ])
+    for (const key of ['dashboardTask', 'dashboardProject', 'dashboardDocument', 'dashboardMeeting', 'dashboardScope'])
       url.searchParams.delete(key);
     window.history.replaceState(null, '', url);
   }
 
-  async function copyLink() {
-    try {
-      await navigator.clipboard.writeText(dashboardLink(window.location.href, scopeKey));
-      notify('success', t('Dashboard link copied'));
-    } catch {
-      notify('error', t('Could not copy the link'));
-    }
-  }
-
   function exportActivity() {
-    const rows = state.activities.map((item) =>
-      [
-        fixtureField(item, 'actor', locale),
-        fixtureField(item, 'text', locale),
-        fixtureField(item, 'subject', locale),
-        fixtureField(item, 'time', locale),
-        translateFixed(item.read ? 'Read' : 'Unread', locale),
-      ]
-        .map(csvCell)
-        .join(','),
-    );
-    downloadFile(
-      'project-activity.csv',
-      [
-        ['Actor', 'Action', 'Subject', 'Time', 'Status']
-          .map((key) => translateFixed(key, locale))
-          .map(csvCell)
-          .join(','),
-        ...rows,
-      ].join('\r\n'),
-      'text/csv;charset=utf-8',
-    );
+    const rows = state.activities.map((item) => [
+      fixtureField(item, 'actor', locale),
+      fixtureField(item, 'text', locale),
+      fixtureField(item, 'subject', locale),
+      fixtureField(item, 'time', locale),
+      translateFixed(item.read ? 'Read' : 'Unread', locale),
+    ].map(csvCell).join(','));
+    downloadFile('project-activity.csv', [
+      ['Actor', 'Action', 'Subject', 'Time', 'Status'].map((key) => translateFixed(key, locale)).map(csvCell).join(','),
+      ...rows,
+    ].join('\r\n'), 'text/csv;charset=utf-8');
     notify('success', t('Activity exported'));
   }
 
@@ -208,173 +117,30 @@ export function ProjectDashboard({
   }
 
   function saveDocument(document: DashboardDocument) {
-    const creating = !state.documents.some((item) => item.id === document.id);
     store.saveDocument(document);
-    if (creating) {
-      setDialog((current) =>
-        current?.kind === 'document' ? { ...current, id: document.id } : current,
-      );
-      setSection('Portfolio');
-      setPortfolioTab('Documents');
-      setDocumentKind(document.kind);
-      setQuery('');
-    }
+    setDialog((current) => current?.kind === 'document' ? { ...current, id: document.id } : current);
   }
 
-  function deleteResource() {
-    if (!deletion) return;
-    const { target } = deletion;
-    if (target.kind === 'project') store.removeProject(target.id);
-    if (target.kind === 'task') store.removeTask(target.id);
-    if (target.kind === 'document') store.removeDocument(target.id);
-    if (target.kind === 'meeting') store.removeMeeting(target.id);
-    setDeletion(null);
-    closeDialog();
-    notify(
-      'success',
-      t('{kind} deleted', {
-        kind: translateFixed(target.kind[0].toUpperCase() + target.kind.slice(1), locale),
-      }),
-    );
-  }
-
-  const searchResults: DashboardSearchResult[] = [
-    ...state.projects.map((project) => ({
-      id: `project:${project.id}`,
-      title: fixtureField(project, 'name', locale),
-      detail: 'Project',
-      keywords: `${project.name} ${project.description} ${project.priority}`,
-      target: { kind: 'project', id: project.id } as const,
-    })),
-    ...state.tasks.map((task) => ({
-      id: `task:${task.id}`,
-      title: fixtureField(task, 'title', locale),
-      detail: `${'Task'} · ${translateFixed(task.status, locale)}`,
-      keywords: `${task.title} ${task.detailTitle} ${task.description} ${task.tag} ${task.priority}`,
-      target: { kind: 'task', id: task.id } as const,
-    })),
-    ...state.documents.map((document) => ({
-      id: `document:${document.id}`,
-      title: fixtureField(document, 'title', locale),
-      detail: `${translateFixed(document.kind[0].toUpperCase() + document.kind.slice(1), locale)} · ${translateFixed(document.status, locale)}`,
-      keywords: `${document.title} ${document.kind} ${document.kind === 'form' ? document.description : document.client}`,
-      target: { kind: 'document', id: document.id } as const,
-    })),
-    ...state.meetings.map((meeting) => ({
-      id: `meeting:${meeting.id}`,
-      title: fixtureField(meeting, 'title', locale),
-      detail: 'Meeting',
-      keywords: `${meeting.title} ${meeting.agenda}`,
-      target: { kind: 'meeting', id: meeting.id } as const,
-    })),
-  ].filter((result) =>
-    (result.keywords + ' ' + result.title + ' ' + result.detail)
-      .toLowerCase()
-      .includes(query.trim().toLowerCase()),
-  );
-
-  const deletionResource =
-    deletion?.target.kind === 'project'
-      ? state.projects.find((item) => item.id === deletion.target.id)
-      : deletion?.target.kind === 'task'
-        ? state.tasks.find((item) => item.id === deletion.target.id)
-        : deletion?.target.kind === 'document'
-          ? state.documents.find((item) => item.id === deletion.target.id)
-          : undefined;
-  const deletionName = deletionResource
-    ? fixtureField(deletionResource, deletion?.target.kind === 'project' ? 'name' : 'title', locale)
-    : '';
   const actions: DashboardContentActions = {
     openTarget,
     openProject,
-    changeSection,
-    exportActivity,
-    openActivity,
     createProject: () => setDialog({ kind: 'action', action: 'New Project' }),
-    deleteProject: (project) =>
-      setDeletion({
-        target: { kind: 'project', id: project.id },
-      }),
+    deleteProject: setDeletion,
     toggleProjectFavorite: store.toggleProjectFavorite,
     completeProject: store.completeProject,
-    saveTask: store.saveTask,
-    deleteTask: (task) =>
-      setDeletion({
-        target: { kind: 'task', id: task.id },
-      }),
-    createTask: () => setDialog({ kind: 'action', action: 'Create Task' }),
     invite: () => setDialog({ kind: 'action', action: 'Invite' }),
     createMeeting: () => setDialog({ kind: 'meeting', id: null }),
-    openDocument: (document) => openTarget({ kind: 'document', id: document.id }),
     createDocument: (kind) => setDialog({ kind: 'document', id: null, documentKind: kind }),
-    saveDocument,
-    deleteDocument: (document) =>
-      setDeletion({
-        target: { kind: 'document', id: document.id },
-      }),
     editMilestones: () => setDialog({ kind: 'milestones' }),
-    readAll: () => {
-      store.markAllRead();
-      notify('success', t('All updates marked as read'));
-    },
-    manageFavorites: () => setDialog({ kind: 'favorites' }),
+    exportActivity,
+    openActivity,
+    navigate: onNavigate,
   };
 
   return (
-    <section
-      className={styles.dashboard}
-      aria-label={t('{v0} project dashboard', { v0: projectName })}
-      lang={locale}
-    >
-      <DashboardSidebar
-        section={section}
-        onSectionChange={changeSection}
-        collapsed={collapsedPreference ?? autoCollapsed}
-        onCollapse={() => setCollapsedPreference(!(collapsedPreference ?? autoCollapsed))}
-        favorites={favorites}
-        unreadCount={unreadCount}
-        onCreate={actions.createTask}
-        onFavorite={openTarget}
-        onAddFavorite={actions.manageFavorites}
-        onViewFavorites={() => {
-          changeSection('Portfolio');
-          setPortfolioTab('Favourites');
-        }}
-        onHelp={() => setDialog({ kind: 'action', action: 'Help Center' })}
-        projectName={projectName}
-        onBack={onBack}
-      />
-      <div className={styles.workbench}>
-        <DashboardToolbar
-          section={section}
-          query={query}
-          onQueryChange={setQuery}
-          results={searchResults}
-          onOpen={openTarget}
-          memberIds={state.memberIds}
-          unreadCount={unreadCount}
-          updatedAt={state.updatedAt}
-          onBack={onBack}
-          onShare={() => void copyLink()}
-          onNotify={() => setDialog({ kind: 'action', action: 'Notifications' })}
-          onInvite={actions.invite}
-          onViewProjects={() => changeSection('Portfolio')}
-        />
-        <div ref={scrollArea} className={styles.content}>
-          <DashboardContent
-            state={state}
-            section={section}
-            query={query}
-            status={status}
-            onStatusChange={setStatus}
-            portfolioTab={portfolioTab}
-            onPortfolioTabChange={setPortfolioTab}
-            documentKind={documentKind}
-            onDocumentKindChange={setDocumentKind}
-            storageError={storageError}
-            actions={actions}
-          />
-        </div>
+    <section className={styles.dashboard} aria-label={t('{v0} project dashboard', { v0: projectName })} lang={locale}>
+      <div className={styles.content}>
+        <DashboardContent state={state} storageError={storageError} actions={actions} />
       </div>
       <DashboardDialogs
         dialog={dialog}
@@ -384,33 +150,21 @@ export function ProjectDashboard({
         onOpenTarget={openTarget}
         onOpenProject={(id) => setDialog({ kind: 'project', id })}
         onCreateTask={(id) => setDialog({ kind: 'action', action: 'Create Task', projectId: id })}
-        onDeleteProject={actions.deleteProject}
+        onDeleteProject={setDeletion}
         onSaveDocument={saveDocument}
         onSaved={(message) => notify('success', message)}
       />
       {deletion ? (
         <DashboardDeleteDialog
-          title={t('Delete {kind}?', {
-            kind: translateFixed(
-              deletion.target.kind[0].toUpperCase() + deletion.target.kind.slice(1),
-              locale,
-            ),
-          })}
-          description={
-            deletion.target.kind === 'project'
-              ? t('“{name}” and all its tasks and comments will be removed.', {
-                  name: deletionName,
-                })
-              : deletion.target.kind === 'task'
-                ? t('“{name}” and its comments will be removed from this project.', {
-                    name: deletionName,
-                  })
-                : t('“{name}” will be permanently removed from this dashboard.', {
-                    name: deletionName,
-                  })
-          }
+          title={t('Delete {kind}?', { kind: translateFixed('Project', locale) })}
+          description={t('“{name}” and all its tasks and comments will be removed.', { name: fixtureField(deletion, 'name', locale) })}
           onClose={() => setDeletion(null)}
-          onDelete={deleteResource}
+          onDelete={() => {
+            store.removeProject(deletion.id);
+            setDeletion(null);
+            closeDialog();
+            notify('success', t('{kind} deleted', { kind: translateFixed('Project', locale) }));
+          }}
         />
       ) : null}
     </section>

@@ -489,6 +489,7 @@ function loadChartLibrary() {
 function milestoneChartOption(
   points: readonly DashboardMilestonePoint[],
   fontFamily: string,
+  colors: { ink: string; line: string },
   locale: Locale = getLocale(),
 ): EChartsCoreOption {
   return {
@@ -499,11 +500,11 @@ function milestoneChartOption(
       data: points.map((point) => shortMonth(locale).format(monthDate(point.month))),
       axisLine: { show: false },
       axisTick: { show: false, alignWithLabel: true },
-      axisLabel: { color: '#55555f', fontFamily, fontSize: 12, margin: 26, interval: 0 },
+      axisLabel: { color: colors.ink, fontFamily, fontSize: 12, margin: 26, interval: 0 },
       splitLine: {
         show: true,
         alignWithLabel: true,
-        lineStyle: { color: '#e7e7e9', width: 1.5, type: [3, 3] },
+        lineStyle: { color: colors.line, width: 1.5, type: [3, 3] },
       },
     },
     yAxis: { type: 'value', max: milestoneYMax(points), show: false },
@@ -568,8 +569,12 @@ export function MilestoneTracker({
   const hasPoints = points.length > 0;
   const draw = useEffectEvent(() => {
     if (instance.current && canvas.current) {
+      const appearance = getComputedStyle(canvas.current);
       instance.current.setOption(
-        milestoneChartOption(visiblePoints, getComputedStyle(canvas.current).fontFamily, locale),
+        milestoneChartOption(visiblePoints, appearance.fontFamily, {
+          ink: appearance.getPropertyValue('--muted-strong').trim(),
+          line: appearance.getPropertyValue('--line').trim(),
+        }, locale),
         { notMerge: true },
       );
     }
@@ -598,6 +603,8 @@ export function MilestoneTracker({
       initialize();
       instance.current?.resize();
     });
+    const appearance = new MutationObserver(() => draw());
+    appearance.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'style', 'data-ui-font'] });
     resize.observe(element);
     void loadChartLibrary()
       .then((loaded) => {
@@ -612,6 +619,7 @@ export function MilestoneTracker({
     return () => {
       disposed = true;
       resize.disconnect();
+      appearance.disconnect();
       instance.current?.dispose();
       instance.current = null;
     };

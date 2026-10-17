@@ -1,6 +1,7 @@
 import { defineMessages } from '@/lib/i18n';
 
 export const knowledgeMessages = defineMessages({
+  selectProjectFirst: ['请先选择项目', 'Select a project first'],
   loadingKnowledgeResources: ['正在加载知识资源', 'Loading knowledge resources'],
   unableToReadLocalDocumentsCheckYourBrowser: [
     '无法读取本机文档，请检查浏览器存储设置。',

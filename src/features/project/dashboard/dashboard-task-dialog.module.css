@@ -6,8 +6,8 @@
   padding: 0;
   border: 0;
   border-radius: 15px;
-  background: #fff;
-  color: #18191c;
+  background: var(--panel);
+  color: var(--ink);
   overflow: visible;
   font-family: inherit;
   font-size: 13px;
@@ -50,12 +50,12 @@
   height: 32px;
   border: 1px solid var(--control-border);
   border-radius: 8px;
-  background: #fff;
+  background: var(--panel);
   box-shadow: 0 2px 5px #11111108;
-  color: #5c6068;
+  color: var(--muted-strong);
 }
 .headerActions button[aria-pressed='true'] {
-  color: #e9a02f;
+  color: light-dark(#e9a02f, color-mix(in srgb, #e9a02f 68%, white));
 }
 .fields {
   display: flex;
@@ -74,12 +74,12 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  color: #63666d;
+  color: var(--muted-strong);
   font-size: 13px;
   white-space: nowrap;
 }
 .fieldLabel svg {
-  color: #54575f;
+  color: var(--muted-strong);
   flex-shrink: 0;
 }
 .control,
@@ -92,11 +92,11 @@
   padding: 0 8px;
   border: 1px solid var(--control-border);
   border-radius: 6px;
-  background: #fff;
+  background: var(--panel);
   font-size: 13px;
   line-height: 1;
   text-align: left;
-  color: #1b1c20;
+  color: var(--ink);
   box-shadow: 0 1px 2px #11111104;
 }
 .control {
@@ -104,7 +104,7 @@
 }
 .caret {
   margin-left: auto;
-  color: #656870;
+  color: var(--muted-strong);
 }
 .menuCheck {
   margin-left: auto;
@@ -120,7 +120,7 @@
   cursor: pointer;
 }
 .dateControl:focus-within {
-  border-color: #818792;
+  border-color: var(--ink);
 }
 .assignees {
   display: flex;
@@ -138,19 +138,19 @@
   padding: 0 7px;
   border: 0;
   border-radius: 5px;
-  background: #eaf2fa;
-  color: #5d82b7;
+  background: light-dark(#eaf2fa, color-mix(in srgb, #eaf2fa 18%, var(--panel)));
+  color: light-dark(#5d82b7, color-mix(in srgb, #5d82b7 68%, white));
   white-space: nowrap;
   cursor: pointer;
   font-size: 12px;
 }
 .assigneeChip[data-person='joe'] {
-  background: #edf8e7;
-  color: #628c7a;
+  background: light-dark(#edf8e7, color-mix(in srgb, #edf8e7 18%, var(--panel)));
+  color: light-dark(#628c7a, color-mix(in srgb, #628c7a 68%, white));
 }
 .assigneeChip[data-person='tania'] {
-  background: #fbf5e5;
-  color: #a79762;
+  background: light-dark(#fbf5e5, color-mix(in srgb, #fbf5e5 18%, var(--panel)));
+  color: light-dark(#a79762, color-mix(in srgb, #a79762 68%, white));
 }
 .addPerson {
   display: grid;
@@ -161,8 +161,8 @@
   padding: 0;
   border: 1px dashed var(--control-border);
   border-radius: 5px;
-  background: #fff;
-  color: #666a72;
+  background: var(--panel);
+  color: var(--muted-strong);
   cursor: pointer;
 }
 .priority {
@@ -172,22 +172,22 @@
   padding: 0 9px;
   border: 0;
   border-radius: 6px;
-  background: #fcebee;
-  color: #d84665;
+  background: light-dark(#fcebee, color-mix(in srgb, #fcebee 18%, var(--panel)));
+  color: light-dark(#d84665, color-mix(in srgb, #d84665 68%, white));
   cursor: pointer;
   font-size: 13px;
 }
 .priority[data-priority='high'] {
-  color: #b96d23;
-  background: #fff0de;
+  color: light-dark(#b96d23, color-mix(in srgb, #b96d23 68%, white));
+  background: light-dark(#fff0de, color-mix(in srgb, #fff0de 18%, var(--panel)));
 }
 .priority[data-priority='medium'] {
-  color: #998249;
-  background: #fff5d9;
+  color: light-dark(#998249, color-mix(in srgb, #998249 68%, white));
+  background: light-dark(#fff5d9, color-mix(in srgb, #fff5d9 18%, var(--panel)));
 }
 .priority[data-priority='low'] {
-  color: #518477;
-  background: #e8f5ed;
+  color: light-dark(#518477, color-mix(in srgb, #518477 68%, white));
+  background: light-dark(#e8f5ed, color-mix(in srgb, #e8f5ed 18%, var(--panel)));
 }
 .priority:is(:hover, :focus-visible, [aria-expanded='true']) {
   filter: brightness(0.96);
@@ -220,7 +220,7 @@
   bottom: 35px;
   left: 13px;
   width: 1px;
-  background: #e8e8eb;
+  background: var(--accent-soft);
 }
 .comment {
   position: relative;
@@ -249,25 +249,25 @@
 .commentMeta strong {
   font-size: 13px;
   font-weight: 520;
-  color: #17191c;
+  color: var(--ink);
 }
 .commentMeta time {
-  color: #77797f;
+  color: var(--muted-strong);
   font-size: 11px;
 }
 .commentMeta > span,
 .commentActions > span[aria-hidden] {
-  color: #d6d7da;
+  color: var(--muted);
 }
 .commentBubble {
-  border: 1px solid #e4e5e8;
+  border: 1px solid var(--line);
   border-radius: 6px;
   padding: 10px;
-  background: #f7f7f8;
+  background: var(--surface-subtle);
 }
 .commentBubble p {
   margin: 0;
-  color: #62646b;
+  color: var(--muted-strong);
   font-size: 12px;
   line-height: 1.55;
   overflow-wrap: anywhere;
@@ -281,10 +281,10 @@
   min-height: 32px;
   margin-top: 11px;
   padding: 5px 9px;
-  border: 1px solid #e2e3e7;
+  border: 1px solid var(--line);
   border-radius: 6px;
-  color: #1c1d21;
-  background: #fff;
+  color: var(--ink);
+  background: var(--panel);
   text-align: left;
   font-size: 11px;
   cursor: pointer;
@@ -295,7 +295,7 @@
   white-space: nowrap;
 }
 .attachment small {
-  color: #72747a;
+  color: var(--muted-strong);
   font-size: 10px;
   flex-shrink: 0;
 }
@@ -310,7 +310,7 @@
   gap: 5px;
   min-height: 24px;
   font-size: 11px;
-  color: #7c7d84;
+  color: var(--muted-strong);
 }
 .commentActions button {
   padding: 2px 0;
@@ -320,10 +320,10 @@
   cursor: pointer;
 }
 .commentActions button[aria-pressed='true'] {
-  color: #4b93bf;
+  color: light-dark(#4b93bf, color-mix(in srgb, #4b93bf 68%, white));
 }
 .delete {
-  color: #b95c68;
+  color: light-dark(#b95c68, color-mix(in srgb, #b95c68 68%, white));
 }
 .attachmentPreview {
   padding: 13px 0 2px;
@@ -353,11 +353,11 @@
   margin-top: 8px;
 }
 .mention {
-  color: #429dce;
+  color: light-dark(#429dce, color-mix(in srgb, #429dce 68%, white));
 }
 .emptyComments {
   padding: 24px 0;
-  color: #77797f;
+  color: var(--muted-strong);
   font-size: 12px;
 }
 .composer {
@@ -379,12 +379,12 @@
 .commentEditor {
   position: relative;
   overflow: hidden;
-  border: 1px solid #e4e5e8;
+  border: 1px solid var(--line);
   border-radius: 7px;
-  background: #fafafa;
+  background: var(--panel);
 }
 .commentEditor:focus-within {
-  border-color: #8d96a0;
+  border-color: var(--ink);
 }
 .commentEditor textarea,
 .editorMirror {
@@ -406,21 +406,21 @@
   display: block;
   resize: none;
   color: transparent;
-  caret-color: #202126;
+  caret-color: var(--ink);
   background: transparent;
   outline: none;
   box-shadow: none;
   scrollbar-width: none;
 }
 .commentEditor textarea::placeholder {
-  color: #73767d;
+  color: var(--muted);
 }
 .editorMirror {
   position: absolute;
   inset: 0;
   overflow: hidden;
   pointer-events: none;
-  color: #26272b;
+  color: var(--ink);
 }
 .composerTools {
   position: absolute;
@@ -428,7 +428,7 @@
   bottom: 7px;
   display: flex;
   gap: 1px;
-  background: #fafafa;
+  background: var(--panel);
 }
 .commentEditor:focus-within .composerTools {
   visibility: visible;
@@ -445,7 +445,7 @@
   padding: 0;
   border: 0;
   border-radius: 4px;
-  color: #727880;
+  color: var(--muted-strong);
   cursor: pointer;
 }
 .replyLabel {
@@ -453,7 +453,7 @@
   align-items: center;
   gap: 5px;
   padding: 0 0 7px;
-  color: #7b8088;
+  color: var(--muted-strong);
   font-size: 10px;
 }
 .replyLabel button {
@@ -477,7 +477,7 @@
   padding: 4px;
   border: 1px solid var(--control-border);
   border-radius: 7px;
-  background: #fff;
+  background: var(--panel);
   box-shadow: 0 7px 24px #18191c12;
 }
 .mentionMenu button {
@@ -497,7 +497,7 @@
   display: block;
   margin-top: 1px;
   font-size: 10px;
-  color: #868a93;
+  color: var(--muted-strong);
 }
 .detailContent {
   flex: 1;
@@ -508,7 +508,7 @@
 .sectionLabel {
   display: block;
   margin-bottom: 9px;
-  color: #72757c;
+  color: var(--muted-strong);
   font-size: 12px;
 }
 .descriptionInput {
@@ -518,19 +518,19 @@
   border: 1px solid var(--control-border);
   border-radius: 7px;
   resize: vertical;
-  color: #4e5158;
+  color: var(--muted-strong);
   font-size: 13px;
   line-height: 1.65;
 }
 .settingField {
   display: block;
   margin-bottom: 18px;
-  color: #62666d;
+  color: var(--muted-strong);
   font-size: 12px;
 }
 .settingField > span {
   float: right;
-  color: #25272d;
+  color: var(--ink);
 }
 .settingField input:not([type='range']) {
   display: block;
@@ -540,18 +540,18 @@
   padding: 0 10px;
   border: 1px solid var(--control-border);
   border-radius: 6px;
-  color: #25272d;
+  color: var(--ink);
 }
 .settingField input[type='range'] {
   display: block;
   width: 100%;
   margin-top: 16px;
-  accent-color: #141518;
+  accent-color: var(--ink);
   cursor: ew-resize;
 }
 .descriptionInput:focus,
 .settingField input:not([type='range']):focus {
-  border-color: #8d96a0;
+  border-color: var(--ink);
   outline: none;
   box-shadow: none;
 }
@@ -563,12 +563,12 @@
   padding: 0 10px;
   border: 1px solid var(--control-border);
   border-radius: 6px;
-  color: #25272d;
-  background: #fff;
+  color: var(--ink);
+  background: var(--panel);
   font: inherit;
 }
 .settingField select:focus {
-  border-color: #8d96a0;
+  border-color: var(--ink);
   outline: none;
   box-shadow: none;
 }
@@ -582,7 +582,7 @@
   margin-top: 3px;
   padding: 6px 8px;
   border-radius: 5px;
-  color: #61656e;
+  color: var(--muted-strong);
   font-size: 11px;
 }
 .scheduleFields {
@@ -594,8 +594,8 @@
   margin: -4px 20px 10px;
   padding: 8px 10px;
   border-radius: 5px;
-  background: #fcedef;
-  color: #bb4658;
+  background: light-dark(#fcedef, color-mix(in srgb, #fcedef 18%, var(--panel)));
+  color: light-dark(#bb4658, color-mix(in srgb, #bb4658 68%, white));
   font-size: 11px;
 }
 .pendingAttachment {
@@ -609,7 +609,7 @@
   border: 1px solid var(--control-border);
   border-radius: 5px;
   font-size: 11px;
-  color: #62666f;
+  color: var(--muted-strong);
 }
 .pendingAttachment span {
   min-width: 0;
@@ -618,7 +618,7 @@
   white-space: nowrap;
 }
 .pendingAttachment small {
-  color: #989ca4;
+  color: var(--muted);
   font-size: 10px;
   white-space: nowrap;
 }
@@ -632,7 +632,7 @@
 }
 .attachmentError {
   margin-top: 7px;
-  color: #bb4658;
+  color: light-dark(#bb4658, color-mix(in srgb, #bb4658 68%, white));
   font-size: 11px;
 }
 .footer {
@@ -643,7 +643,7 @@
   align-items: center;
   gap: 8px;
   margin-right: auto;
-  color: #555960;
+  color: var(--muted-strong);
   font-size: 12px;
 }
 .collaborators .addPerson {
@@ -658,17 +658,17 @@
   font-weight: 400;
 }
 .saveButton {
-  border: 1px solid #111;
-  background: #111;
-  color: #fff;
+  border: 1px solid var(--ink);
+  background: var(--accent);
+  color: var(--accent-foreground);
   box-shadow: none;
 }
 .saveButton:is(:hover, :focus-visible) {
-  background: #2f3033;
+  background: var(--accent);
 }
 .cancelButton {
-  color: #585d66;
-  background: #fff;
+  color: var(--muted-strong);
+  background: var(--panel);
   box-shadow: 0 2px 6px #11111107;
 }
 .dialog :is(button, textarea, input):focus-visible {
@@ -758,18 +758,16 @@
     min-width: 64px;
   }
 }
-@media (prefers-reduced-motion: no-preference) {
-  .dialog[open] {
-    animation: dialogAppear 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
+.dialog[open] {
+  animation: dialogAppear 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes dialogAppear {
+  from {
+    opacity: 0;
+    transform: translateY(5px) scale(0.995);
   }
-  @keyframes dialogAppear {
-    from {
-      opacity: 0;
-      transform: translateY(5px) scale(0.995);
-    }
-    to {
-      opacity: 1;
-      transform: none;
-    }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }

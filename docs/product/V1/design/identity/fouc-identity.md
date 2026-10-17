@@ -4,7 +4,7 @@
 
 Fouc 只有一套账户。邮箱密码、邮箱验证、企业 SSO 与数据库会话由 `backend/server/src/platform/identity` 提供，接口统一为 `/api/auth/*`。身份表由 `backend/server/src/platform/database/identity/schema.ts` 定义，知识库和其它资源只引用同一个用户 UUID。
 
-PostgreSQL 数据库统一命名为 `fouc`；账户表位于全局 `auth` schema，其中 `user`、`session`、`account`、`verification` 由身份模块拥有。项目与知识库等业务表位于 `resources` schema；项目通过 `projectId` 与项目成员授权，知识库通过 `knowledgeBaseId`、库成员与页面 ACL 授权，统一引用全局用户 UUID。
+PostgreSQL 数据库统一命名为 `fouc`；账户表位于全局 `auth` schema，其中 `user`、`session`、`account`、`verification` 由身份模块拥有。项目与知识库等业务表位于 `resources` schema；当前项目是工作台业务范围，任务、资产、成员与聊天默认以真实 projectId 隔离。项目通过 `projectId` 与项目成员授权，知识库通过 `knowledgeBaseId`、库成员与页面 ACL 授权，统一引用全局用户 UUID。
 
 `backend/server/src/platform/database/schema.ts` 组合各模块的表定义；全局初始化、检查与当前 DDL 位于 `backend/server/src/platform/database/initialize*.ts`、`current.sql`。命令为 `bun backend/server/scripts/database.ts [init|status|check]`、`bun backend/server/scripts/database-schema.ts [--write|--check]`。初始化只接受空数据库，没有迁移链、旧 schema 分支或兼容适配器。开发环境集中配置在忽略提交的 `.env.fouc.local`；内置开发账户由 `backend/server/scripts/auth-admin.ts` 创建。
 
@@ -26,7 +26,7 @@ PostgreSQL 数据库统一命名为 `fouc`；账户表位于全局 `auth` schema
 - 登录成功刷新全局身份、关闭模态框并显示提示。注册请求先进入邮箱验证阶段，完成验证后登录；不会把注册受理当成已登录。
 - 会话通过 HttpOnly Cookie 传输，不把会话令牌写入 localStorage。焦点恢复、到期计时、业务请求 401 和同源窗口的 BroadcastChannel 同步会话变化。
 - 退出先撤销服务器会话，成功后切换为访客。撤销失败保留已知身份并显示失败，不宣称退出成功。迟到的会话检查不能恢复已经退出或过期的身份。
-- 业务查询、订阅与私有缓存按身份及具体知识库或项目分区；退出、身份失效、换账户或权限撤销时不能展示上一主体的私有资源。
+- 业务查询、订阅与私有缓存按身份、来源及具体知识库或项目分区；项目选择偏好按主体独立保存。退出、身份失效、换账户或权限撤销时不能展示上一主体的私有资源。
 - 当前工作台模块放入 URL 的 `view` 参数，刷新和认证返回都能恢复模块。
 
 `src/lib/fouc-api-endpoint.ts` 是全局服务地址解析；`src/lib/authenticated-fetch.ts` 是需要会话的业务传输入口。知识库只定义自己的资源路径。开发环境中若 API 与网页均为 HTTP loopback，会对齐 localhost/127.0.0.1 主机名，使 Cookie 在同一站点使用。远程地址和生产配置不会被改写。
@@ -41,7 +41,7 @@ PostgreSQL 数据库统一命名为 `fouc`；账户表位于全局 `auth` schema
 
 ## 访客与资源选择
 
-登录态只决定主体身份与具体操作许可，不决定整套知识库页面或其他模块的数据模式。全产品不设工作空间；项目与知识库是各自授权的独立资源；本机、服务端、设备能力由资源和操作明确选择。登录或退出不得隐式上传、清空或替换当前内容。
+登录态只决定主体身份与具体操作许可，不决定整套知识库页面或其他模块的数据模式。全产品不设额外工作空间；项目是统一工作台业务隔离域，知识库仍独立归属。知识库 owner 配置开放项目范围，关联只限制目录发现，不授予库成员资格或页面 ACL；本机、服务端、设备能力由资源和操作明确选择。登录或退出不得隐式上传、清空或替换当前内容。
 
 当前实现允许访客使用本机范围内的项目与知识库数据，浏览器存储失败时不能报告“已保存”；清除站点数据会删除这类浏览器数据。它不是长期的访客服务端资源模型。面向全产品的受限访客主体、服务端私有资源、保留规则与登录承接仍待设计和实现，不能把“访客 = 本机知识库”当成目标架构。授权原则见 [项目结构设计](../arch/fouc-project-structure-design.md#5-访客资源与登录承接)。
 

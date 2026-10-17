@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import type { ChatSubmission } from "./chat-types";
+import { useProjectResources } from '@/features/project/project-resources';
 
 export type ChatHistoryEntry = {
   id: string;
@@ -12,7 +13,7 @@ export type ChatHistoryEntry = {
 // The home conversation is a UI preview. Keep its history in this app session,
 // without presenting it as a persisted device Agent session.
 const emptyHistory: ChatHistoryEntry[] = [];
-let history = emptyHistory;
+const histories = new Map<string, ChatHistoryEntry[]>();
 const listeners = new Set<() => void>();
 
 function subscribe(listener: () => void) {
@@ -20,11 +21,13 @@ function subscribe(listener: () => void) {
   return () => { listeners.delete(listener); };
 }
 
-export function saveChatConversation(entry: ChatHistoryEntry) {
-  history = [entry, ...history.filter((item) => item.id !== entry.id)];
+export function saveChatConversation(scopeKey: string, entry: ChatHistoryEntry) {
+  const history = histories.get(scopeKey) ?? emptyHistory;
+  histories.set(scopeKey, [entry, ...history.filter((item) => item.id !== entry.id)]);
   listeners.forEach((listener) => listener());
 }
 
 export function useChatHistory() {
-  return useSyncExternalStore(subscribe, () => history, () => emptyHistory);
+  const { scopeKey } = useProjectResources();
+  return useSyncExternalStore(subscribe, () => scopeKey ? histories.get(scopeKey) ?? emptyHistory : emptyHistory, () => emptyHistory);
 }

@@ -3,7 +3,6 @@
 import type { ChatContext } from "./chat-types";
 import type { ChatText } from "./chat-messages";
 import styles from "./chat-context-toolbar.module.css";
-import { ChatProjectSelector } from "./chat-project-selector";
 import { ChatKnowledgeSelector } from "./chat-knowledge-selector";
 import { ChatLocalSettings } from "./chat-local-settings";
 
@@ -15,7 +14,6 @@ export function ChatContextSelectors({ context, onChange, t }: {
   return (
     <div className={styles.toolbar}>
       <div className={styles.resources}>
-        <ChatProjectSelector context={context} onChange={onChange} t={t} />
         <ChatKnowledgeSelector context={context} onChange={onChange} t={t} />
       </div>
       <ChatLocalSettings context={context} onChange={onChange} />

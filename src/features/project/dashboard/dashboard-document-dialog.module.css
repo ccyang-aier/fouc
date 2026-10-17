@@ -14,19 +14,19 @@
   padding: 5px 8px;
   border-radius: 5px;
   font-size: 10px;
-  color: #8a7a45;
-  background: #f8f1df;
+  color: light-dark(#8a7a45, color-mix(in srgb, #8a7a45 68%, white));
+  background: light-dark(#f8f1df, color-mix(in srgb, #f8f1df 18%, var(--panel)));
 }
 .status[data-status='ready'] {
-  color: #548073;
-  background: #e8f3ed;
+  color: light-dark(#548073, color-mix(in srgb, #548073 68%, white));
+  background: light-dark(#e8f3ed, color-mix(in srgb, #e8f3ed 18%, var(--panel)));
 }
 .status[data-status='completed'] {
-  color: #687c9d;
-  background: #eaf0f8;
+  color: light-dark(#687c9d, color-mix(in srgb, #687c9d 68%, white));
+  background: light-dark(#eaf0f8, color-mix(in srgb, #eaf0f8 18%, var(--panel)));
 }
 .dangerIcon {
-  color: #c04955;
+  color: light-dark(#c04955, color-mix(in srgb, #c04955 68%, white));
 }
 .itemField {
   margin: 0;
@@ -34,7 +34,7 @@
   border: 0;
 }
 .itemField legend {
-  color: #626570;
+  color: var(--muted-strong);
   font-size: 12px;
   margin-bottom: 8px;
 }
@@ -47,7 +47,7 @@
 }
 .itemHeader {
   margin-bottom: 5px;
-  color: #9a9da5;
+  color: var(--muted);
   font-size: 10px;
 }
 .itemRow + .itemRow {
@@ -61,7 +61,7 @@
   padding: 0;
   border: 0;
   border-radius: 4px;
-  color: #b95c67;
+  color: light-dark(#b95c67, color-mix(in srgb, #b95c67 68%, white));
   background: transparent;
 }
 .itemFooter {
@@ -71,13 +71,13 @@
   gap: 12px;
   padding-top: 10px;
   font-size: 12px;
-  color: #93969e;
+  color: var(--muted);
 }
 .itemFooter strong {
   margin-left: 6px;
   font-size: 14px;
   font-weight: 500;
-  color: #292c34;
+  color: var(--ink);
 }
 .addButton {
   display: inline-flex;
@@ -87,7 +87,7 @@
   border: 0;
   border-radius: 4px;
   background: transparent;
-  color: #616976;
+  color: light-dark(#616976, color-mix(in srgb, #616976 68%, white));
   font-size: 11px;
 }
 .questionRow {
@@ -106,7 +106,7 @@
   margin: 8px 0 0;
   font-size: 11px;
   line-height: 1.6;
-  color: #91959f;
+  color: var(--muted);
 }
 .downloads {
   display: flex;
@@ -118,20 +118,20 @@
   padding: 30px;
   border: 1px solid var(--resource-card-border);
   border-radius: 8px;
-  background: #fafbfc;
+  background: var(--panel);
 }
 .previewHeading {
   display: flex;
   align-items: center;
   gap: 9px;
-  color: #92969f;
+  color: var(--muted);
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
 .preview h3 {
   margin: 19px 0 24px;
-  color: #242730;
+  color: var(--ink);
   font-size: 24px;
   font-weight: 500;
   letter-spacing: -0.7px;
@@ -141,10 +141,10 @@
   margin: 22px 0 7px;
   font-size: 12px;
   font-weight: 500;
-  color: #7c8492;
+  color: light-dark(#7c8492, color-mix(in srgb, #7c8492 68%, white));
 }
 .preview p {
-  color: #69717f;
+  color: light-dark(#69717f, color-mix(in srgb, #69717f 68%, white));
   font-size: 12px;
   line-height: 1.8;
   white-space: pre-wrap;
@@ -154,13 +154,13 @@
   justify-content: space-between;
   gap: 20px;
   margin-bottom: 24px;
-  color: #9399a4;
+  color: var(--muted);
   font-size: 10px;
   line-height: 1.7;
 }
 .previewMeta strong {
   display: block;
-  color: #343944;
+  color: var(--ink);
   font-size: 12px;
   font-weight: 500;
 }
@@ -175,11 +175,11 @@
   border-bottom: 1px solid var(--separator-color);
 }
 .preview th {
-  color: #9a9fab;
+  color: var(--muted);
   font-weight: 400;
 }
 .preview td {
-  color: #555e6e;
+  color: light-dark(#555e6e, color-mix(in srgb, #555e6e 68%, white));
 }
 .preview :is(th, td):last-child {
   text-align: right;
@@ -189,11 +189,11 @@
   justify-content: flex-end;
   gap: 20px;
   margin-top: 20px;
-  color: #8b939f;
+  color: var(--muted);
   font-size: 12px;
 }
 .total strong {
-  color: #272e3a;
+  color: var(--ink);
   font-size: 16px;
   font-weight: 500;
 }
@@ -212,7 +212,7 @@
   padding: 15px;
   border: 1px solid var(--resource-card-border);
   border-radius: 7px;
-  background: #fafbfc;
+  background: var(--panel);
 }
 .responses h3 {
   display: flex;
@@ -223,7 +223,7 @@
   font-weight: 500;
 }
 .responses time {
-  color: #9a9faa;
+  color: var(--muted);
   font-size: 10px;
   font-weight: 400;
 }
@@ -231,14 +231,14 @@
   margin-top: 14px;
 }
 .responses strong {
-  color: #89909d;
+  color: var(--muted);
   font-size: 11px;
   font-weight: 400;
 }
 .responses p {
   margin: 4px 0 0;
   font-size: 12px;
-  color: #4b5361;
+  color: light-dark(#4b5361, color-mix(in srgb, #4b5361 68%, white));
   line-height: 1.6;
   white-space: pre-wrap;
 }

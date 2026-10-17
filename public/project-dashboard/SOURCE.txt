@@ -1,7 +1,4 @@
 Source: user-supplied opensource/dribbble/produtc-design-01.mp4.
-Portraits, attachment marks and distinctive UI icons were extracted from that
+Portraits and attachment marks were extracted from that
 reference for the requested Fouc project-dashboard recreation. They represent
 the reference design's sample content, not Fouc account or member identities.
-
-Font: Inter by The Inter Project Authors, distributed under SIL OFL 1.1.
-Font files and the full license are in ../fonts/dashboard-inter/.

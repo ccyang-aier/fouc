@@ -20,36 +20,17 @@ export const messages = defineMessages({
   Color: ['颜色', 'Color'],
   'Create project': ['创建项目', 'Create project'],
   'Create task': ['创建任务', 'Create task'],
-  'Dashboard changes are saved on this device for the selected Fouc project.': [
-    '工作台变更保存在此设备上，并关联当前 Fouc 项目。',
-    'Dashboard changes are saved on this device for the selected Fouc project.',
-  ],
   Delete: ['删除', 'Delete'],
   Description: ['说明', 'Description'],
-  Done: ['完成', 'Done'],
   'Due date': ['截止日期', 'Due date'],
   'Duration (hours)': ['持续时间（小时）', 'Duration (hours)'],
   'Enter a task name.': ['请输入任务名称。', 'Enter a task name.'],
   'Give it a name': ['输入名称', 'Give it a name'],
-  'Got it': ['知道了', 'Got it'],
-  'Mark all as read': ['全部标为已读', 'Mark all as read'],
-  'Meetings have their own agenda, attendees and calendar export. Notifications open the item that changed.':
-    [
-      '会议可设置议程、参与人并导出日历。点击通知可打开对应内容。',
-      'Meetings have their own agenda, attendees and calendar export. Notifications open the item that changed.',
-    ],
-  'No notifications yet.': ['暂无通知。', 'No notifications yet.'],
-  'Notifications marked as read': ['通知已标为已读', 'Notifications marked as read'],
   Orange: ['橙色', 'Orange'],
   Priority: ['优先级', 'Priority'],
   Project: ['项目', 'Project'],
   'Project created': ['项目已创建', 'Project created'],
   'Project name': ['项目名称', 'Project name'],
-  'Projects group tasks. Create a task, choose its project and schedule, then open it to update details or add a comment.':
-    [
-      '项目管理多个任务。创建任务时设置所属项目和排期，打开任务可编辑详情或添加评论。',
-      'Projects group tasks. Create a task, choose its project and schedule, then open it to update details or add a comment.',
-    ],
   Sage: ['鼠尾草绿', 'Sage'],
   Save: ['保存', 'Save'],
   'Scheduled date': ['排期日期', 'Scheduled date'],
@@ -57,13 +38,7 @@ export const messages = defineMessages({
   'Task created': ['任务已创建', 'Task created'],
   'Task name': ['任务名称', 'Task name'],
   'Timeline category': ['时间线分类', 'Timeline category'],
-  'Use the four document shortcuts for invoices, proposals, contracts and forms. Save drafts, download their content, or collect form responses on this device.':
-    [
-      '四个文档入口分别用于账单、提案、合同和表单，可保存草稿、下载内容或在本机收集表单回复。',
-      'Use the four document shortcuts for invoices, proposals, contracts and forms. Save drafts, download their content, or collect form responses on this device.',
-    ],
   'What are you working on?': ['你正在做什么？', 'What are you working on?'],
-  'Working with your projects': ['使用项目工作台', 'Working with your projects'],
   'To Do': ['待办', 'To Do'],
   Low: ['低', 'Low'],
   Medium: ['中', 'Medium'],
@@ -72,6 +47,5 @@ export const messages = defineMessages({
   'Mobile App': ['移动应用', 'Mobile App'],
   'Dashboard Design': ['工作台设计', 'Dashboard Design'],
   'Landing Page': ['落地页', 'Landing Page'],
-  'Mark {v0} as read': ['将 {v0} 标为已读', 'Mark {v0} as read'],
   'Invite collaborators': ['添加协作者', 'Invite collaborators'],
 });

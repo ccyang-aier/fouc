@@ -11,15 +11,15 @@ import { useWorkbenchTabScroll } from './use-workbench-tab-scroll';
 import { messages } from './i18n/navigation-sidebar.messages';
 import styles from './workbench-tab-bar.module.css';
 
-export function WorkbenchTabBar({ tabs, active, titles, onActivate, onClose, onReorder, onPin, onReload, onDuplicate, onNew }: {
-  tabs: WorkbenchTab[]; active: string; titles: ReadonlyMap<string, string>;
+export function WorkbenchTabBar({ tabs, active, revealRequest, titles, onActivate, onClose, onReorder, onPin, onReload, onDuplicate, onNew }: {
+  tabs: WorkbenchTab[]; active: string; revealRequest: number; titles: ReadonlyMap<string, string>;
   onActivate: (key: string) => void; onClose: (key: string, action?: TabCloseAction) => void; onReorder: (instances: number[]) => void;
   onPin: (key: string) => void; onReload: (key: string) => void; onDuplicate: (key: string) => void; onNew: (view: WorkbenchPage) => void;
 }) {
   const { t } = useTranslation(messages);
   const group = useId();
   const order = tabs.map(tab => tab.instance).join(',');
-  const { strip, ref, viewport, newButton, dragging, edges, revealSelected } = useWorkbenchTabScroll(active, tabs);
+  const { strip, ref, viewport, newButton, dragging, edges, revealSelected, browse } = useWorkbenchTabScroll(active, revealRequest);
   const [context, setContext] = useState<{ instance: number; x: number; y: number } | null>(null);
   const [newContext, setNewContext] = useState<{ x: number; y: number } | null>(null);
   const [layout, setLayout] = useState({ order, tabs, reorder: false });
@@ -28,7 +28,7 @@ export function WorkbenchTabBar({ tabs, active, titles, onActivate, onClose, onR
     // Insert/remove changes the native scroll range. Only reorder the same items with FLIP.
     setLayout({ order, tabs, reorder: tabs.length === previous.size && tabs.every(tab => previous.has(tab.instance)) });
   }
-  function focusSelected() { requestAnimationFrame(() => { revealSelected(); ref.current?.querySelector<HTMLButtonElement>('[aria-selected="true"]')?.focus({ preventScroll: true }); }); }
+  function focusSelected() { requestAnimationFrame(() => { ref.current?.querySelector<HTMLButtonElement>('[aria-selected="true"]')?.focus({ preventScroll: true }); }); }
   function activate(key: string) { setContext(null); setNewContext(null); onActivate(key); }
   function close(key: string, action?: TabCloseAction) { setContext(null); onClose(key, action); focusSelected(); }
   function newTab(view: WorkbenchPage = 'home') { setContext(null); setNewContext(null); onNew(view); focusSelected(); }
@@ -59,7 +59,7 @@ export function WorkbenchTabBar({ tabs, active, titles, onActivate, onClose, onR
   }
   const contextIndex = context ? tabs.findIndex(tab => tab.instance === context.instance) : -1;
   return <div ref={strip} className={styles.strip} data-tauri-drag-region="false">
-    {edges.overflow && <button type="button" className={`fouc-action ${styles.browse}`} aria-label={t('向左浏览页签')} title={t('向左浏览页签')} disabled={!edges.left} onClick={() => viewport.current?.scrollBy({ left: -viewport.current.clientWidth * .7, behavior: 'smooth' })}><CaretLeft size={13} aria-hidden /></button>}
+    {edges.overflow && <button type="button" className={`fouc-action ${styles.browse}`} aria-label={t('向左浏览页签')} title={t('向左浏览页签')} disabled={!edges.left} onClick={() => browse(-1)}><CaretLeft size={13} aria-hidden /></button>}
     <div className={styles.scroller} data-hidden-left={edges.left} data-hidden-right={edges.right}>
     <motion.div ref={viewport} layoutScroll className={styles.viewport}>
       <LayoutGroup id={group}>
@@ -79,7 +79,7 @@ export function WorkbenchTabBar({ tabs, active, titles, onActivate, onClose, onR
       </LayoutGroup>
     </motion.div>
     </div>
-    {edges.overflow && <button type="button" className={`fouc-action ${styles.browse}`} aria-label={t('向右浏览页签')} title={t('向右浏览页签')} disabled={!edges.right} onClick={() => viewport.current?.scrollBy({ left: viewport.current.clientWidth * .7, behavior: 'smooth' })}><CaretRight size={13} aria-hidden /></button>}
+    {edges.overflow && <button type="button" className={`fouc-action ${styles.browse}`} aria-label={t('向右浏览页签')} title={t('向右浏览页签')} disabled={!edges.right} onClick={() => browse(1)}><CaretRight size={13} aria-hidden /></button>}
     <button ref={newButton} type="button" className={`fouc-action ${styles.newTab}`} aria-label={t('新建标签页')} title={t('新建标签页')} aria-haspopup="menu" aria-expanded={Boolean(newContext)} onClick={() => newTab()}
       onContextMenu={event => { event.preventDefault(); setContext(null); setNewContext({ x: event.clientX, y: event.clientY }); }}
       onKeyDown={event => { if (event.key === 'ContextMenu' || event.shiftKey && event.key === 'F10') { event.preventDefault(); const bounds = event.currentTarget.getBoundingClientRect(); setContext(null); setNewContext({ x: bounds.left, y: bounds.bottom }); } }}><Plus size={17} aria-hidden /></button>

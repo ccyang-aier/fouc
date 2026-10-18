@@ -18,6 +18,7 @@ export function useWorkbenchTabs(scope: string | null, view: WorkbenchPage, sear
   const requested = tabTarget(view, search);
   const unavailable = Boolean(requested.conversationId && !conversationIds.includes(requested.conversationId));
   const target = unavailable ? tabTarget('home') : requested;
+  const [revealRequest, setRevealRequest] = useState(0);
   const [memory, setMemory] = useState(() => ({ state: createWorkbenchTabs(scope, target), location: search, hydrated: false, hasProject: false, restoreSearch: null as string | null }));
   let current = memory;
   if (boot && (!current.hydrated || current.state.scope !== scope)) {
@@ -79,8 +80,9 @@ export function useWorkbenchTabs(scope: string | null, view: WorkbenchPage, sear
     }
   }
   function commit(next: WorkbenchTabsState, replace = false) {
-    // Re-selecting the current page also reveals its tab after manual scrolling.
-    setStored(next === state ? { ...next, tabs: [...next.tabs] } : next);
+    setStored(next);
+    // Explicit navigation can reveal even the current page; background updates cannot take over browsing.
+    setRevealRequest(value => value + 1);
     navigate(next.tabs.find(tab => tab.key === next.active)!, replace);
   }
   function open(view: WorkbenchPage, conversationId?: string) {
@@ -134,5 +136,5 @@ export function useWorkbenchTabs(scope: string | null, view: WorkbenchPage, sear
     else setStored(next);
   }
 
-  return { ...state, ready: boot, open, activate, close, promote, reorder, newTab, pin, reload, duplicate };
+  return { ...state, revealRequest, ready: boot, open, activate, close, promote, reorder, newTab, pin, reload, duplicate };
 }

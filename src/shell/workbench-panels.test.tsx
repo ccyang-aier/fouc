@@ -79,6 +79,23 @@ beforeEach(async () => {
 });
 afterAll(async () => { await act(async () => root.unmount()); await browser.happyDOM.abort(); });
 
+test('explicit navigation reveals tabs while background operations leave manual browsing alone', async () => {
+  const first = tabs.revealRequest;
+  await act(async () => tabs.open('home'));
+  expect(tabs.revealRequest).toBe(first + 1);
+  await act(async () => tabs.open('connectors'));
+  const connector = tabs.tabs.find(tab => tab.view === 'connectors')!;
+  await act(async () => tabs.open('home'));
+  const request = tabs.revealRequest;
+  await act(async () => tabs.pin(connector.key));
+  await act(async () => tabs.reload(connector.key));
+  await act(async () => tabs.close(connector.key));
+  expect(tabs.revealRequest).toBe(request);
+  await act(async () => tabs.newTab());
+  expect(tabs.revealRequest).toBe(request + 1);
+  expect(tabs.tabs.find(tab => tab.key === tabs.active)?.view).toBe('home');
+});
+
 test('switching tabs preserves the actual DOM, draft, local state and scroll; closing releases just that page', async () => {
   const input = host.querySelector<HTMLInputElement>('input')!;
   const scroll = host.querySelector<HTMLElement>('[data-scroll]')!;

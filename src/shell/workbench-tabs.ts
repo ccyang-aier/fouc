@@ -3,6 +3,7 @@ import type { WorkbenchPage } from './workbench-pages';
 export type TabTarget = { key: string; view: WorkbenchPage; search: string; conversationId?: string };
 export type WorkbenchTab = TabTarget & { instance: number };
 export type WorkbenchTabsState = { scope: string | null; tabs: WorkbenchTab[]; active: string; nextInstance: number };
+export type TabCloseAction = 'current' | 'others' | 'right' | 'all';
 export const workbenchTabId = (instance: number) => `workbench-tab-${instance}`;
 export const workbenchPanelId = (instance: number) => `workbench-panel-${instance}`;
 
@@ -33,12 +34,21 @@ export function openWorkbenchTab(state: WorkbenchTabsState, target: TabTarget): 
   };
 }
 
-export function closeWorkbenchTab(state: WorkbenchTabsState, key: string): WorkbenchTabsState {
+export function reorderWorkbenchTabs(state: WorkbenchTabsState, instances: readonly number[]): WorkbenchTabsState {
+  const positions = new Map(instances.map((instance, index) => [instance, index]));
+  const tabs = [...state.tabs].sort((a, b) => (positions.get(a.instance) ?? instances.length) - (positions.get(b.instance) ?? instances.length));
+  return tabs.every((tab, index) => tab === state.tabs[index]) ? state : { ...state, tabs };
+}
+
+export function closeWorkbenchTab(state: WorkbenchTabsState, key: string, action: TabCloseAction = 'current'): WorkbenchTabsState {
   const index = state.tabs.findIndex(tab => tab.key === key);
   if (index < 0) return state;
-  const tabs = state.tabs.filter(tab => tab.key !== key);
+  const tabs = state.tabs.filter((tab, position) => action === 'current' ? tab.key !== key : action === 'others' ? tab.key === key : action === 'right' ? position <= index : false);
+  if (tabs.length === state.tabs.length) return state;
   if (!tabs.length) return { ...state, tabs: [{ ...tabTarget('home'), instance: state.nextInstance }], active: 'home', nextInstance: state.nextInstance + 1 };
-  return { ...state, tabs, active: state.active === key ? tabs[Math.max(0, index - 1)].key : state.active };
+  const activeIndex = state.tabs.findIndex(tab => tab.key === state.active);
+  const neighbor = state.tabs.slice(0, activeIndex).reverse().find(tab => tabs.includes(tab)) ?? tabs[0];
+  return { ...state, tabs, active: tabs.some(tab => tab.key === state.active) ? state.active : neighbor.key };
 }
 
 /** Promotion keeps the mounted draft/editor instance when its first message is sent. */

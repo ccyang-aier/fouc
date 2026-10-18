@@ -43,7 +43,7 @@ export function NavigationSidebar({ open, onCollapse, onExpand, view, onViewChan
         <TooltipContent side="bottom">{t(open ? '收起主导航' : '展开主导航')}</TooltipContent>
       </Tooltip>
     </header>
-    <ScrollArea className="min-h-0 flex-1" viewportClassName={open ? 'px-3 pb-4 pt-3' : 'px-1 pb-3 pt-3'}>
+    <ScrollArea className="min-h-0 flex-1" viewportClassName={open ? 'px-3 pb-4 pt-2' : 'px-1 pb-3 pt-2'}>
       <nav aria-label={t('项目导航')} className="flex flex-col gap-0.5">{primary.map(row)}</nav>
       <div role="separator" className="mx-2 my-3 border-t border-[var(--line)]" />
       {open && <SidebarProjectSections key={scopeKey ?? 'no-project'} onNewChat={() => onViewChange('home')} onAllChats={() => onViewChange('chats')} onOpenChat={onOpenChat} />}

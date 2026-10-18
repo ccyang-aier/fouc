@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { closeWorkbenchTab, createWorkbenchTabs, openWorkbenchTab, promoteConversationTab, tabTarget } from './workbench-tabs';
+import { closeWorkbenchTab, createWorkbenchTabs, openWorkbenchTab, promoteConversationTab, reorderWorkbenchTabs, tabTarget } from './workbench-tabs';
 
 test('menus reuse existing tabs without changing their instances or opening settings', () => {
   let state = createWorkbenchTabs('user:local:a', tabTarget('home'));
@@ -39,4 +39,29 @@ test('the first message promotes a draft in place and distinct conversations hav
   state = openWorkbenchTab(state, tabTarget('home', '?conversation=chat-b'));
   expect(state.tabs.map(tab => tab.key)).toEqual(['chat:chat-a', 'home', 'chat:chat-b']);
   expect(tabTarget('knowledge', '?view=home&conversation=chat-a').conversationId).toBeUndefined();
+});
+
+test('reordering retains instances and selection, and bulk closes use the displayed order and target tab', () => {
+  let state = createWorkbenchTabs('scope', tabTarget('home'));
+  for (const page of ['community', 'connectors', 'knowledge'] as const) state = openWorkbenchTab(state, tabTarget(page));
+  const [home, community, connectors, knowledge] = state.tabs;
+  state = reorderWorkbenchTabs(state, [knowledge.instance, home.instance, connectors.instance, community.instance]);
+  expect(state.tabs).toEqual([knowledge, home, connectors, community]);
+  expect(state.tabs[0]).toBe(knowledge);
+  expect(state.active).toBe('knowledge');
+  expect(reorderWorkbenchTabs(state, state.tabs.map(tab => tab.instance))).toBe(state);
+  const right = closeWorkbenchTab(state, 'home', 'right');
+  expect(right.tabs).toEqual([knowledge, home]);
+  expect(right.active).toBe('knowledge');
+  expect(closeWorkbenchTab(right, 'home', 'right')).toBe(right);
+  const others = closeWorkbenchTab(state, 'connectors', 'others');
+  expect(others.tabs).toEqual([connectors]);
+  expect(others.tabs[0]).toBe(connectors);
+  expect(others.active).toBe('connectors');
+  const selectedRight = closeWorkbenchTab({ ...state, active: 'community' }, 'home', 'right');
+  expect(selectedRight.active).toBe('home');
+  const all = closeWorkbenchTab(state, 'connectors', 'all');
+  expect(all.tabs.map(tab => tab.key)).toEqual(['home']);
+  expect(all.tabs[0].instance).toBe(state.nextInstance);
+  expect(all.active).toBe('home');
 });

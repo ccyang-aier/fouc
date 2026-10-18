@@ -24,7 +24,8 @@ export function WorkbenchPanels({ tabs, active, history, onNavigate, onOpenChat,
 }) {
   const { t } = useTranslation(messages);
   const { projects, selectedProject, selectProject, scopeKey } = useProjectResources();
-  return tabs.map(tab => {
+  // Tab order must not move live editor/iframe hosts in the document.
+  return tabs.toSorted((a, b) => a.instance - b.instance).map(tab => {
     const visible = tab.key === active;
     const projectPage = !['community', 'connectors', 'knowledge'].includes(tab.view);
     // Keep actual DOM/editors mounted: hiding must not destroy collaboration or undo.

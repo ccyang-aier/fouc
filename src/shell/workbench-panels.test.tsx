@@ -138,6 +138,43 @@ test('conversation promotion keeps its editor, and deleting a conversation remov
   expect(browser.location.search).not.toContain('conversation');
 });
 
+test('drag order and bulk closing preserve retained page DOM and drafts without changing unrelated navigation', async () => {
+  const home = host.querySelector<HTMLInputElement>('input')!;
+  await act(async () => { home.value = 'keep this draft'; home.dispatchEvent(new Event('input', { bubbles: true })); tabs.open('community'); });
+  const community = host.querySelector<HTMLInputElement>('[data-page="community"] input')!;
+  const scroll = host.querySelector<HTMLElement>('[data-page="community"] [data-scroll]')!;
+  scroll.scrollTop = 240;
+  await act(async () => tabs.open('connectors'));
+  const connector = host.querySelector('[data-page="connectors"] input');
+  const [homeTab, communityTab, connectorTab] = tabs.tabs;
+  const panels = [...host.querySelectorAll('[role="tabpanel"]')];
+  const url = browser.location.href;
+  await act(async () => tabs.reorder([connectorTab.instance, homeTab.instance, communityTab.instance]));
+  expect(tabs.tabs.map(tab => tab.key)).toEqual(['connectors', 'home', 'community']);
+  expect([...host.querySelectorAll('[role="tabpanel"]')]).toEqual(panels);
+  expect(browser.location.href).toBe(url);
+  expect(host.querySelector('[data-page="home"] input')).toBe(home);
+  expect(host.querySelector('[data-page="community"] input')).toBe(community);
+  expect(host.querySelector('[data-page="connectors"] input')).toBe(connector);
+  expect(scroll.scrollTop).toBe(240);
+  expect([...releases.values()]).toEqual([]);
+  await act(async () => tabs.close('home', 'right'));
+  expect(tabs.active).toBe('connectors');
+  expect(browser.location.href).toBe(url);
+  expect(releases.get('community')).toBe(1);
+  expect(host.querySelector('[data-page="home"] input')).toBe(home);
+  await act(async () => tabs.close('home', 'others'));
+  expect(tabs.active).toBe('home');
+  expect(host.querySelector('input')).toBe(home);
+  expect(home.value).toBe('keep this draft');
+  expect(mounts.get('home')).toBe(1);
+  expect(releases.get('connectors')).toBe(1);
+  await act(async () => tabs.close('home', 'all'));
+  expect(tabs.tabs).toHaveLength(1);
+  expect(host.querySelector('input')).not.toBe(home);
+  expect(host.querySelector<HTMLInputElement>('input')!.value).toBe('');
+});
+
 test('hydration opens only the requested URL when there is no selected project', async () => {
   await act(async () => root.unmount());
   scope = null;

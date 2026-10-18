@@ -49,7 +49,7 @@ export function WorkbenchShell() {
         <div className="flex min-h-0 flex-1">
           <div className={`${styles.navigation} flex shrink-0`}><NavigationSidebar open={!sidebarCollapsed} onCollapse={() => setSidebarCollapsed(true)} onExpand={() => setSidebarCollapsed(false)} view={view} onViewChange={changeView} onProjectChange={() => setView('workbench')} onOpenChat={openChat} /></div>
           <div className={styles.workspace}>
-            <div className={styles.systemBar}><SystemBar onNavigate={changeView} navigation={navigation}>{tabs.ready ? <WorkbenchTabBar key={scopeKey ?? 'no-project'} tabs={tabs.tabs} active={tabs.active} titles={titles} onActivate={tabs.activate} onClose={tabs.close} /> : <div className="flex-1" />}</SystemBar></div>
+            <div className={styles.systemBar}><SystemBar onNavigate={changeView} navigation={navigation}>{tabs.ready ? <WorkbenchTabBar key={scopeKey ?? 'no-project'} tabs={tabs.tabs} active={tabs.active} titles={titles} onActivate={tabs.activate} onClose={tabs.close} onReorder={tabs.reorder} /> : <div className="flex-1" />}</SystemBar></div>
             <main className={styles.content}>
               <WorkbenchPanels tabs={tabs.tabs} active={tabs.active} history={history} onNavigate={changeView} onOpenChat={openChat} onConversationStarted={tabs.promote} />
             </main>

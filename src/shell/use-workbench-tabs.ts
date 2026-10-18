@@ -4,7 +4,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { pushWorkbenchLocation, replaceWorkbenchLocation } from '@/lib/navigation-history';
 import { closeSettings } from '@/lib/settings-navigation';
 import type { WorkbenchPage } from './workbench-pages';
-import { closeWorkbenchTab, createWorkbenchTabs, openWorkbenchTab, promoteConversationTab, tabTarget, type WorkbenchTab, type WorkbenchTabsState } from './workbench-tabs';
+import { closeWorkbenchTab, createWorkbenchTabs, openWorkbenchTab, promoteConversationTab, reorderWorkbenchTabs, tabTarget, type TabCloseAction, type WorkbenchTab, type WorkbenchTabsState } from './workbench-tabs';
 
 const subscribeHydration = () => () => {};
 const clientReady = () => true;
@@ -62,11 +62,16 @@ export function useWorkbenchTabs(scope: string | null, view: WorkbenchPage, sear
     const tab = remembered.tabs.find(tab => tab.key === key);
     if (tab) commit(openWorkbenchTab(remembered, tab));
   }
-  function close(key: string) {
+  function close(key: string, action: TabCloseAction = 'current') {
     const remembered = rememberLocation(state);
-    const next = closeWorkbenchTab(remembered, key);
-    if (next.active !== remembered.active || !next.tabs.some(tab => tab.instance === remembered.tabs.find(item => item.key === remembered.active)?.instance)) commit(next, true);
+    const next = closeWorkbenchTab(remembered, key, action);
+    const previous = remembered.tabs.find(tab => tab.key === remembered.active);
+    const selected = next.tabs.find(tab => tab.key === next.active);
+    if (previous?.instance !== selected?.instance) commit(next, true);
     else setStored(next);
+  }
+  function reorder(instances: number[]) {
+    setStored(current => current.scope === scope ? reorderWorkbenchTabs(current, instances) : current);
   }
   function promote(instance: number, id: string) {
     const next = promoteConversationTab(state, instance, id);
@@ -74,5 +79,5 @@ export function useWorkbenchTabs(scope: string | null, view: WorkbenchPage, sear
     else setStored(next);
   }
 
-  return { ...state, ready, open, activate, close, promote };
+  return { ...state, ready, open, activate, close, promote, reorder };
 }

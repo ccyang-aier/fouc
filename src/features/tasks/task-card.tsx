@@ -62,12 +62,12 @@ export function TaskCard({ task, board, editable, draggable, dragging, onOpen, o
       </div>
       <div className={styles.metadataRow}>
         <span className={styles.date} data-overdue={overdue || undefined} data-empty={!task.dueDate || undefined}>
-          <CalendarDots size={18} />{task.dueDate ? <time dateTime={task.dueDate}>{task.dueDate.split('-').reverse().join('/')}</time> : progressText('noDueDate')}
+          <CalendarDots size={16} />{task.dueDate ? <time dateTime={task.dueDate}>{task.dueDate.split('-').reverse().join('/')}</time> : progressText('noDueDate')}
         </span>
         <div className={styles.metrics}>
           {/* Tasks do not yet accept attachments, so their current count is zero. */}
-          <span aria-label={t('attachments', { count: 0 })}><Paperclip size={18} />0</span>
-          <span aria-label={t('comments', { count: task.commentCount })}><ChatText size={18} />{task.commentCount}</span>
+          <span aria-label={t('attachments', { count: 0 })}><Paperclip size={16} />0</span>
+          <span aria-label={t('comments', { count: task.commentCount })}><ChatText size={16} />{task.commentCount}</span>
         </div>
       </div>
     </div>

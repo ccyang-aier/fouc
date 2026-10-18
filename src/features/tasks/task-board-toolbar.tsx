@@ -1,13 +1,14 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { ArrowDownUp, ChartGantt, Check, ChevronDown, Clock3, Columns2, Ellipsis, Funnel, LockKeyhole, Pencil, Plus, RotateCw, Search, Table2, Trash2, Users, X, Zap } from 'lucide-react';
+import { ArrowDownUp, Check, ChevronDown, Clock3, Columns2, Ellipsis, Funnel, LockKeyhole, Pencil, Plus, RotateCw, Search, Trash2, Users, X, Zap } from 'lucide-react';
 import type { TaskBoardDetail } from '@fouc/shared/tasks';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTranslation } from '@/lib/i18n';
 import { emptyTaskFilters, hasTaskFilters, type TaskFilters, type TaskSort } from './task-board-model';
+import { TaskBoardViewSwitcher } from './task-board-view-switcher';
 import { messages } from './task-board.messages';
 import styles from './task-board.module.css';
 
@@ -42,13 +43,9 @@ export function TaskBoardToolbar({ board, filters, onFilters, sort, onSort, onRe
             <DropdownMenuSeparator />{board.members.map(member => <DropdownMenuRadioItem key={member.userId} value={member.userId}>{member.name}</DropdownMenuRadioItem>)}
           </DropdownMenuRadioGroup></DropdownMenuContent>
         </DropdownMenu>
-        <div className={styles.viewSwitcher} role="group" aria-label={t('views')}>
-          {([{ key: 'list', icon: Table2 }, { key: 'timeline', icon: ChartGantt }, { key: 'kanban', icon: Columns2 }] as const).map(({ key, icon: Icon }) => key === 'kanban'
-            ? <button key={key} type="button" className={`fouc-action ${styles.viewSegment}`} aria-pressed="true"><span>{t(key)}</span><Icon size={16} /></button>
-            : <Tooltip key={key}><TooltipTrigger asChild><span className={styles.plannedView}><button type="button" className={styles.viewSegment} disabled aria-label={`${t(key)} · ${t('planned')}`}><span>{t(key)}</span><Icon size={16} /></button></span></TooltipTrigger><TooltipContent>{t('planned')}</TooltipContent></Tooltip>)}
-        </div>
+        <TaskBoardViewSwitcher />
         <div className={styles.toolbarControls}>
-        <DropdownMenu><Tooltip><TooltipTrigger asChild><DropdownMenuTrigger className={styles.toolbarIcon} aria-label={t('filter')} data-filter-active={filterCount > 0 || undefined}><Funnel size={18} />{filterCount > 0 && <span className={styles.filterCount}>{filterCount}</span>}</DropdownMenuTrigger></TooltipTrigger><TooltipContent>{t('filter')}</TooltipContent></Tooltip>
+        <DropdownMenu><Tooltip><TooltipTrigger asChild><DropdownMenuTrigger className={styles.toolbarIcon} aria-label={t('filter')} data-filter-active={filterCount > 0 || undefined}><Funnel size={16} />{filterCount > 0 && <span className={styles.filterCount}>{filterCount}</span>}</DropdownMenuTrigger></TooltipTrigger><TooltipContent>{t('filter')}</TooltipContent></Tooltip>
           <DropdownMenuContent align="end"><DropdownMenuSub><DropdownMenuSubTrigger>{t('priority')}</DropdownMenuSubTrigger><DropdownMenuSubContent>
             <DropdownMenuRadioGroup value={filters.priority} onValueChange={priority => onFilters({ ...filters, priority: priority as TaskFilters['priority'] })}>{(['all', 'urgent', 'high', 'medium', 'low'] as const).map(value => <DropdownMenuRadioItem key={value} value={value}>{t(value === 'all' ? 'allPriorities' : value)}</DropdownMenuRadioItem>)}</DropdownMenuRadioGroup>
           </DropdownMenuSubContent></DropdownMenuSub>
@@ -57,17 +54,17 @@ export function TaskBoardToolbar({ board, filters, onFilters, sort, onSort, onRe
             {hasTaskFilters(filters) && <><DropdownMenuSeparator /><DropdownMenuItem onSelect={() => onFilters(emptyTaskFilters)}><X />{t('reset')}</DropdownMenuItem></>}
           </DropdownMenuContent>
         </DropdownMenu>
-        <DropdownMenu><Tooltip><TooltipTrigger asChild><DropdownMenuTrigger className={styles.toolbarIcon} aria-label={t('sort')} data-filter-active={sort !== 'manual' || undefined}><ArrowDownUp size={18} /></DropdownMenuTrigger></TooltipTrigger><TooltipContent>{t(sort === 'manual' ? 'sort' : sortLabels[sort])}</TooltipContent></Tooltip><DropdownMenuContent align="end"><DropdownMenuLabel>{t('sort')}</DropdownMenuLabel><DropdownMenuRadioGroup value={sort} onValueChange={value => onSort(value as TaskSort)}>{(Object.keys(sortLabels) as TaskSort[]).map(value => <DropdownMenuRadioItem key={value} value={value}>{t(sortLabels[value])}</DropdownMenuRadioItem>)}</DropdownMenuRadioGroup></DropdownMenuContent></DropdownMenu>
-        <DropdownMenu><Tooltip><TooltipTrigger asChild><DropdownMenuTrigger className={styles.toolbarIcon} aria-label={t('quickFilters')}><Zap size={18} /></DropdownMenuTrigger></TooltipTrigger><TooltipContent>{t('quickFilters')}</TooltipContent></Tooltip><DropdownMenuContent align="end">
+        <DropdownMenu><Tooltip><TooltipTrigger asChild><DropdownMenuTrigger className={styles.toolbarIcon} aria-label={t('sort')} data-filter-active={sort !== 'manual' || undefined}><ArrowDownUp size={16} /></DropdownMenuTrigger></TooltipTrigger><TooltipContent>{t(sort === 'manual' ? 'sort' : sortLabels[sort])}</TooltipContent></Tooltip><DropdownMenuContent align="end"><DropdownMenuLabel>{t('sort')}</DropdownMenuLabel><DropdownMenuRadioGroup value={sort} onValueChange={value => onSort(value as TaskSort)}>{(Object.keys(sortLabels) as TaskSort[]).map(value => <DropdownMenuRadioItem key={value} value={value}>{t(sortLabels[value])}</DropdownMenuRadioItem>)}</DropdownMenuRadioGroup></DropdownMenuContent></DropdownMenu>
+        <DropdownMenu><Tooltip><TooltipTrigger asChild><DropdownMenuTrigger className={styles.toolbarIcon} aria-label={t('quickFilters')}><Zap size={16} /></DropdownMenuTrigger></TooltipTrigger><TooltipContent>{t('quickFilters')}</TooltipContent></Tooltip><DropdownMenuContent align="end">
           <DropdownMenuItem onSelect={() => onFilters({ ...filters, assignee: 'me' })}><Users />{t('myTasks')}</DropdownMenuItem>
           <DropdownMenuItem onSelect={() => onFilters({ ...filters, due: 'overdue' })}><Clock3 />{t('overdue')}</DropdownMenuItem>
           {hasTaskFilters(filters) && <><DropdownMenuSeparator /><DropdownMenuItem onSelect={() => onFilters(emptyTaskFilters)}><X />{t('reset')}</DropdownMenuItem></>}
         </DropdownMenuContent></DropdownMenu>
         <div className={styles.searchControl} data-expanded={searchOpen || undefined}>
-          <Tooltip><TooltipTrigger asChild><button ref={searchTrigger} type="button" className={`fouc-action ${styles.toolbarIcon}`} aria-label={t('searchTasks')} aria-expanded={searchOpen} onClick={() => { setSearchExpanded(true); searchInput.current?.focus(); }}><Search size={18} /></button></TooltipTrigger><TooltipContent>{t('searchTasks')}</TooltipContent></Tooltip>
+          <Tooltip><TooltipTrigger asChild><button ref={searchTrigger} type="button" className={`fouc-action ${styles.toolbarIcon}`} aria-label={t('searchTasks')} aria-expanded={searchOpen} onClick={() => { setSearchExpanded(true); searchInput.current?.focus(); }}><Search size={16} /></button></TooltipTrigger><TooltipContent>{t('searchTasks')}</TooltipContent></Tooltip>
           {searchOpen && <label className={styles.search}><input ref={searchInput} autoFocus value={filters.query} onChange={event => onFilters({ ...filters, query: event.target.value })} onKeyDown={event => { if (event.key === 'Escape') closeSearch(); }} placeholder={t('searchTasks')} aria-label={t('searchTasks')} /><button type="button" className={`fouc-action ${styles.searchClear}`} aria-label={t('closeSearch')} onClick={closeSearch}><X size={12} /></button></label>}
         </div>
-        <DropdownMenu><Tooltip><TooltipTrigger asChild><DropdownMenuTrigger className={styles.toolbarIcon} aria-label={t('boardActions')}><Ellipsis size={18} /></DropdownMenuTrigger></TooltipTrigger><TooltipContent>{t('boardActions')}</TooltipContent></Tooltip><DropdownMenuContent align="end">
+        <DropdownMenu><Tooltip><TooltipTrigger asChild><DropdownMenuTrigger className={styles.toolbarIcon} aria-label={t('boardActions')}><Ellipsis size={16} /></DropdownMenuTrigger></TooltipTrigger><TooltipContent>{t('boardActions')}</TooltipContent></Tooltip><DropdownMenuContent align="end">
           <DropdownMenuItem disabled={refreshing} onSelect={onRefresh}><RotateCw className={refreshing ? styles.refreshing : undefined} />{t('refresh')}</DropdownMenuItem>
           {board.permission === 'owner' && <><DropdownMenuSeparator /><DropdownMenuItem onSelect={onSettings}><Pencil />{t('settings')}</DropdownMenuItem><DropdownMenuItem variant="destructive" onSelect={onRemoveBoard}><Trash2 />{t('removeBoard')}</DropdownMenuItem></>}
         </DropdownMenuContent></DropdownMenu>

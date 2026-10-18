@@ -55,3 +55,27 @@ test('storage failures are reported while the live UI state remains usable', asy
   session.set('page:1:query', 'still usable', '');
   expect(session.get('page:1:query', '')).toBe('still usable');
 });
+
+test('duplicating a page copies typed UI fields independently without copying shared conversation history', async () => {
+  const session = new ProjectUiSession('copy:local:project');
+  await session.loaded;
+  session.set('page:3:draft', { text: 'source', files: [new Blob(['attachment'])], at: new Date(123) }, null);
+  session.set('page:3:knowledge:local:base:scroll:editor', { top: 280, left: 0 }, null);
+  session.set('page:2:query', 'unrelated', '');
+  session.set('chat.history', ['shared'], []);
+  expect(session.copyPage(3, 4)).toBe(true);
+  const original = session.get<{ text: string } | null>('page:3:draft', null)!;
+  const copy = session.get<{ text: string } | null>('page:4:draft', null)!;
+  expect(copy).not.toBe(original);
+  copy.text = 'copy edited';
+  expect(original.text).toBe('source');
+  const reopened = new ProjectUiSession(session.scope);
+  await reopened.loaded;
+  const restored = reopened.get<{ text: string; files: Blob[]; at: Date } | null>('page:4:draft', null)!;
+  expect(restored.text).toBe('source');
+  expect(await restored.files[0].text()).toBe('attachment');
+  expect(restored.at.getTime()).toBe(123);
+  expect(reopened.get('page:4:knowledge:local:base:scroll:editor', null)).toEqual({ top: 280, left: 0 });
+  expect(reopened.get('page:4:query', null)).toBeNull();
+  expect(reopened.get('chat.history', [])).toEqual(['shared']);
+});

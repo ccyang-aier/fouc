@@ -21,7 +21,8 @@ export const messages = defineMessages({
   设置: ['设置', 'Settings'],
   工作页面: ['工作页面', 'Open pages'], 关闭页面: ['关闭“{name}”页签', 'Close “{name}” tab'],
   向左浏览页签: ['向左浏览页签', 'Scroll tabs left'], 向右浏览页签: ['向右浏览页签', 'Scroll tabs right'],
-  页签操作: ['页签操作', 'Tab actions'], 关闭当前: ['关闭当前', 'Close tab'], 关闭其他: ['关闭其他', 'Close other tabs'], 关闭右侧: ['关闭右侧', 'Close tabs to the right'], 关闭全部: ['关闭全部', 'Close all tabs'],
+  页签操作: ['页签操作', 'Tab actions'], 重新加载: ['重新加载', 'Reload'], 复制标签页: ['复制标签页', 'Duplicate tab'],
+  关闭其它标签页: ['关闭其它标签页', 'Close other tabs'], 关闭全部标签页: ['关闭全部标签页', 'Close all tabs'], 新建标签页: ['新建标签页', 'New tab'],
   页面恢复保存失败: ['无法保存页面恢复记录，当前会话仍可继续使用', 'Could not save page recovery data. You can keep using this session.'],
   切换到浅色模式: ['切换到浅色模式', 'Switch to light mode'], 切换到深色模式: ['切换到深色模式', 'Switch to dark mode'],
 });

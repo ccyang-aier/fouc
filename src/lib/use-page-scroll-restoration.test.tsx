@@ -4,7 +4,7 @@ import { indexedDB } from 'fake-indexeddb';
 import { act, useRef } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { ProjectUiSession } from './project-ui-session';
-import { PageSessionNamespace, ProjectUiSessionContext, usePageScrollKey } from './page-session-state';
+import { PAGE_SESSION_FLUSH, PageSessionNamespace, ProjectUiSessionContext, usePageScrollKey } from './page-session-state';
 import { usePageScrollRestoration } from './use-page-scroll-restoration';
 
 let browser: Window, root: Root, host: HTMLElement, viewport: HTMLDivElement;
@@ -65,4 +65,15 @@ test('a new user interaction cancels pending restoration instead of jumping afte
   viewport.dispatchEvent(new Event('scroll'));
   browser.dispatchEvent(new browser.Event('pagehide'));
   expect(session.get('page:5:scroll:list', null)).toEqual({ top: 55, left: 0 });
+});
+
+test('page duplication can synchronously flush the most recent scroll before its debounce expires', async () => {
+  const session = await mount('scroll:local:copy');
+  contentHeight = 600;
+  await act(async () => resized.forEach(callback => callback()));
+  viewport.scrollTop = 355;
+  viewport.dispatchEvent(new Event('scroll'));
+  viewport.closest('section')!.dispatchEvent(new Event(PAGE_SESSION_FLUSH));
+  expect(session.copyPage(5, 6)).toBe(true);
+  expect(session.get('page:6:scroll:list', null)).toEqual({ top: 355, left: 0 });
 });

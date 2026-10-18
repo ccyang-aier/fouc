@@ -31,7 +31,7 @@ export function WorkbenchPanels({ tabs, active, history, onNavigate, onOpenChat,
     const visible = tab.key === active;
     const projectPage = !['community', 'connectors', 'knowledge'].includes(tab.view);
     // Keep actual DOM/editors mounted: hiding must not destroy collaboration or undo.
-    return <PageSessionNamespace key={`${scopeKey}:${tab.instance}`} name={`page:${tab.instance}`}><WorkbenchPanel tab={tab} visible={visible}>
+    return <PageSessionNamespace key={`${scopeKey}:${tab.instance}:${tab.revision ?? 0}`} name={`page:${tab.instance}`}><WorkbenchPanel tab={tab} visible={visible}>
         {projectPage && (!selectedProject || !scopeKey) ? <ProjectSelectionEmpty />
           : tab.view === 'home' ? <HomeCanvas conversation={history.find(entry => entry.id === tab.conversationId)} onOpenConnectors={() => onNavigate('connectors')} onOpenConversation={onOpenChat} onNewConversation={() => onNavigate('home')} onConversationStarted={id => onConversationStarted(tab.instance, id)} />
           : tab.view === 'workbench' && selectedProject && scopeKey ? <ProjectDashboard projectName={selectedProject.name} scopeKey={scopeKey} onNavigate={onNavigate} />

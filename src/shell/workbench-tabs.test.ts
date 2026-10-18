@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { closeWorkbenchTab, createWorkbenchTabs, openWorkbenchTab, promoteConversationTab, reorderWorkbenchTabs, restoreWorkbenchTabs, tabTarget } from './workbench-tabs';
+import { addWorkbenchTab, closeWorkbenchTab, createWorkbenchTabs, openWorkbenchTab, pinWorkbenchTab, promoteConversationTab, reloadWorkbenchTab, reorderWorkbenchTabs, restoreWorkbenchTabs, tabTarget } from './workbench-tabs';
 
 test('menus reuse existing tabs without changing their instances or opening settings', () => {
   let state = createWorkbenchTabs('user:local:a', tabTarget('home'));
@@ -50,20 +50,60 @@ test('reordering retains instances and selection, and bulk closes use the displa
   expect(state.tabs[0]).toBe(knowledge);
   expect(state.active).toBe('knowledge');
   expect(reorderWorkbenchTabs(state, state.tabs.map(tab => tab.instance))).toBe(state);
-  const right = closeWorkbenchTab(state, 'home', 'right');
-  expect(right.tabs).toEqual([knowledge, home]);
-  expect(right.active).toBe('knowledge');
-  expect(closeWorkbenchTab(right, 'home', 'right')).toBe(right);
   const others = closeWorkbenchTab(state, 'connectors', 'others');
   expect(others.tabs).toEqual([connectors]);
   expect(others.tabs[0]).toBe(connectors);
   expect(others.active).toBe('connectors');
-  const selectedRight = closeWorkbenchTab({ ...state, active: 'community' }, 'home', 'right');
-  expect(selectedRight.active).toBe('home');
   const all = closeWorkbenchTab(state, 'connectors', 'all');
   expect(all.tabs.map(tab => tab.key)).toEqual(['home']);
   expect(all.tabs[0].instance).toBe(state.nextInstance);
   expect(all.active).toBe('home');
+});
+
+test('fresh and duplicate tabs have independent identities, while sidebar and history reuse the intended page', () => {
+  let state = createWorkbenchTabs('scope', tabTarget('home'));
+  state = addWorkbenchTab(state, state.tabs[0], 'home');
+  const copy = state.tabs[1];
+  expect(copy.key).not.toBe('home');
+  expect(copy.search).toContain('tab=');
+  expect(openWorkbenchTab(state, tabTarget('home')).active).toBe(copy.key);
+  state = addWorkbenchTab(state, tabTarget('home'));
+  expect(new Set(state.tabs.map(tab => tab.instance)).size).toBe(3);
+  state = openWorkbenchTab(state, copy);
+  expect(state.active).toBe(copy.key);
+  expect(state.tabs).toHaveLength(3);
+  state = promoteConversationTab(state, copy.instance, 'message');
+  const conversation = state.tabs.find(tab => tab.instance === copy.instance)!;
+  state = addWorkbenchTab(state, conversation, conversation.key);
+  const restored = restoreWorkbenchTabs('scope', structuredClone(state))!;
+  expect(restored.tabs.filter(tab => tab.conversationId === 'message')).toHaveLength(2);
+  expect(restored.active).toBe(state.active);
+  expect(openWorkbenchTab(restored, restored.tabs.find(tab => tab.key === restored.active)!).tabs).toHaveLength(4);
+});
+
+test('pinning keeps a stable left group through dragging and restoration; reload affects only its target', () => {
+  let state = createWorkbenchTabs('scope', tabTarget('home'));
+  state = openWorkbenchTab(state, tabTarget('community'));
+  state = openWorkbenchTab(state, tabTarget('connectors'));
+  state = pinWorkbenchTab(state, 'connectors');
+  expect(state.tabs.map(tab => tab.key)).toEqual(['connectors', 'home', 'community']);
+  const copyOfPinned = addWorkbenchTab(state, state.tabs[0], 'connectors');
+  expect(Boolean(copyOfPinned.tabs.find(tab => tab.key === copyOfPinned.active)!.pinned)).toBe(false);
+  expect(copyOfPinned.tabs[0].key).toBe('connectors');
+  state = reorderWorkbenchTabs(state, [1, 0, 2]);
+  expect(state.tabs.map(tab => tab.key)).toEqual(['connectors', 'community', 'home']);
+  const home = state.tabs[2];
+  const reloaded = reloadWorkbenchTab(state, 'community');
+  expect(reloaded.tabs.find(tab => tab.key === 'community')!.revision).toBe(1);
+  expect(reloaded.tabs[2]).toBe(home);
+  expect(reloaded.active).toBe(state.active);
+  state = restoreWorkbenchTabs('scope', reloaded)!;
+  expect(state.tabs[0].pinned).toBe(true);
+  expect(state.tabs[1].revision).toBe(1);
+  state = pinWorkbenchTab(state, 'connectors');
+  expect(state.tabs[0].pinned).toBe(false);
+  expect(closeWorkbenchTab(state, 'connectors', 'others').tabs).toHaveLength(1);
+  expect(closeWorkbenchTab(state, 'connectors', 'all').tabs[0].conversationId).toBeUndefined();
 });
 
 test('restoring validates scope and page targets while retaining order, selection and instance sequence', () => {

@@ -53,14 +53,13 @@ export function HomeChat({
     localEnvironment: { createWorktree: false },
     ...conversation?.submissions.at(-1)?.context,
   });
-  const [submissions, setSubmissions] = useState<ChatSubmission[]>(conversation?.submissions ?? []);
   const [conversationId, setConversationId] = useState<string | null>(conversation?.id ?? null);
   const [editingId, setEditingId] = usePageSessionState<string | null>('editing', null);
   const savedConversation = history.find(entry => entry.id === conversationId);
+  const submissions = savedConversation?.submissions ?? [];
   // A deleted preview must stop being editable, including one started on this page.
   if (conversationId && !savedConversation) {
     setConversationId(null);
-    setSubmissions([]);
     setEditingId(null);
     setDraft({ text: '', attachments: [], mode: null });
     setContext(current => ({ ...current, resources: [] }));
@@ -74,7 +73,6 @@ export function HomeChat({
       ? submissions.map((item) => (item.id === editingId ? submission : item))
       : [...submissions, submission];
     const id = conversationId ?? crypto.randomUUID();
-    setSubmissions(next);
     setConversationId(id);
     if (scopeKey) saveChatConversation(scopeKey, { id, submissions: next, updatedAt: submission.createdAt });
     if (!conversationId) onConversationStarted?.(id);
@@ -96,7 +94,6 @@ export function HomeChat({
   function openConversation(entry: ChatHistoryEntry) {
     if (onOpenConversation) { onOpenConversation(entry); return; }
     setConversationId(entry.id);
-    setSubmissions(entry.submissions);
     setContext({ ...entry.submissions.at(-1)!.context, resources: [] });
     setDraft({ text: "", attachments: [], mode: null });
     setEditingId(null);
@@ -116,7 +113,6 @@ export function HomeChat({
             size="sm"
             onClick={() => {
               if (onNewConversation) { onNewConversation(); return; }
-              setSubmissions([]);
               setEditingId(null);
               setConversationId(null);
               setDraft({ text: "", attachments: [], mode: null });

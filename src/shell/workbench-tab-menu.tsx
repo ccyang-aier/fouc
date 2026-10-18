@@ -1,34 +1,53 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowLineRight, Tabs, X, XSquare, type Icon } from '@phosphor-icons/react';
+import { ArrowsClockwise, CopySimple, PushPin, PushPinSlash, Tabs, X, XSquare } from '@phosphor-icons/react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { getOverlayRoot } from '@/lib/overlay-root';
 import { useTranslation } from '@/lib/i18n';
-import type { TabCloseAction } from './workbench-tabs';
+import { newWorkbenchPages, type TabAction } from './workbench-tabs';
+import { workbenchPages, type WorkbenchPage } from './workbench-pages';
 import { messages } from './i18n/navigation-sidebar.messages';
 import styles from './workbench-tab-bar.module.css';
 
-export function WorkbenchTabMenu({ point, title, icon: PageIcon, otherCount, rightCount, onClose, onAction, onReturnFocus }: {
-  point: { x: number; y: number }; title: string; icon: Icon; otherCount: number; rightCount: number;
-  onClose: () => void; onAction: (action: TabCloseAction) => void; onReturnFocus: () => void;
-}) {
-  const { t } = useTranslation(messages);
-  const returnFocus = useRef(false);
-  function action(value: TabCloseAction) { returnFocus.current = true; onAction(value); }
+type ContextMenuProps = { point: { x: number; y: number }; onClose: () => void; onReturnFocus: () => void };
+
+function TabContextMenu({ point, label, onClose, onReturnFocus, children }: ContextMenuProps & { label: string; children: ReactNode }) {
+  const returnFocus = useRef(true);
   return <DropdownMenu open modal={false} onOpenChange={open => { if (!open) onClose(); }}>
     {createPortal(<DropdownMenuTrigger aria-hidden tabIndex={-1} className={styles.contextAnchor} style={{ left: point.x, top: point.y }} />, getOverlayRoot() ?? document.body)}
-    <DropdownMenuContent aria-label={t('页签操作')} className={styles.menu} side="bottom" align="start" sideOffset={4} collisionPadding={8}
-      onEscapeKeyDown={() => { returnFocus.current = true; }}
+    <DropdownMenuContent aria-label={label} className={styles.menu} side="bottom" align="start" sideOffset={4} collisionPadding={8}
+      onInteractOutside={() => { returnFocus.current = false; }}
       onCloseAutoFocus={event => { event.preventDefault(); if (returnFocus.current) onReturnFocus(); }}>
-      <div className={styles.menuHeading}><span className={styles.menuBadge}><PageIcon size={16} weight="duotone" aria-hidden /></span><span className={styles.menuTitle}>{title}</span></div>
-      <DropdownMenuSeparator />
-      <DropdownMenuItem onSelect={() => action('current')}><X aria-hidden />{t('关闭当前')}</DropdownMenuItem>
-      <DropdownMenuItem disabled={otherCount === 0} onSelect={() => action('others')}><Tabs weight="duotone" aria-hidden />{t('关闭其他')}<span aria-hidden className={styles.menuCount}>{otherCount}</span></DropdownMenuItem>
-      <DropdownMenuItem disabled={rightCount === 0} onSelect={() => action('right')}><ArrowLineRight aria-hidden />{t('关闭右侧')}<span aria-hidden className={styles.menuCount}>{rightCount}</span></DropdownMenuItem>
-      <DropdownMenuSeparator />
-      <DropdownMenuItem onSelect={() => action('all')}><XSquare weight="duotone" aria-hidden />{t('关闭全部')}<span aria-hidden className={styles.menuCount}>{otherCount + 1}</span></DropdownMenuItem>
+      {children}
     </DropdownMenuContent>
   </DropdownMenu>;
+}
+
+export function WorkbenchTabMenu({ pinned, hasOthers, onAction, ...props }: ContextMenuProps & {
+  pinned: boolean; hasOthers: boolean; onAction: (action: TabAction) => void;
+}) {
+  const { t } = useTranslation(messages);
+  const PinIcon = pinned ? PushPinSlash : PushPin;
+  return <TabContextMenu {...props} label={t('页签操作')}>
+    <DropdownMenuItem className={styles.menuItem} onSelect={() => onAction('pin')}><PinIcon weight="duotone" aria-hidden />{t(pinned ? '取消置顶' : '置顶')}</DropdownMenuItem>
+    <DropdownMenuItem className={styles.menuItem} onSelect={() => onAction('reload')}><ArrowsClockwise aria-hidden />{t('重新加载')}</DropdownMenuItem>
+    <DropdownMenuItem className={styles.menuItem} onSelect={() => onAction('duplicate')}><CopySimple weight="duotone" aria-hidden />{t('复制标签页')}</DropdownMenuItem>
+    <DropdownMenuSeparator className={styles.menuSeparator} />
+    <DropdownMenuItem className={styles.menuItem} onSelect={() => onAction('current')}><X aria-hidden />{t('关闭')}</DropdownMenuItem>
+    <DropdownMenuItem className={styles.menuItem} disabled={!hasOthers} onSelect={() => onAction('others')}><Tabs weight="duotone" aria-hidden />{t('关闭其它标签页')}</DropdownMenuItem>
+    <DropdownMenuItem className={styles.menuItem} onSelect={() => onAction('all')}><XSquare weight="duotone" aria-hidden />{t('关闭全部标签页')}</DropdownMenuItem>
+  </TabContextMenu>;
+}
+
+export function WorkbenchNewTabMenu({ onNew, ...props }: ContextMenuProps & { onNew: (page: WorkbenchPage) => void }) {
+  const { t } = useTranslation(messages);
+  return <TabContextMenu {...props} label={t('新建标签页')}>
+    {newWorkbenchPages.map(view => {
+      const page = workbenchPages[view];
+      const Icon = page.icon;
+      return <DropdownMenuItem key={view} className={styles.menuItem} onSelect={() => onNew(view)}><Icon weight="duotone" aria-hidden />{t(page.label)}</DropdownMenuItem>;
+    })}
+  </TabContextMenu>;
 }

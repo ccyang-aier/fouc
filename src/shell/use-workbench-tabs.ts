@@ -1,11 +1,11 @@
 'use client';
 
 import { useContext, useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { ProjectUiSessionContext } from '@/lib/page-session-state';
+import { PAGE_SESSION_FLUSH, ProjectUiSessionContext } from '@/lib/page-session-state';
 import { pushWorkbenchLocation, replaceWorkbenchLocation } from '@/lib/navigation-history';
 import { closeSettings } from '@/lib/settings-navigation';
 import type { WorkbenchPage } from './workbench-pages';
-import { closeWorkbenchTab, createWorkbenchStartup, createWorkbenchTabs, openWorkbenchTab, promoteConversationTab, reorderWorkbenchTabs, restoreWorkbenchTabs, tabTarget, type TabCloseAction, type WorkbenchTab, type WorkbenchTabsState } from './workbench-tabs';
+import { addWorkbenchTab, closeWorkbenchTab, createWorkbenchStartup, createWorkbenchTabs, findWorkbenchTab, openWorkbenchTab, pinWorkbenchTab, promoteConversationTab, reloadWorkbenchTab, reorderWorkbenchTabs, restoreWorkbenchTabs, tabTarget, workbenchPanelId, type TabCloseAction, type WorkbenchTab, type WorkbenchTabsState } from './workbench-tabs';
 
 const subscribeHydration = () => () => {};
 const clientReady = () => true;
@@ -85,15 +85,14 @@ export function useWorkbenchTabs(scope: string | null, view: WorkbenchPage, sear
   }
   function open(view: WorkbenchPage, conversationId?: string) {
     const remembered = rememberLocation(state);
-    const key = conversationId ? `chat:${conversationId}` : view;
-    const existing = remembered.tabs.find(tab => tab.key === key);
-    const next = existing ?? tabTarget(view, conversationId ? new URLSearchParams({ conversation: conversationId }).toString() : '');
+    const target = tabTarget(view, conversationId ? new URLSearchParams({ conversation: conversationId }).toString() : '');
+    const next = findWorkbenchTab(remembered, target) ?? target;
     commit(openWorkbenchTab(remembered, next));
   }
   function activate(key: string) {
     const remembered = rememberLocation(state);
     const tab = remembered.tabs.find(tab => tab.key === key);
-    if (tab) commit(openWorkbenchTab(remembered, tab));
+    if (tab) commit({ ...remembered, active: tab.key });
   }
   function close(key: string, action: TabCloseAction = 'current') {
     const remembered = rememberLocation(state);
@@ -106,11 +105,34 @@ export function useWorkbenchTabs(scope: string | null, view: WorkbenchPage, sear
   function reorder(instances: number[]) {
     setStored(current => current.scope === scope ? reorderWorkbenchTabs(current, instances) : current);
   }
+  function newTab(view: WorkbenchPage = 'home') {
+    commit(addWorkbenchTab(rememberLocation(state), tabTarget(view)));
+  }
+  function pin(key: string) {
+    setStored(current => pinWorkbenchTab(current, key));
+  }
+  function flushPage(tab: WorkbenchTab) {
+    document.getElementById(workbenchPanelId(tab.instance))?.dispatchEvent(new Event(PAGE_SESSION_FLUSH));
+  }
+  function reload(key: string) {
+    const tab = state.tabs.find(tab => tab.key === key);
+    if (!tab) return;
+    flushPage(tab);
+    setStored(current => reloadWorkbenchTab(current, key));
+  }
+  function duplicate(key: string) {
+    const remembered = rememberLocation(state);
+    const tab = remembered.tabs.find(tab => tab.key === key);
+    if (!tab) return;
+    flushPage(tab);
+    if (session && !session.copyPage(tab.instance, remembered.nextInstance)) return;
+    commit(addWorkbenchTab(remembered, tab, key));
+  }
   function promote(instance: number, id: string) {
     const next = promoteConversationTab(state, instance, id);
     if (next.active !== state.active) commit(next, true);
     else setStored(next);
   }
 
-  return { ...state, ready: boot, open, activate, close, promote, reorder };
+  return { ...state, ready: boot, open, activate, close, promote, reorder, newTab, pin, reload, duplicate };
 }

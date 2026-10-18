@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useLayoutEffect, use
 import type { ProjectUiSession } from './project-ui-session';
 
 export const ProjectUiSessionContext = createContext<ProjectUiSession | null>(null);
+export const PAGE_SESSION_FLUSH = 'fouc:page-session-flush';
 const PagePrefix = createContext('');
 
 export function PageSessionNamespace({ name, children }: { name: string; children: ReactNode }) {

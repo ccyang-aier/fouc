@@ -1,7 +1,7 @@
 'use client';
 
 import { useContext, useEffect, type RefObject } from 'react';
-import { ProjectUiSessionContext } from './page-session-state';
+import { PAGE_SESSION_FLUSH, ProjectUiSessionContext } from './page-session-state';
 
 /** Stable viewport keys survive asynchronous lists, editor mounts and hidden tabs. */
 export function usePageScrollRestoration(ref: RefObject<HTMLElement | null>) {
@@ -52,6 +52,7 @@ export function usePageScrollRestoration(ref: RefObject<HTMLElement | null>) {
     const mutation = new MutationObserver(discover);
     mutation.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-page-scroll'] });
     root.addEventListener('scroll', onScroll, true);
+    root.addEventListener(PAGE_SESSION_FLUSH, flush);
     root.addEventListener('pointerdown', cancelRestore, true);
     root.addEventListener('wheel', cancelRestore, { passive: true });
     root.addEventListener('keydown', cancelRestore, true);
@@ -60,6 +61,7 @@ export function usePageScrollRestoration(ref: RefObject<HTMLElement | null>) {
     return () => {
       flush(); resize.disconnect(); mutation.disconnect();
       root.removeEventListener('scroll', onScroll, true);
+      root.removeEventListener(PAGE_SESSION_FLUSH, flush);
       root.removeEventListener('pointerdown', cancelRestore, true);
       root.removeEventListener('wheel', cancelRestore);
       root.removeEventListener('keydown', cancelRestore, true);

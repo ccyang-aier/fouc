@@ -71,6 +71,15 @@ export class ProjectUiSession {
       transaction.onerror = () => this.fail(transaction.error);
     } catch (cause) { this.fail(cause); }
   }
+  copyPage(from: number, to: number) {
+    const prefix = `page:${from}:`;
+    try {
+      const copies = [...this.values].filter(([key]) => key.startsWith(prefix)).map(([key, value]) => [`page:${to}:${key.slice(prefix.length)}`, structuredClone(value)] as const);
+      copies.forEach(([key, value]) => { this.values.set(key, value); this.write(key, value); });
+      this.publish();
+      return true;
+    } catch (cause) { this.fail(cause); return false; }
+  }
   retainPages(instances: readonly number[]) {
     const retained = new Set(instances);
     const keys = [...this.values.keys()].filter(key => { const id = /^page:(\d+):/.exec(key)?.[1]; return id !== undefined && !retained.has(Number(id)); });

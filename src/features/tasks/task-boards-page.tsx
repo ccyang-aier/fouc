@@ -108,7 +108,7 @@ function TaskBoardsContent({ projectId, actorId }: { projectId: string; actorId:
       </div>
       <div className={styles.headerActions}>
         {board && <button type="button" className={`fouc-action ${styles.accessButton}`} onClick={() => setDialog({ kind: 'members', boardId: board.id })} aria-label={t('members')}>
-          <span className={styles.headerAvatars}>{board.members.slice(0, 3).map(member => <UserAvatar key={member.userId} name={member.name} image={member.image} />)}</span><span>{t('members')}</span>
+          <span className={styles.headerAvatars}>{board.members.slice(0, 3).map(member => <UserAvatar key={member.userId} name={member.name} image={member.image} />)}</span>
         </button>}
         {!selected && <Button size="sm" onClick={() => setDialog({ kind: 'create' })}><Plus size={15} />{t('createBoard')}</Button>}
       </div></div>

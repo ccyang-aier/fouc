@@ -21,7 +21,7 @@ export function TaskBoardViewSwitcher() {
   const { t } = useTranslation(messages);
   return <div className={styles.viewSwitcher} role="group" aria-label={t('views')}>
     {views.map(view => view === 'kanban'
-      ? <button key={view} type="button" className={`fouc-action ${styles.viewSegment}`} aria-pressed="true"><ViewIcon view={view} /><span>{t(view)}</span></button>
+      ? <button key={view} type="button" className={`fouc-action ${styles.viewSegment}`} data-surface="plain" aria-pressed="true"><ViewIcon view={view} /><span>{t(view)}</span></button>
       : <Tooltip key={view}>
         <TooltipTrigger asChild><span className={styles.plannedView}><button type="button" className={styles.viewSegment} disabled aria-label={`${t(view)} · ${t('planned')}`}><ViewIcon view={view} /><span>{t(view)}</span></button></span></TooltipTrigger>
         <TooltipContent>{t('planned')}</TooltipContent>

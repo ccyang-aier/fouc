@@ -1,0 +1,60 @@
+.card {
+  --task-progress-blue: #4f86df;
+  --task-progress-risk: #d24752;
+  --task-priority-high: #b46c00;
+  --task-priority-high-icon: #e5a12a;
+  --task-priority-urgent: #cd3d4a;
+  position: relative;
+  padding: 12px 14px;
+  border-radius: 9px;
+  cursor: pointer;
+  outline: none;
+}
+:global(html[data-theme="dark"]) .card {
+  --task-progress-blue: #83adfa;
+  --task-progress-risk: #ff8690;
+  --task-priority-high: #f8be58;
+  --task-priority-high-icon: #f8be58;
+  --task-priority-urgent: #ff8690;
+}
+.card:focus-visible { border-color: var(--ink); }
+.card[data-dragging] { opacity: .35; }
+.card[data-insert-before]::before { content: ''; position: absolute; inset: -8px 0 auto; height: var(--drag-indicator-width); background: var(--drag-indicator-color); pointer-events: none; }
+.cardTop { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 24px; margin-bottom: 8px; }
+.taskReference { display: flex; align-items: center; gap: 7px; min-width: 0; color: var(--muted-strong); font-size: 11px; font-variant-numeric: tabular-nums; }
+.taskReference > svg { color: var(--muted); }
+.taskReference > span:last-child { margin-left: 1px; }
+.cardHeading { display: flex; align-items: flex-start; gap: 5px; }
+.cardHeading h3 { flex: 1; min-width: 0; margin: 0; font-size: 14px; font-weight: 600; line-height: 1.6; overflow-wrap: anywhere; }
+.cardHeading h3[data-completed] { color: var(--muted-strong); }
+.cardMenu { display: grid; place-items: center; margin-right: -4px; width: 24px; height: 24px; color: var(--muted); border-radius: 4px; cursor: pointer; }
+.columnMenu { width: 220px; }
+.columnOptions { max-height: 260px; overflow-y: auto; }
+.menuEmpty { margin: 0; padding: 12px 8px; color: var(--muted-strong); font-size: 11px; }
+.cardDescription { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; margin: 8px 0 0; font-size: 12px; line-height: 1.75; color: var(--muted-strong); white-space: pre-line; }
+.cardTags { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 18px; margin-top: 12px; }
+.labels { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; min-width: 0; }
+.label { max-width: 110px; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 500; line-height: 1.4; color: var(--info-ink); background: var(--info-soft); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.priority { display: inline-flex; align-items: center; flex-shrink: 0; gap: 4px; font-size: 10px; color: var(--muted); }
+.priority[data-priority='urgent'] { color: var(--task-priority-urgent); }
+.priority[data-priority='high'] { color: var(--task-priority-high); }
+.priority[data-priority='high'] > svg { color: var(--task-priority-high-icon); }
+.cardFooter { display: flex; flex-direction: column; gap: 8px; margin-top: 13px; }
+.assigneesRow, .metadataRow { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 24px; }
+.assignedLabel { color: var(--muted-strong); font-size: 11px; }
+.unassigned { color: var(--muted); font-size: 10px; }
+.metadataRow { min-height: 18px; color: var(--muted-strong); font-size: 10px; }
+.date, .metrics, .metrics > span { display: inline-flex; align-items: center; gap: 4px; }
+.date { min-width: 0; font-variant-numeric: tabular-nums; }
+.date[data-overdue] { color: var(--err-ink); }
+.date[data-empty] { color: var(--muted); }
+.metrics { justify-content: flex-end; flex-shrink: 0; gap: 10px; }
+.progressIndicator { display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; width: 18px; height: 18px; border: 1px solid transparent; border-radius: 4px; outline: none; color: var(--task-progress-blue); }
+.progressIndicator[data-risk] { color: var(--task-progress-risk); }
+.progressIndicator:focus-visible { border-color: var(--ink); }
+.progressIndicator > svg { display: block; flex-shrink: 0; }
+.progressRing { opacity: .45; }
+.progressIndicator[data-risk] .progressRing { opacity: 1; }
+.progressTooltip { display: flex; flex-direction: column; gap: 3px; max-width: 260px; line-height: 1.55; }
+.progressTooltip > strong { font-weight: 600; }
+.progressTooltip > span { font-weight: 400; }

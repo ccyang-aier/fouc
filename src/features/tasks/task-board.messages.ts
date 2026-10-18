@@ -12,6 +12,7 @@ export const messages = defineMessages({
   closeSearch: ['关闭搜索', 'Close search'], boardActions: ['看板操作', 'Board actions'], createOptions: ['更多新建选项', 'More creation options'],
   create: ['新建', 'New'], quickFilters: ['快捷筛选', 'Quick filters'],
   allMembers: ['全部负责人', 'All assignees'], myTasks: ['分配给我', 'Assigned to me'], unassigned: ['未分配', 'Unassigned'],
+  searchAssignees: ['搜索负责人…', 'Search assignees…'], searchLabels: ['搜索标签…', 'Search labels…'], noFilterResults: ['没有匹配项', 'No matching options'],
   priority: ['优先级', 'Priority'], allPriorities: ['全部优先级', 'All priorities'], low: ['低', 'Low'], medium: ['普通', 'Medium'], high: ['高', 'High'], urgent: ['紧急', 'Urgent'],
   dueDate: ['截止日期', 'Due date'], allDates: ['不限日期', 'Any date'], overdue: ['已逾期', 'Overdue'], week: ['未来 7 天', 'Next 7 days'],
   label: ['标签', 'Label'], allLabels: ['全部标签', 'All labels'], reset: ['清除筛选', 'Clear filters'],

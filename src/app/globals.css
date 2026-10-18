@@ -40,7 +40,7 @@
   --focus-ring: rgba(32, 32, 32, 0.24);
   /* 中性反馈统一使用浅白灰，避免局部叠加墨色后变深。 */
   --hover-fill: var(--action-hover-bg);
-  /* 通用控件的浅灰反馈面；导航行使用独立的 --sidebar-row-*。 */
+  /* 通用控件与导航行复用下方全局中性反馈色。 */
   --raise: var(--action-hover-bg);
   /* 浅白芯片（描边按钮 / 用户卡） */
   --chip: rgba(255, 255, 255, 0.75);
@@ -86,10 +86,15 @@
   --menu-warning-ink: var(--warn-ink);
   --menu-warning-hover-bg: #faedcc;
   --menu-warning-hover-ink: #875510;
-  /* 紧凑操作按钮与模态框底栏尺寸；各业务界面只安排内容，不另定高度。 */
-  --action-hover-bg: #f5f5f5;
+  /* 全局中性反馈，取自系统侧栏：
+     “浅灰白色” = hover（#f3f3f3）；“灰白色” = active（#efefef）。
+     菜单、侧栏与页面工具栏共用这两个角色，业务组件不另配灰度。 */
+  --interaction-hover-bg: #f3f3f3;
+  --interaction-active-bg: #efefef;
+  --action-hover-bg: var(--interaction-hover-bg);
+  --action-active-bg: var(--interaction-active-bg);
   --action-surface-bg: #f8f8f8;
-  --action-surface-hover-bg: #eeeeee;
+  --action-surface-hover-bg: var(--interaction-hover-bg);
   --action-nested-hover-bg: color-mix(in srgb, var(--ink) 8%, var(--panel));
   --dialog-action-height: 30px;
   --dialog-section-gap: 16px;
@@ -113,8 +118,8 @@
   --wt-sidebar-identity-hover: #e4e4e4;
   --wt-sidebar-edge: var(--line);
   /* 悬停比激活更轻，避免指针经过时与当前页面混淆。 */
-  --sidebar-row-bg: #efefef;
-  --sidebar-row-hover-bg: #f3f3f3;
+  --sidebar-row-bg: var(--interaction-active-bg);
+  --sidebar-row-hover-bg: var(--interaction-hover-bg);
   --sidebar-row-border: #e3e3e3;
   --sidebar-row-hover-border: var(--sidebar-row-border);
   --sidebar-row-shadow: none;
@@ -184,7 +189,11 @@ html[data-theme="dark"] {
   --warn-soft-line: rgba(217, 167, 67, 0.28);
   --menu-warning-hover-bg: #4b3920;
   --menu-warning-hover-ink: #f0c979;
-  --action-hover-bg: #303030;
+  /* 深色主题保留相同语义与侧栏原有层次：hover 更轻，active 更明显。 */
+  --interaction-hover-bg: rgb(255 255 255 / 0.04);
+  --interaction-active-bg: rgb(255 255 255 / 0.06);
+  --action-hover-bg: var(--interaction-hover-bg);
+  --action-active-bg: var(--interaction-active-bg);
   --action-surface-bg: #222222;
   --action-surface-hover-bg: var(--action-hover-bg);
 
@@ -193,8 +202,8 @@ html[data-theme="dark"] {
   --wt-sidebar-identity-panel: var(--surface-subtle);
   --wt-sidebar-identity-hover: var(--action-hover-bg);
   --wt-sidebar-edge: var(--line);
-  --sidebar-row-bg: rgb(255 255 255 / 0.06);
-  --sidebar-row-hover-bg: rgb(255 255 255 / 0.04);
+  --sidebar-row-bg: var(--interaction-active-bg);
+  --sidebar-row-hover-bg: var(--interaction-hover-bg);
   --sidebar-row-border: rgb(255 255 255 / 0.08);
   --sidebar-row-hover-border: var(--sidebar-row-border);
   --sidebar-row-shadow: none;

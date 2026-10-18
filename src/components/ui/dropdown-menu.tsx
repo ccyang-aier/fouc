@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu"
-import { Check, CaretRight } from "@phosphor-icons/react"
+import { Check, CaretRight, MagnifyingGlass, X } from "@phosphor-icons/react"
 
 import { getOverlayRoot } from "@/lib/overlay-root"
 import { cn } from "@/lib/utils"
@@ -35,10 +35,43 @@ function DropdownMenuTrigger({
 }
 const DropdownMenuGroup = DropdownMenuPrimitive.Group
 
+function keepSearchOpenOnEscape(event: KeyboardEvent) {
+  // Radix handles Escape on document capture, before the input clears its query.
+  if (event.target instanceof HTMLInputElement && event.target.closest('.dropdown-menu-search') && event.target.value) event.preventDefault()
+}
+
+function DropdownMenuSearch({ value, onValueChange, placeholder, clearLabel }: {
+  value: string; onValueChange: (value: string) => void; placeholder: string; clearLabel: string
+}) {
+  const input = React.useRef<HTMLInputElement>(null)
+  React.useEffect(() => {
+    // Focus after Radix finishes handing keyboard entry into a submenu.
+    const frame = requestAnimationFrame(() => input.current?.focus())
+    return () => cancelAnimationFrame(frame)
+  }, [])
+  return <div className="dropdown-menu-search">
+    <MagnifyingGlass size={14} aria-hidden />
+    <input ref={input} autoFocus value={value} placeholder={placeholder} aria-label={placeholder}
+      onChange={event => onValueChange(event.target.value)} onKeyDown={event => {
+        if (event.key === 'Escape') {
+          if (value) { event.preventDefault(); event.stopPropagation(); onValueChange('') }
+          return
+        }
+        event.stopPropagation()
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+          const items = event.currentTarget.closest('[role="menu"]')?.querySelectorAll<HTMLElement>('[role^="menuitem"]:not([data-disabled])')
+          if (items?.length) { event.preventDefault(); items[event.key === 'ArrowDown' ? 0 : items.length - 1].focus() }
+        }
+      }} />
+    {value && <button type="button" className="fouc-action" aria-label={clearLabel} onClick={() => { onValueChange(''); input.current?.focus() }}><X size={12} /></button>}
+  </div>
+}
+
 function DropdownMenuContent({
   className,
   sideOffset = 6,
   onCloseAutoFocus,
+  onEscapeKeyDown,
   density = "regular",
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Content> & { density?: "regular" | "compact" }) {
@@ -53,6 +86,7 @@ function DropdownMenuContent({
           className,
         )}
         {...props}
+        onEscapeKeyDown={event => { onEscapeKeyDown?.(event); keepSearchOpenOnEscape(event) }}
         onCloseAutoFocus={event => {
           onCloseAutoFocus?.(event)
           const active = document.activeElement
@@ -174,6 +208,7 @@ function DropdownMenuSubContent({
   sideOffset = 6,
   alignOffset = -4,
   density = "regular",
+  onEscapeKeyDown,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.SubContent> & { density?: "regular" | "compact" }) {
   const container = React.useContext(DropdownMenuContainer) ?? getOverlayRoot()
@@ -188,6 +223,7 @@ function DropdownMenuSubContent({
           className,
         )}
         {...props}
+        onEscapeKeyDown={event => { onEscapeKeyDown?.(event); keepSearchOpenOnEscape(event) }}
       />
     </DropdownMenuPrimitive.Portal>
   )
@@ -202,6 +238,7 @@ export {
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
+  DropdownMenuSearch,
   DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubContent,

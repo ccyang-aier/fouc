@@ -179,6 +179,28 @@ CREATE TABLE "resources"."block_index" (
 	CONSTRAINT "block_index_acl_revision_nonnegative" CHECK ("resources"."block_index"."acl_revision" >= 0)
 );
 
+CREATE TABLE "resources"."board_task" (
+	"project_id" uuid NOT NULL,
+	"board_id" uuid NOT NULL,
+	"id" uuid NOT NULL,
+	"column_id" uuid NOT NULL,
+	"title" varchar(240) NOT NULL,
+	"description" text DEFAULT '' NOT NULL,
+	"priority" varchar(8) DEFAULT 'medium' NOT NULL,
+	"assignee_ids" uuid[] DEFAULT '{}'::uuid[] NOT NULL,
+	"labels" text[] DEFAULT '{}'::text[] NOT NULL,
+	"due_date" date,
+	"checklist" jsonb DEFAULT '[]'::jsonb NOT NULL,
+	"position" double precision NOT NULL,
+	"created_by" uuid NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "board_task_project_id_board_id_id_pk" PRIMARY KEY("project_id","board_id","id"),
+	CONSTRAINT "board_task_title_not_empty" CHECK (length(btrim("resources"."board_task"."title")) > 0),
+	CONSTRAINT "board_task_priority_valid" CHECK ("resources"."board_task"."priority" IN ('low', 'medium', 'high', 'urgent')),
+	CONSTRAINT "board_task_checklist_array" CHECK (jsonb_typeof("resources"."board_task"."checklist") = 'array')
+);
+
 CREATE TABLE "resources"."comment" (
 	"knowledge_base_id" uuid NOT NULL,
 	"id" uuid NOT NULL,
@@ -450,6 +472,55 @@ CREATE TABLE "resources"."share_link" (
 	CONSTRAINT "share_link_token_hash_valid" CHECK ("resources"."share_link"."token_hash" ~ '^[a-f0-9]{64}$')
 );
 
+CREATE TABLE "resources"."task_board" (
+	"project_id" uuid NOT NULL,
+	"id" uuid NOT NULL,
+	"name" varchar(120) NOT NULL,
+	"description" text DEFAULT '' NOT NULL,
+	"visibility" varchar(12) DEFAULT 'private' NOT NULL,
+	"owner_id" uuid NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "task_board_project_id_id_pk" PRIMARY KEY("project_id","id"),
+	CONSTRAINT "task_board_name_not_empty" CHECK (length(btrim("resources"."task_board"."name")) > 0),
+	CONSTRAINT "task_board_visibility_valid" CHECK ("resources"."task_board"."visibility" IN ('private', 'project', 'invited'))
+);
+
+CREATE TABLE "resources"."task_board_member" (
+	"project_id" uuid NOT NULL,
+	"board_id" uuid NOT NULL,
+	"user_id" uuid NOT NULL,
+	"role" varchar(8) DEFAULT 'viewer' NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "task_board_member_project_id_board_id_user_id_pk" PRIMARY KEY("project_id","board_id","user_id"),
+	CONSTRAINT "task_board_member_role_valid" CHECK ("resources"."task_board_member"."role" IN ('viewer', 'editor'))
+);
+
+CREATE TABLE "resources"."task_column" (
+	"project_id" uuid NOT NULL,
+	"board_id" uuid NOT NULL,
+	"id" uuid NOT NULL,
+	"name" varchar(60) NOT NULL,
+	"color" varchar(8) DEFAULT 'slate' NOT NULL,
+	"is_done" boolean DEFAULT false NOT NULL,
+	"position" double precision NOT NULL,
+	CONSTRAINT "task_column_project_id_board_id_id_pk" PRIMARY KEY("project_id","board_id","id"),
+	CONSTRAINT "task_column_name_not_empty" CHECK (length(btrim("resources"."task_column"."name")) > 0),
+	CONSTRAINT "task_column_color_valid" CHECK ("resources"."task_column"."color" IN ('slate', 'blue', 'amber', 'green', 'violet', 'rose'))
+);
+
+CREATE TABLE "resources"."task_comment" (
+	"project_id" uuid NOT NULL,
+	"board_id" uuid NOT NULL,
+	"task_id" uuid NOT NULL,
+	"id" uuid NOT NULL,
+	"author_id" uuid NOT NULL,
+	"body" text NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "task_comment_project_id_board_id_id_pk" PRIMARY KEY("project_id","board_id","id"),
+	CONSTRAINT "task_comment_body_not_empty" CHECK (length(btrim("resources"."task_comment"."body")) > 0)
+);
+
 CREATE TABLE "resources"."teamspace" (
 	"knowledge_base_id" uuid NOT NULL,
 	"id" uuid NOT NULL,
@@ -494,6 +565,9 @@ ALTER TABLE "resources"."backlink" ADD CONSTRAINT "backlink_target_page_fk" FORE
 ALTER TABLE "resources"."block_embedding_model" ADD CONSTRAINT "block_embedding_model_library_fk" FOREIGN KEY ("knowledge_base_id") REFERENCES "resources"."knowledge_base"("id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "resources"."block_embedding_staging" ADD CONSTRAINT "block_embedding_staging_block_fk" FOREIGN KEY ("knowledge_base_id","page_id","block_id") REFERENCES "resources"."block_index"("knowledge_base_id","page_id","block_id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "resources"."block_index" ADD CONSTRAINT "block_index_page_fk" FOREIGN KEY ("knowledge_base_id","page_id") REFERENCES "resources"."page"("knowledge_base_id","id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "resources"."board_task" ADD CONSTRAINT "board_task_created_by_user_id_fk" FOREIGN KEY ("created_by") REFERENCES "auth"."user"("id") ON DELETE no action ON UPDATE no action;
+ALTER TABLE "resources"."board_task" ADD CONSTRAINT "board_task_column_fk" FOREIGN KEY ("project_id","board_id","column_id") REFERENCES "resources"."task_column"("project_id","board_id","id") ON DELETE no action ON UPDATE no action;
+ALTER TABLE "resources"."board_task" ADD CONSTRAINT "board_task_board_fk" FOREIGN KEY ("project_id","board_id") REFERENCES "resources"."task_board"("project_id","id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "resources"."comment" ADD CONSTRAINT "comment_author_id_user_id_fk" FOREIGN KEY ("author_id") REFERENCES "auth"."user"("id") ON DELETE no action ON UPDATE no action;
 ALTER TABLE "resources"."comment" ADD CONSTRAINT "comment_thread_fk" FOREIGN KEY ("knowledge_base_id","thread_id") REFERENCES "resources"."comment_thread"("knowledge_base_id","id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "resources"."comment" ADD CONSTRAINT "comment_reply_target_fk" FOREIGN KEY ("knowledge_base_id","reply_to_comment_id") REFERENCES "resources"."comment"("knowledge_base_id","id") ON DELETE no action ON UPDATE no action;
@@ -532,6 +606,13 @@ ALTER TABLE "resources"."project_member" ADD CONSTRAINT "project_member_project_
 ALTER TABLE "resources"."project_member" ADD CONSTRAINT "project_member_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "resources"."share_link" ADD CONSTRAINT "share_link_created_by_user_id_fk" FOREIGN KEY ("created_by") REFERENCES "auth"."user"("id") ON DELETE no action ON UPDATE no action;
 ALTER TABLE "resources"."share_link" ADD CONSTRAINT "share_link_page_fk" FOREIGN KEY ("knowledge_base_id","page_id") REFERENCES "resources"."page"("knowledge_base_id","id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "resources"."task_board" ADD CONSTRAINT "task_board_project_id_project_id_fk" FOREIGN KEY ("project_id") REFERENCES "resources"."project"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "resources"."task_board" ADD CONSTRAINT "task_board_owner_id_user_id_fk" FOREIGN KEY ("owner_id") REFERENCES "auth"."user"("id") ON DELETE no action ON UPDATE no action;
+ALTER TABLE "resources"."task_board_member" ADD CONSTRAINT "task_board_member_board_fk" FOREIGN KEY ("project_id","board_id") REFERENCES "resources"."task_board"("project_id","id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "resources"."task_board_member" ADD CONSTRAINT "task_board_member_project_member_fk" FOREIGN KEY ("project_id","user_id") REFERENCES "resources"."project_member"("project_id","user_id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "resources"."task_column" ADD CONSTRAINT "task_column_board_fk" FOREIGN KEY ("project_id","board_id") REFERENCES "resources"."task_board"("project_id","id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "resources"."task_comment" ADD CONSTRAINT "task_comment_author_id_user_id_fk" FOREIGN KEY ("author_id") REFERENCES "auth"."user"("id") ON DELETE no action ON UPDATE no action;
+ALTER TABLE "resources"."task_comment" ADD CONSTRAINT "task_comment_task_fk" FOREIGN KEY ("project_id","board_id","task_id") REFERENCES "resources"."board_task"("project_id","board_id","id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "resources"."teamspace" ADD CONSTRAINT "teamspace_knowledge_base_id_knowledge_base_id_fk" FOREIGN KEY ("knowledge_base_id") REFERENCES "resources"."knowledge_base"("id") ON DELETE cascade ON UPDATE no action;
 CREATE INDEX "account_user_idx" ON "auth"."account" USING btree ("user_id");
 CREATE INDEX "session_user_idx" ON "auth"."session" USING btree ("user_id");
@@ -549,6 +630,7 @@ CREATE INDEX "block_embedding_staging_model_idx" ON "resources"."block_embedding
 CREATE INDEX "block_index_principals_gin_idx" ON "resources"."block_index" USING gin ("principals");
 CREATE INDEX "block_index_embedding_model_idx" ON "resources"."block_index" USING btree ("knowledge_base_id","embed_model","embed_dimensions");
 CREATE INDEX "block_index_bm25_idx" ON "resources"."block_index" USING paradedb ("id",("content_md"::pdb.jieba)) WITH (key_field='id');
+CREATE INDEX "board_task_column_order_idx" ON "resources"."board_task" USING btree ("project_id","board_id","column_id","position");
 CREATE INDEX "comment_thread_time_idx" ON "resources"."comment" USING btree ("knowledge_base_id","thread_id","created_at");
 CREATE INDEX "comment_author_idx" ON "resources"."comment" USING btree ("author_id");
 CREATE INDEX "comment_thread_page_idx" ON "resources"."comment_thread" USING btree ("knowledge_base_id","page_id","status");
@@ -580,3 +662,6 @@ CREATE INDEX "project_member_user_idx" ON "resources"."project_member" USING btr
 CREATE INDEX "share_link_page_idx" ON "resources"."share_link" USING btree ("knowledge_base_id","page_id");
 CREATE INDEX "share_link_token_idx" ON "resources"."share_link" USING btree ("knowledge_base_id","token_hash");
 CREATE INDEX "share_link_created_by_idx" ON "resources"."share_link" USING btree ("created_by");
+CREATE INDEX "task_board_project_updated_idx" ON "resources"."task_board" USING btree ("project_id","updated_at");
+CREATE INDEX "task_column_order_idx" ON "resources"."task_column" USING btree ("project_id","board_id","position");
+CREATE INDEX "task_comment_task_created_idx" ON "resources"."task_comment" USING btree ("project_id","board_id","task_id","created_at");

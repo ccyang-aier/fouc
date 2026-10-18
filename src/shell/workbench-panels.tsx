@@ -7,6 +7,7 @@ import { CommunityCanvas } from '@/features/community/community-canvas';
 import { ConnectorsCanvas } from '@/features/connectors/connectors-canvas';
 import { KnowledgePage } from '@/features/knowledge/knowledge-page';
 import { ProjectDashboard } from '@/features/project/dashboard/project-dashboard';
+import { TaskBoardsPage } from '@/features/tasks/task-boards-page';
 import { ProjectChatsPage, ProjectEmptyPage, ProjectSelectionEmpty } from '@/features/project/project-workspace-pages';
 import { useProjectResources } from '@/features/project/project-resources';
 import { AgentSettings } from '@/features/settings/agent-settings';
@@ -35,7 +36,8 @@ export function WorkbenchPanels({ tabs, active, history, onNavigate, onOpenChat,
         {projectPage && (!selectedProject || !scopeKey) ? <ProjectSelectionEmpty />
           : tab.view === 'home' ? <HomeCanvas conversation={history.find(entry => entry.id === tab.conversationId)} onOpenConnectors={() => onNavigate('connectors')} onOpenConversation={onOpenChat} onNewConversation={() => onNavigate('home')} onConversationStarted={id => onConversationStarted(tab.instance, id)} />
           : tab.view === 'workbench' && selectedProject && scopeKey ? <ProjectDashboard projectName={selectedProject.name} scopeKey={scopeKey} onNavigate={onNavigate} />
-          : tab.view === 'tasks' || tab.view === 'members' || tab.view === 'assets' ? <ProjectEmptyPage page={tab.view} />
+          : tab.view === 'tasks' ? <TaskBoardsPage />
+          : tab.view === 'members' || tab.view === 'assets' ? <ProjectEmptyPage page={tab.view} />
           : tab.view === 'chats' ? <ProjectChatsPage onNew={() => onNavigate('home')} onOpen={onOpenChat} />
           : tab.view === 'agents' ? <section className="h-full overflow-auto" aria-label={t('智能体')}><AgentSettings /></section>
           : tab.view === 'community' ? <CommunityCanvas />

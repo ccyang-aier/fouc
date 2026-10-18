@@ -39,7 +39,7 @@ export function createResourceApi(auth: FoucAuth, base: string) {
   });
   app.use(`${base}/*`, cors({ origin: (origin) => origins.includes(origin) ? origin : undefined, credentials: true,
     allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'], allowHeaders: ['Content-Type'], maxAge: 600 }));
-  app.use(`${base}/*`, bodyLimit({ maxSize: 16 * 1_024, onError: (context) => context.json({ code: 'PAYLOAD_TOO_LARGE', message: 'Organization request is too large.' }, 413) }));
+  app.use(`${base}/*`, bodyLimit({ maxSize: 128 * 1_024, onError: (context) => context.json({ code: 'PAYLOAD_TOO_LARGE', message: 'Request is too large.' }, 413) }));
   app.use(`${base}/*`, requireFoucIdentity(auth));
   app.onError((error, context) => {
     const known = resourceFailure(error);

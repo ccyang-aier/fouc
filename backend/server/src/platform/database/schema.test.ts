@@ -4,6 +4,7 @@ import { describe, expect, test } from 'bun:test';
 import { getTableConfig } from 'drizzle-orm/pg-core';
 import { aiTaskSchema, assetStatusSchema, commentThreadStatusSchema, modelTiers, pageKindSchema, permissionLevels } from '@fouc/shared/knowledge/contracts';
 import { memberRoleSchema } from '@fouc/shared/resources';
+import { taskTableNames } from './resources/task-rls';
 import { generateDatabaseSchemaSql, databaseSchemaSqlPath } from '../../../scripts/database-schema';
 import {
   aiTaskKind,
@@ -56,7 +57,7 @@ describe('knowledgeBase-owned current Drizzle schema', () => {
   });
 
   test('knowledge-base children carry the real library key and consistent composite relations', () => {
-    for (const table of resourceTables.filter((item) => !new Set<object>([project, projectMember, knowledgeBase, knowledgeBaseProject]).has(item))) {
+    for (const table of resourceTables.filter((item) => !new Set<object>([project, projectMember, knowledgeBase, knowledgeBaseProject]).has(item) && !(taskTableNames as readonly string[]).includes(getTableConfig(item).name))) {
       const config = getTableConfig(table);
       expect(config.columns.find((column) => column.name === 'knowledge_base_id')?.notNull, config.name).toBe(true);
       for (const foreignKey of config.foreignKeys) {

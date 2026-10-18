@@ -50,6 +50,7 @@ beforeAll(async () => {
   mock.module('@/features/connectors/connectors-canvas', () => ({ ConnectorsCanvas: () => <ExamplePage name="connectors" /> }));
   mock.module('@/features/knowledge/knowledge-page', () => ({ KnowledgePage: () => <ExamplePage name="knowledge" /> }));
   mock.module('@/features/project/dashboard/project-dashboard', () => ({ ProjectDashboard: () => <ExamplePage name="workbench" /> }));
+  mock.module('@/features/tasks/task-boards-page', () => ({ TaskBoardsPage: () => <ExamplePage name="tasks" /> }));
   mock.module('@/features/project/project-workspace-pages', () => ({ ProjectChatsPage: () => null, ProjectEmptyPage: () => null, ProjectSelectionEmpty: () => null }));
   mock.module('@/features/settings/agent-settings', () => ({ AgentSettings: () => null }));
   const { WorkbenchPanels } = await import('./workbench-panels');

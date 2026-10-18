@@ -1,6 +1,6 @@
 import type { z } from 'zod';
 
-export type ResourceRequestErrorCode = 'INVALID_INPUT' | 'UNAUTHENTICATED' | 'KNOWLEDGE_BASE_NOT_FOUND' | 'PROJECT_NOT_FOUND' | 'FORBIDDEN' | 'MEMBER_NOT_FOUND' | 'GROUP_NOT_FOUND' | 'TEAMSPACE_NOT_FOUND' | 'TEAMSPACE_NOT_EMPTY' | 'LAST_OWNER' | 'CONFLICT' | 'INVITATION_INVALID';
+export type ResourceRequestErrorCode = 'INVALID_INPUT' | 'UNAUTHENTICATED' | 'KNOWLEDGE_BASE_NOT_FOUND' | 'PROJECT_NOT_FOUND' | 'FORBIDDEN' | 'MEMBER_NOT_FOUND' | 'GROUP_NOT_FOUND' | 'TEAMSPACE_NOT_FOUND' | 'TEAMSPACE_NOT_EMPTY' | 'LAST_OWNER' | 'CONFLICT' | 'INVITATION_INVALID' | 'TASK_BOARD_NOT_FOUND' | 'TASK_NOT_FOUND' | 'TASK_COLUMN_NOT_FOUND' | 'TASK_COLUMN_NOT_EMPTY';
 
 export class ResourceRequestError extends Error {
   constructor(readonly code: ResourceRequestErrorCode, message: string, readonly status: 400 | 401 | 403 | 404 | 409) {

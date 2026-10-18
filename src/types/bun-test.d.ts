@@ -34,16 +34,29 @@ declare module 'bun:test' {
   }
   function describe(name: string, fn: () => void): void
   function test(name: string, fn: TestFn): void
+  namespace test {
+    function each<T>(cases: readonly T[]): (name: string, fn: (item: T) => void | Promise<void>) => void
+  }
   const it: typeof test
   function beforeAll(fn: () => void | Promise<void>, timeout?: number): void
   function afterAll(fn: () => void | Promise<void>): void
   function beforeEach(fn: () => void | Promise<void>): void
   function afterEach(fn: () => void | Promise<void>): void
   function expect<T>(actual: T): Expectation<T>
-  const mock: { module(specifier: string, factory: () => Record<string, unknown>): void }
+  type Mock<T extends (...args: never[]) => unknown> = T & {
+    mock: { calls: Parameters<T>[] }
+    mockClear(): Mock<T>
+    mockReset(): Mock<T>
+    mockImplementation(implementation: T): Mock<T>
+  }
+  const mock: {
+    <T extends (...args: never[]) => unknown>(implementation: T): Mock<T>
+    module(specifier: string, factory: () => Record<string, unknown>): void
+    restore(): void
+  }
 }
 
-/** The one Bun global the bundle test uses: the build API for the browser-target check. */
+/** Bun APIs used by frontend tests, without introducing Bun's production globals. */
 declare namespace Bun {
   interface BuildArtifact {
     text(): Promise<string>
@@ -53,4 +66,5 @@ declare namespace Bun {
     outputs: BuildArtifact[]
   }
   function build(options: { entrypoints: string[]; target: string }): Promise<BuildOutput>
+  function sleep(milliseconds: number): Promise<void>
 }

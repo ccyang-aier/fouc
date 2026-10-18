@@ -29,7 +29,7 @@ Fouc 是一套构建于 AI Agent 之上的超级工作台，面向个人与企�
 - **项目与知识库是独立、多实例资源**：项目以 `projectId` 和项目成员权限管理；知识库以 `knowledgeBaseId`、成员、分组、可见性与页面 ACL 管理。项目不包含知识库，知识库也不包含项目；知识库 owner 配置开放项目集合，项目成员资格、开放范围、库成员与页面 ACL 共同限制访问，关联不隐式授予内容权限。知识库下才有文件夹（现存内部名 `teamspace`）与文档；项目引用文档不改变归属或授予权限。
 - 项目列表、顶部切换及当前作用域状态归 `features/project`；知识库目录、文件夹和文档归 `features/knowledge`；`src/shell/` 只负责组合与呈现。后端 `modules/projects`、`modules/knowledge` 拥有对应用例，业务表位于 `platform/database/resources`。设备会话和连接以真实 `sessionId`、`connectionId` 校验，不借助产品空间分区。
 - 登录态决定主体身份和具体操作权限，不决定整套知识库页面或整个产品的数据模式。访客也能使用允许的功能；本机、服务端和设备能力应按资源与操作明确选择，不因登录、退出自动迁移或替换内容。
-- 现有工作台首页、连接器目录与社区部分页面使用演示数据；任务、成员、资产主页面按本次范围先保留空状态，自动化模块已移除；渲染了某项能力不等于已有对应的服务端持久化或资源授权。先核对实际用例与数据所有者，再扩展该能力；当前实现状态见 `docs/product/V1/design/arch/fouc-project-structure-design.md` §2.3。
+- 现有工作台首页、连接器目录与社区部分页面使用演示数据；任务菜单已接入真实服务端项目的多看板、Kanban 与看板成员授权（`features/tasks`、`modules/tasks`、`@fouc/shared/tasks`），成员与资产主页面仍为空状态，自动化模块已移除；渲染了某项能力不等于已有对应的服务端持久化或资源授权。先核对实际用例与数据所有者，再扩展该能力；当前实现状态见 `docs/product/V1/design/arch/fouc-project-structure-design.md` §2.3。
 
 ## 开发理念
 

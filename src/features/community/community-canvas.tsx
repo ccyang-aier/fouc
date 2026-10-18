@@ -7,6 +7,7 @@ import { messages } from './i18n/community-canvas.messages';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePageVisible } from '@/lib/page-visibility';
+import { usePageSessionState, usePageScrollKey } from '@/lib/page-session-state';
 import { COMMUNITY_SKILLS_REQUESTED } from './community-navigation';
 import {
   CaretDown,
@@ -90,20 +91,21 @@ export function CommunityCanvas() {
   const SORT_OPTIONS = getSortOptions(locale);
   const [agents, setAgents] = useState(initialCommunityAgents);
   const [skills, setSkills] = useState(initialCommunitySkills);
-  const [typeFilter, setTypeFilter] = useState<CommunityTypeFilter>(() =>
-    typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('communityType') === 'skills' ? 'skills' : 'all');
-  const [domain, setDomain] = useState('');
-  const [tag, setTag] = useState('');
-  const [minRating, setMinRating] = useState(0);
-  const [minDownloads, setMinDownloads] = useState(0);
-  const [authorQuery, setAuthorQuery] = useState('');
-  const [sort, setSort] = useState<CommunitySortKey>('popular');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-  const [columnSort, setColumnSort] = useState<CommunitySortKey | null>(null);
-  const [query, setQuery] = useState('');
-  const [view, setView] = useState<ViewMode>('grid');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [detailId, setDetailId] = useState<string | null>(null);
+  const skillsLink = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('communityType') === 'skills';
+  const [typeFilter, setTypeFilter] = usePageSessionState<CommunityTypeFilter>('type', skillsLink ? 'skills' : 'all', { preferInitial: skillsLink });
+  const [domain, setDomain] = usePageSessionState('domain', '');
+  const [tag, setTag] = usePageSessionState('tag', '');
+  const [minRating, setMinRating] = usePageSessionState('rating', 0);
+  const [minDownloads, setMinDownloads] = usePageSessionState('downloads', 0);
+  const [authorQuery, setAuthorQuery] = usePageSessionState('author', '');
+  const [sort, setSort] = usePageSessionState<CommunitySortKey>('sort', 'popular');
+  const [sortDirection, setSortDirection] = usePageSessionState<'asc' | 'desc'>('direction', 'desc');
+  const [columnSort, setColumnSort] = usePageSessionState<CommunitySortKey | null>('columnSort', null);
+  const [query, setQuery] = usePageSessionState('query', '');
+  const [view, setView] = usePageSessionState<ViewMode>('view', 'grid');
+  const [selectedId, setSelectedId] = usePageSessionState<string | null>('selected', null);
+  const [detailId, setDetailId] = usePageSessionState<string | null>('detail', null);
+  const scrollKey = usePageScrollKey('catalog');
   const [detailTagDraft, setDetailTagDraft] = useState('');
   const [addingDetailTag, setAddingDetailTag] = useState(false);
   const { notify } = useAppAlert();
@@ -290,7 +292,7 @@ export function CommunityCanvas() {
     function showSkills() { setTypeFilter('skills'); }
     window.addEventListener(COMMUNITY_SKILLS_REQUESTED, showSkills);
     return () => window.removeEventListener(COMMUNITY_SKILLS_REQUESTED, showSkills);
-  }, []);
+  }, [setTypeFilter]);
 
   useEffect(() => {
     if (!visible) return;
@@ -677,7 +679,7 @@ export function CommunityCanvas() {
             </div>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-auto px-[18px] pb-20 pt-0.5">
+          <div data-page-scroll={scrollKey} className="min-h-0 flex-1 overflow-auto px-[18px] pb-20 pt-0.5">
             <p className="mb-3 text-[10px] tabular-nums text-[var(--muted)]">
               {uiText('共')}
               {visibleItems.length} {uiText('项资源')}

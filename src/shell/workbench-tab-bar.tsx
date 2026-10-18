@@ -91,7 +91,7 @@ export function WorkbenchTabBar({ tabs, active, titles, onActivate, onClose, onR
     </motion.div>
     </div>
     {edges.overflow && <button type="button" className={`fouc-action ${styles.browse}`} aria-label={t('向右浏览页签')} title={t('向右浏览页签')} disabled={!edges.right} onClick={() => viewport.current?.scrollBy({ left: viewport.current.clientWidth * .7, behavior: 'smooth' })}><CaretRight size={13} aria-hidden /></button>}
-    {context && contextIndex >= 0 && <WorkbenchTabMenu key={context.instance} point={context} hasOthers={tabs.length > 1} hasRight={contextIndex < tabs.length - 1} onClose={() => setContext(null)} onAction={action => close(tabs[contextIndex].key, action)} onReturnFocus={focusSelected} />}
+    {context && contextIndex >= 0 && <WorkbenchTabMenu key={context.instance} point={context} title={tabs[contextIndex].conversationId ? titles.get(tabs[contextIndex].conversationId!) ?? t('新对话') : t(workbenchPages[tabs[contextIndex].view].label)} icon={workbenchPages[tabs[contextIndex].view].icon} otherCount={tabs.length - 1} rightCount={tabs.length - contextIndex - 1} onClose={() => setContext(null)} onAction={action => close(tabs[contextIndex].key, action)} onReturnFocus={focusSelected} />}
   </div>;
 }
 

@@ -5,6 +5,7 @@ import { createTranslator, type Locale, useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './connectors-canvas.messages';
 /** 连接器目录：使用与社区一致的浏览结构，专注单类系统资源。 */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { usePageSessionState, usePageScrollKey } from '@/lib/page-session-state';
 import { motion } from 'motion/react';
 import { CaretDown, CaretUp, MagnifyingGlass, PlugsConnected } from '@phosphor-icons/react';
 import { useAppAlert } from '@/components/app-alert-provider';
@@ -48,12 +49,13 @@ export function ConnectorsCanvas({
 }) {
   const { t: tConnector, locale } = useTranslation(connectorMessages);
   const [connectors, setConnectors] = useState(initialConnectors);
-  const [category, setCategory] = useState<(typeof CONNECTOR_CATEGORIES)[number]>('全部');
-  const [query, setQuery] = useState('');
-  const [view, setView] = useState<ViewMode>('grid');
-  const [sort, setSort] = useState<ConnectorSort>('default');
-  const [updatedSortDirection, setUpdatedSortDirection] = useState<'asc' | 'desc'>('desc');
-  const [detailId, setDetailId] = useState<string | null>(null);
+  const [category, setCategory] = usePageSessionState<(typeof CONNECTOR_CATEGORIES)[number]>('category', '全部');
+  const [query, setQuery] = usePageSessionState('query', '');
+  const [view, setView] = usePageSessionState<ViewMode>('view', 'grid');
+  const [sort, setSort] = usePageSessionState<ConnectorSort>('sort', 'default');
+  const [updatedSortDirection, setUpdatedSortDirection] = usePageSessionState<'asc' | 'desc'>('sortDirection', 'desc');
+  const [detailId, setDetailId] = usePageSessionState<string | null>('detail', null);
+  const scrollKey = usePageScrollKey('catalog');
   const { notify } = useAppAlert();
   const catalogScrollTop = useRef(0);
   const restoreCatalogScroll = useCallback((element: HTMLDivElement | null) => {
@@ -337,6 +339,7 @@ export function ConnectorsCanvas({
           catalogScrollTop.current = event.currentTarget.scrollTop;
         }}
         className="min-h-0 flex-1 overflow-auto px-3 pb-20 pt-2.5"
+        data-page-scroll={scrollKey}
       >
         {visible.length === 0 ? (
           <div className="flex min-h-64 flex-col items-center justify-center text-center">

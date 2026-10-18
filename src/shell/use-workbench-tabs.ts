@@ -1,36 +1,69 @@
 'use client';
 
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useContext, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { ProjectUiSessionContext } from '@/lib/page-session-state';
 import { pushWorkbenchLocation, replaceWorkbenchLocation } from '@/lib/navigation-history';
 import { closeSettings } from '@/lib/settings-navigation';
 import type { WorkbenchPage } from './workbench-pages';
-import { closeWorkbenchTab, createWorkbenchTabs, openWorkbenchTab, promoteConversationTab, reorderWorkbenchTabs, tabTarget, type TabCloseAction, type WorkbenchTab, type WorkbenchTabsState } from './workbench-tabs';
+import { closeWorkbenchTab, createWorkbenchStartup, createWorkbenchTabs, openWorkbenchTab, promoteConversationTab, reorderWorkbenchTabs, restoreWorkbenchTabs, tabTarget, type TabCloseAction, type WorkbenchTab, type WorkbenchTabsState } from './workbench-tabs';
 
 const subscribeHydration = () => () => {};
 const clientReady = () => true;
 const serverReady = () => false;
 
-export function useWorkbenchTabs(scope: string | null, view: WorkbenchPage, search: string, conversationIds: readonly string[]) {
+export function useWorkbenchTabs(scope: string | null, view: WorkbenchPage, search: string, conversationIds: readonly string[], restorationReady = true, startup?: ReturnType<typeof createWorkbenchStartup>) {
+  const session = useContext(ProjectUiSessionContext);
   const ready = useSyncExternalStore(subscribeHydration, clientReady, serverReady);
-  const [initialized, setInitialized] = useState(ready);
+  const boot = ready && restorationReady;
   const requested = tabTarget(view, search);
   const unavailable = Boolean(requested.conversationId && !conversationIds.includes(requested.conversationId));
   const target = unavailable ? tabTarget('home') : requested;
-  const [stored, setStored] = useState(() => createWorkbenchTabs(scope, target));
-  // The SSR fallback route must not become a real tab after the URL hydrates.
-  let remaining = stored.scope === scope && initialized === ready ? stored : createWorkbenchTabs(scope, target);
-  if (initialized !== ready) setInitialized(ready);
-  for (const tab of remaining.tabs) {
-    if (tab.conversationId && !conversationIds.includes(tab.conversationId)) remaining = closeWorkbenchTab(remaining, tab.key);
+  const [memory, setMemory] = useState(() => ({ state: createWorkbenchTabs(scope, target), location: search, hydrated: false, hasProject: false, restoreSearch: null as string | null }));
+  let current = memory;
+  if (boot && (!current.hydrated || current.state.scope !== scope)) {
+    const first = !current.hasProject && !startup?.isConsumed();
+    let restored = restoreWorkbenchTabs(scope, session?.get('tabs', null)) ?? createWorkbenchTabs(scope, first ? target : tabTarget('workbench'));
+    for (const tab of restored.tabs) if (tab.conversationId && !conversationIds.includes(tab.conversationId)) restored = closeWorkbenchTab(restored, tab.key);
+    const params = new URLSearchParams(search);
+    const explicit = ['view', 'conversation', 'dashboardTask', 'dashboardProject', 'dashboardDocument', 'dashboardMeeting'].some(key => params.has(key));
+    if (first && explicit) restored = openWorkbenchTab(restored, target);
+    const selected = restored.tabs.find(tab => tab.key === restored.active)!;
+    current = { state: restored, location: search, hydrated: true, hasProject: current.hasProject || scope !== null, restoreSearch: selected.search !== requested.search ? selected.search : null };
   }
-  const state = openWorkbenchTab(remaining, target);
-  if (state !== stored) setStored(state);
+  if (boot) {
+    if (current.restoreSearch !== null) {
+      if (requested.search === current.restoreSearch) current = { ...current, location: search, restoreSearch: null };
+    } else if (current.location !== search || unavailable) {
+      const next = openWorkbenchTab(current.state, target);
+      if (next !== current.state || current.location !== search) current = { ...current, state: next, location: search };
+    }
+    let remaining = current.state;
+    for (const tab of remaining.tabs) if (tab.conversationId && !conversationIds.includes(tab.conversationId)) remaining = closeWorkbenchTab(remaining, tab.key);
+    if (remaining !== current.state) current = { ...current, state: remaining };
+  }
+  if (current !== memory) setMemory(current);
+  const state = current.state;
+  function setStored(change: WorkbenchTabsState | ((value: WorkbenchTabsState) => WorkbenchTabsState)) {
+    setMemory(previous => ({ ...previous, state: typeof change === 'function' ? change(previous.state) : change }));
+  }
+  const restoreSearch = current.restoreSearch;
+  const persisted = useRef<{ session: typeof session; snapshot: string } | null>(null);
   useEffect(() => {
-    if (!unavailable) return;
+    if (!boot || (restoreSearch === null && !unavailable)) return;
     const url = new URL(window.location.href);
-    url.search = target.search;
+    url.search = restoreSearch ?? target.search;
     replaceWorkbenchLocation(url);
-  }, [unavailable, target.search]);
+  }, [boot, restoreSearch, unavailable, target.search]);
+  useEffect(() => {
+    if (!boot || state.scope !== scope || !session) return;
+    startup?.consume();
+    const snapshot = JSON.stringify(state);
+    if (persisted.current?.session === session && persisted.current.snapshot === snapshot) return;
+    persisted.current = { session, snapshot };
+    // Re-rendering an unchanged window must not overwrite a newer window's record.
+    if (JSON.stringify(session.get('tabs', null)) !== snapshot) session.set('tabs', state, null);
+    session.retainPages(state.tabs.map(tab => tab.instance));
+  }, [boot, scope, session, state, startup]);
 
   function rememberLocation(current: WorkbenchTabsState) {
     return openWorkbenchTab(current, tabTarget(view, window.location.search));
@@ -79,5 +112,5 @@ export function useWorkbenchTabs(scope: string | null, view: WorkbenchPage, sear
     else setStored(next);
   }
 
-  return { ...state, ready, open, activate, close, promote, reorder };
+  return { ...state, ready: boot, open, activate, close, promote, reorder };
 }

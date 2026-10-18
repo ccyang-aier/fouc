@@ -3,6 +3,7 @@
 import { formatDate, createTranslator, useTranslation, type Locale } from '@/lib/i18n';
 import { knowledgeMessages } from './library-canvas.messages';
 import { useMemo } from 'react';
+import { usePageScrollKey } from '@/lib/page-session-state';
 import { DocumentsPage } from '../documents/documents-page';
 import { KnowledgeBaseDocumentImport } from '../documents/server-document-import';
 import { FilePlus, Folder, Plus } from '@phosphor-icons/react';
@@ -62,6 +63,7 @@ export function LibraryCanvas({
   onExpandSidebar?: () => void;
 }) {
   const { locale, t: knowledgeT } = useTranslation(knowledgeMessages);
+  const scrollKey = usePageScrollKey(`library:${view}:${folder?.id ?? ''}`);
 
   const query = useKnowledgePagesQuery(knowledgeBaseId);
   const pages = useMemo(() => {
@@ -155,6 +157,7 @@ export function LibraryCanvas({
     <section
       aria-label={knowledgeT('knowledgeBaseDocuments')}
       className="min-h-0 flex-1 overflow-y-auto bg-white"
+      data-page-scroll={scrollKey}
     >
       <div className={styles.libraryView}>
         <header className={styles.viewHeader}>

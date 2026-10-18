@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ComponentPropsWithoutRef, type ElementType, type PointerEvent as ReactPointerEvent, type Ref } from "react";
 import { cn } from "@/lib/utils";
+import { usePageScrollKey } from '@/lib/page-session-state';
 
 const THUMB_MIN = 48;
 const THUMB_MAX = 128;
@@ -23,9 +24,11 @@ type ScrollAreaProps = ComponentPropsWithoutRef<"div"> & {
   orientation?: "vertical" | "horizontal";
   scrollbar?: boolean;
   as?: ElementType;
+  restorationKey?: string;
 };
 
-export function ScrollArea({ children, className, viewportClassName, viewportRef, orientation = "vertical", scrollbar = true, as: Tag = "div", ...props }: ScrollAreaProps) {
+export function ScrollArea({ children, className, viewportClassName, viewportRef, orientation = "vertical", scrollbar = true, as: Tag = "div", restorationKey, ...props }: ScrollAreaProps) {
+  const scrollKey = usePageScrollKey(restorationKey);
   const horizontal = orientation === "horizontal";
   const scrollRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ pointerId: number; start: number; startScroll: number } | null>(null);
@@ -139,6 +142,7 @@ export function ScrollArea({ children, className, viewportClassName, viewportRef
   return (
     <Tag className={cn("relative", className)} {...props}>
       <div
+        data-page-scroll={scrollKey}
         ref={(node) => {
           scrollRef.current = node;
           if (typeof viewportRef === "function") viewportRef(node);

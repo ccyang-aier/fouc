@@ -1,4 +1,5 @@
 import type { WorkbenchPage } from './workbench-pages';
+import { workbenchPages } from './workbench-pages';
 
 export type TabTarget = { key: string; view: WorkbenchPage; search: string; conversationId?: string };
 export type WorkbenchTab = TabTarget & { instance: number };
@@ -6,6 +7,11 @@ export type WorkbenchTabsState = { scope: string | null; tabs: WorkbenchTab[]; a
 export type TabCloseAction = 'current' | 'others' | 'right' | 'all';
 export const workbenchTabId = (instance: number) => `workbench-tab-${instance}`;
 export const workbenchPanelId = (instance: number) => `workbench-panel-${instance}`;
+
+export function createWorkbenchStartup() {
+  let consumed = false;
+  return { isConsumed: () => consumed, consume: () => { consumed = true; } };
+}
 
 export function tabTarget(view: WorkbenchPage, search = ''): TabTarget {
   const params = new URLSearchParams(search);
@@ -21,6 +27,21 @@ export function tabTarget(view: WorkbenchPage, search = ''): TabTarget {
 
 export function createWorkbenchTabs(scope: string | null, target: TabTarget): WorkbenchTabsState {
   return { scope, tabs: [{ ...target, instance: 0 }], active: target.key, nextInstance: 1 };
+}
+
+export function restoreWorkbenchTabs(scope: string | null, value: unknown): WorkbenchTabsState | null {
+  if (!value || typeof value !== 'object') return null;
+  const raw = value as Partial<WorkbenchTabsState>;
+  if (raw.scope !== scope || !Array.isArray(raw.tabs)) return null;
+  const tabs: WorkbenchTab[] = [];
+  for (const item of raw.tabs) {
+    if (!item || !Object.hasOwn(workbenchPages, item.view) || typeof item.search !== 'string' || !Number.isSafeInteger(item.instance) || item.instance < 0) continue;
+    const target = tabTarget(item.view, item.search);
+    if (!tabs.some(tab => tab.key === target.key || tab.instance === item.instance)) tabs.push({ ...target, instance: item.instance });
+  }
+  if (!tabs.length) return null;
+  const nextInstance = Math.max(...tabs.map(tab => tab.instance)) + 1;
+  return { scope, tabs, active: tabs.some(tab => tab.key === raw.active) ? raw.active! : tabs[0].key, nextInstance: Math.max(nextInstance, Number.isSafeInteger(raw.nextInstance) ? raw.nextInstance! : 0) };
 }
 
 export function openWorkbenchTab(state: WorkbenchTabsState, target: TabTarget): WorkbenchTabsState {

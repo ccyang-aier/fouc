@@ -11,6 +11,8 @@ import { ProjectChatsPage, ProjectEmptyPage, ProjectSelectionEmpty } from '@/fea
 import { useProjectResources } from '@/features/project/project-resources';
 import { AgentSettings } from '@/features/settings/agent-settings';
 import { PageVisibility } from '@/lib/page-visibility';
+import { PageSessionNamespace } from '@/lib/page-session-state';
+import { usePageScrollRestoration } from '@/lib/use-page-scroll-restoration';
 import { useTranslation } from '@/lib/i18n';
 import type { WorkbenchView } from './workbench-view';
 import { workbenchPanelId, workbenchTabId, type WorkbenchTab } from './workbench-tabs';
@@ -29,7 +31,7 @@ export function WorkbenchPanels({ tabs, active, history, onNavigate, onOpenChat,
     const visible = tab.key === active;
     const projectPage = !['community', 'connectors', 'knowledge'].includes(tab.view);
     // Keep actual DOM/editors mounted: hiding must not destroy collaboration or undo.
-    return <WorkbenchPanel key={`${scopeKey}:${tab.instance}`} tab={tab} visible={visible}>
+    return <PageSessionNamespace key={`${scopeKey}:${tab.instance}`} name={`page:${tab.instance}`}><WorkbenchPanel tab={tab} visible={visible}>
         {projectPage && (!selectedProject || !scopeKey) ? <ProjectSelectionEmpty />
           : tab.view === 'home' ? <HomeCanvas conversation={history.find(entry => entry.id === tab.conversationId)} onOpenConnectors={() => onNavigate('connectors')} onOpenConversation={onOpenChat} onNewConversation={() => onNavigate('home')} onConversationStarted={id => onConversationStarted(tab.instance, id)} />
           : tab.view === 'workbench' && selectedProject && scopeKey ? <ProjectDashboard projectName={selectedProject.name} scopeKey={scopeKey} onNavigate={onNavigate} />
@@ -40,12 +42,13 @@ export function WorkbenchPanels({ tabs, active, history, onNavigate, onOpenChat,
           : tab.view === 'connectors' ? <ConnectorsCanvas onOpenProject={id => { if (projects.some(project => project.id === id)) selectProject(id); onNavigate('workbench'); }} />
           : tab.view === 'knowledge' ? <KnowledgePage onOpenSettings={() => onNavigate('settings')} />
           : null}
-    </WorkbenchPanel>;
+    </WorkbenchPanel></PageSessionNamespace>;
   });
 }
 
 function WorkbenchPanel({ tab, visible, children }: { tab: WorkbenchTab; visible: boolean; children: ReactNode }) {
   const ref = useRef<HTMLElement>(null);
+  usePageScrollRestoration(ref);
   useEffect(() => {
     // Native modal dialogs otherwise leave the whole window inert after browser Back.
     if (!visible) ref.current?.querySelectorAll<HTMLDialogElement>('dialog[open]').forEach(dialog => dialog.close());

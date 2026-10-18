@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { usePageSessionState } from '@/lib/page-session-state';
 import { motion } from "motion/react";
 import {
   ArrowLeft,
@@ -41,8 +42,8 @@ export function HomeChat({
   const history = useChatHistory();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const conversationViewport = useRef<HTMLDivElement>(null);
-  const [draft, setDraft] = useState<ChatDraft>({ text: "", attachments: [], mode: null });
-  const [context, setContext] = useState<ChatContext>({
+  const [draft, setDraft] = usePageSessionState<ChatDraft>('draft', { text: "", attachments: [], mode: null });
+  const [context, setContext] = usePageSessionState<ChatContext>('context', {
     execution: { kind: "auto" },
     autoRules: { modelIds: null, reasoningEffort: autoReasoning.defaultLevel },
     projectId: selectedProject?.id ?? null,
@@ -54,7 +55,7 @@ export function HomeChat({
   });
   const [submissions, setSubmissions] = useState<ChatSubmission[]>(conversation?.submissions ?? []);
   const [conversationId, setConversationId] = useState<string | null>(conversation?.id ?? null);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = usePageSessionState<string | null>('editing', null);
   const savedConversation = history.find(entry => entry.id === conversationId);
   // A deleted preview must stop being editable, including one started on this page.
   if (conversationId && !savedConversation) {
@@ -132,6 +133,7 @@ export function HomeChat({
         </header>
       ) : null}
       <ScrollArea
+        restorationKey="conversation"
         as="div"
         className={styles.pageScroll}
         viewportClassName={styles.viewport}

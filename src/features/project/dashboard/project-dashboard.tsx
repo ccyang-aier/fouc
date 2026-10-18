@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { usePageScrollKey } from '@/lib/page-session-state';
 import { useAppAlert } from '@/components/app-alert-provider';
 import { useTranslation } from '@/lib/i18n';
 import { replaceWorkbenchLocation } from '@/lib/navigation-history';
@@ -29,6 +30,7 @@ export function ProjectDashboard(props: ProjectDashboardProps) {
 }
 
 function ProjectDashboardCanvas({ projectName, scopeKey, onNavigate }: ProjectDashboardProps) {
+  const scrollKey = usePageScrollKey('dashboard');
   const { t, locale } = useTranslation(messages);
   const store = useDashboard(scopeKey);
   const { state, storageError } = store;
@@ -140,7 +142,7 @@ function ProjectDashboardCanvas({ projectName, scopeKey, onNavigate }: ProjectDa
 
   return (
     <section className={styles.dashboard} aria-label={t('{v0} project dashboard', { v0: projectName })} lang={locale}>
-      <div className={styles.content}>
+      <div data-page-scroll={scrollKey} className={styles.content}>
         <DashboardContent state={state} storageError={storageError} actions={actions} />
       </div>
       <DashboardDialogs

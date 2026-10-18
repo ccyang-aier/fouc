@@ -3,6 +3,10 @@ import { Window } from 'happy-dom';
 import { act, useEffect, useState, type ReactNode } from 'react';
 import { createRoot, hydrateRoot, type Root } from 'react-dom/client';
 import { renderToString } from 'react-dom/server';
+import { indexedDB } from 'fake-indexeddb';
+import { ProjectUiSession } from '@/lib/project-ui-session';
+import { ProjectUiSessionContext, usePageSessionState } from '@/lib/page-session-state';
+import { createWorkbenchStartup, createWorkbenchTabs, tabTarget } from './workbench-tabs';
 import type { useWorkbenchTabs } from './use-workbench-tabs';
 import type { useWorkbenchView } from './workbench-view';
 
@@ -14,12 +18,15 @@ let tabs: ReturnType<typeof useWorkbenchTabs>;
 let route: ReturnType<typeof useWorkbenchView>;
 let scope: string | null = '';
 let chatIds: string[] = [];
+let activeSession: ProjectUiSession | null = null;
+let restorationReady = true;
+let startupEntry: ReturnType<typeof createWorkbenchStartup> | undefined;
 let serial = 0;
 const mounts = new Map<string, number>();
 const releases = new Map<string, number>();
 
 function ExamplePage({ name }: { name: string }) {
-  const [draft, setDraft] = useState('');
+  const [draft, setDraft] = usePageSessionState('draft', '');
   const [count, setCount] = useState(0);
   useEffect(() => {
     mounts.set(name, (mounts.get(name) ?? 0) + 1);
@@ -31,8 +38,9 @@ function ExamplePage({ name }: { name: string }) {
 beforeAll(async () => {
   browser = new Window({ url: 'http://localhost:3000/?view=home' });
   const globals = globalThis as Record<string, unknown>;
-  for (const name of ['document', 'navigator', 'HTMLElement', 'HTMLInputElement', 'Element', 'Node', 'Event']) globals[name] = (browser as unknown as Record<string, unknown>)[name];
+  for (const name of ['document', 'navigator', 'HTMLElement', 'HTMLInputElement', 'Element', 'Node', 'Event', 'ResizeObserver', 'MutationObserver']) globals[name] = (browser as unknown as Record<string, unknown>)[name];
   globals.window = browser;
+  globals.indexedDB = indexedDB;
   globals.IS_REACT_ACT_ENVIRONMENT = true;
   const icon = () => <svg />;
   mock.module('@phosphor-icons/react', () => Object.fromEntries(['Archive', 'BookOpenText', 'ChatCircleDots', 'ChatsCircle', 'ListChecks', 'Planet', 'PlugsConnected', 'Robot', 'SquaresFour', 'UsersThree', 'X'].map(name => [name, icon])));
@@ -49,11 +57,11 @@ beforeAll(async () => {
   const { useWorkbenchView } = await import('./workbench-view');
   function Workspace() {
     const view = useWorkbenchView(scope);
-    const current = useWorkbenchTabs(scope, view[0], view[4], chatIds);
+    const current = useWorkbenchTabs(scope, view[0], view[4], chatIds, restorationReady, startupEntry);
     useEffect(() => { tabs = current; route = view; });
-    return <WorkbenchPanels tabs={current.tabs} active={current.active} history={[]} onNavigate={next => { if (next !== 'settings') current.open(next); }} onOpenChat={() => {}} onConversationStarted={current.promote} />;
+    return current.ready ? <WorkbenchPanels tabs={current.tabs} active={current.active} history={[]} onNavigate={next => { if (next !== 'settings') current.open(next); }} onOpenChat={() => {}} onConversationStarted={current.promote} /> : null;
   }
-  renderWorkspace = () => <Workspace />;
+  renderWorkspace = () => <ProjectUiSessionContext value={activeSession}><Workspace /></ProjectUiSessionContext>;
   host = document.createElement('div');
   document.body.append(host);
   root = createRoot(host);
@@ -62,6 +70,9 @@ beforeEach(async () => {
   await act(async () => root.render(null));
   browser.history.replaceState(null, '', '/?view=home');
   scope = `principal:local:project-${++serial}`;
+  activeSession = null;
+  restorationReady = true;
+  startupEntry = undefined;
   chatIds = [];
   mounts.clear(); releases.clear();
   await act(async () => root.render(renderWorkspace()));
@@ -116,7 +127,8 @@ test('history and settings select existing tabs, while project or identity chang
   expect(releases.get('home')).toBe(1);
   expect(releases.get('connectors')).toBe(1);
   expect(releases.get('community')).toBe(1);
-  expect(mounts.get('community')).toBe(2);
+  expect(mounts.get('community')).toBe(1);
+  expect(tabs.active).toBe('workbench');
 });
 
 test('conversation promotion keeps its editor, and deleting a conversation removes its tab and URL', async () => {
@@ -183,4 +195,78 @@ test('hydration opens only the requested URL when there is no selected project',
   await act(async () => { root = hydrateRoot(host, renderWorkspace()); });
   expect(tabs.tabs.map(tab => tab.key)).toEqual(['knowledge']);
   expect(tabs.active).toBe('knowledge');
+});
+
+test('reloads and project returns restore the ordered tabs, active page and drafts; explicit links take priority', async () => {
+  await act(async () => root.render(null));
+  const firstScope = scope!;
+  activeSession = new ProjectUiSession(firstScope);
+  await activeSession.loaded;
+  await act(async () => root.render(renderWorkspace()));
+  const home = host.querySelector<HTMLInputElement>('input')!;
+  await act(async () => { home.value = 'saved across reopen'; home.dispatchEvent(new Event('input', { bubbles: true })); tabs.open('community'); });
+  await act(async () => tabs.open('connectors'));
+  const [homeTab, communityTab, connectorTab] = tabs.tabs;
+  await act(async () => tabs.reorder([connectorTab.instance, homeTab.instance, communityTab.instance]));
+  await act(async () => tabs.activate('community'));
+  await act(async () => root.render(null));
+  browser.history.replaceState(null, '', '/');
+  activeSession = new ProjectUiSession(firstScope);
+  await activeSession.loaded;
+  await act(async () => root.render(renderWorkspace()));
+  expect(tabs.tabs.map(tab => tab.key)).toEqual(['connectors', 'home', 'community']);
+  expect(tabs.active).toBe('community');
+  expect(browser.location.search).toBe('?view=community');
+  expect(host.querySelector<HTMLInputElement>('[data-page="home"] input')!.value).toBe('saved across reopen');
+  const second = new ProjectUiSession('principal:server:other-project');
+  await second.loaded;
+  scope = second.scope; activeSession = second;
+  await act(async () => root.render(renderWorkspace()));
+  expect(tabs.active).toBe('workbench');
+  await act(async () => tabs.open('knowledge'));
+  scope = firstScope; activeSession = new ProjectUiSession(firstScope);
+  await activeSession.loaded;
+  await act(async () => root.render(renderWorkspace()));
+  expect(tabs.active).toBe('community');
+  expect(tabs.tabs.map(tab => tab.key)).toEqual(['connectors', 'home', 'community']);
+  expect(host.querySelector<HTMLInputElement>('[data-page="home"] input')!.value).toBe('saved across reopen');
+  scope = second.scope; activeSession = new ProjectUiSession(second.scope);
+  await activeSession.loaded;
+  await act(async () => root.render(renderWorkspace()));
+  expect(tabs.active).toBe('knowledge');
+  await act(async () => root.render(null));
+  scope = firstScope; activeSession = new ProjectUiSession(firstScope);
+  await activeSession.loaded;
+  browser.history.replaceState(null, '', '/?view=knowledge');
+  await act(async () => root.render(renderWorkspace()));
+  expect(tabs.active).toBe('knowledge');
+  expect(tabs.tabs.map(tab => tab.key)).toEqual(['connectors', 'home', 'community', 'knowledge']);
+});
+
+test('identity checking cannot rewrite the startup URL or expose guest pages before the account restores', async () => {
+  await act(async () => root.render(null));
+  const guest = new ProjectUiSession('guest:local:startup');
+  const user = new ProjectUiSession('user:local:startup');
+  await Promise.all([guest.loaded, user.loaded]);
+  guest.set('tabs', createWorkbenchTabs(guest.scope, tabTarget('community')), null);
+  user.set('tabs', createWorkbenchTabs(user.scope, tabTarget('connectors')), null);
+  scope = guest.scope; activeSession = guest; restorationReady = false; startupEntry = createWorkbenchStartup();
+  browser.history.replaceState(null, '', '/');
+  await act(async () => root.render(renderWorkspace()));
+  expect(browser.location.search).toBe('');
+  expect(host.querySelector('[role="tabpanel"]')).toBeNull();
+  // ProjectResourceProvider remounts its children when the principal resolves.
+  await act(async () => root.render(null));
+  scope = user.scope; activeSession = user; restorationReady = true;
+  await act(async () => root.render(renderWorkspace()));
+  expect(tabs.active).toBe('connectors');
+  expect(browser.location.search).toBe('?view=connectors');
+  expect(tabs.tabs.map(tab => tab.key)).toEqual(['connectors']);
+  expect(startupEntry.isConsumed()).toBe(true);
+  await act(async () => root.render(null));
+  scope = guest.scope; activeSession = guest;
+  await act(async () => root.render(renderWorkspace()));
+  expect(tabs.active).toBe('community');
+  expect(tabs.tabs.map(tab => tab.key)).toEqual(['community']);
+  expect(user.get<ReturnType<typeof createWorkbenchTabs> | null>('tabs', null)!.active).toBe('connectors');
 });

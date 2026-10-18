@@ -6,6 +6,7 @@ import { knowledgeMessages } from './knowledge-page.messages';
 /** Identity controls access; each knowledge base owns its resource scope. */
 
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { PageSessionNamespace, usePageSessionState } from '@/lib/page-session-state';
 import { useQueryClient } from '@tanstack/react-query';
 import { LockSimple, XCircle } from '@phosphor-icons/react';
 import dynamic from 'next/dynamic';
@@ -123,6 +124,7 @@ function KnowledgeResources({
   };
   return (
     <>
+      <PageSessionNamespace key={`${activeResource}:${activeBaseId}`} name={`knowledge:${activeResource}:${activeBaseId}`}>
       {activeResource === 'local' ? (
         localStore ? (
           <LocalKnowledgeResource
@@ -153,6 +155,7 @@ function KnowledgeResources({
           {...shared}
         />
       )}
+      </PageSessionNamespace>
       <CreateKnowledgeBaseDialog
         key={activeResource}
         open={creating}
@@ -291,13 +294,12 @@ function ServerKnowledgeResource({
     };
   }, [stageActive, activeId, queryClient]);
 
-  const [libraryView, setLibraryView] = useState<LibraryView>('all-documents');
-  const [selectedTeamspaceId, setSelectedTeamspaceId] = useState<string | null>(null);
-  const [selectedPageId, setSelectedPageId] = useState<string | null>(() =>
-    activeBaseId ? (currentDocumentLinkTarget(activeBaseId, 'server')?.pageId ?? null) : null,
-  );
-  const [editorSidebarOpen, setEditorSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [libraryView, setLibraryView] = usePageSessionState<LibraryView>('view', 'all-documents');
+  const [selectedTeamspaceId, setSelectedTeamspaceId] = usePageSessionState<string | null>('folder', null);
+  const linkedPage = activeBaseId ? currentDocumentLinkTarget(activeBaseId, 'server')?.pageId ?? null : null;
+  const [selectedPageId, setSelectedPageId] = usePageSessionState<string | null>('page', linkedPage, { preferInitial: Boolean(linkedPage) });
+  const [editorSidebarOpen, setEditorSidebarOpen] = usePageSessionState('editorSidebar', false);
+  const [sidebarCollapsed, setSidebarCollapsed] = usePageSessionState('sidebar', false);
   const [createTeamspaceOpen, setCreateTeamspaceOpen] = useState(false);
   const [createDocumentOpen, setCreateDocumentOpen] = useState(false);
   const { notify } = useAppAlert();

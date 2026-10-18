@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { closeWorkbenchTab, createWorkbenchTabs, openWorkbenchTab, promoteConversationTab, reorderWorkbenchTabs, tabTarget } from './workbench-tabs';
+import { closeWorkbenchTab, createWorkbenchTabs, openWorkbenchTab, promoteConversationTab, reorderWorkbenchTabs, restoreWorkbenchTabs, tabTarget } from './workbench-tabs';
 
 test('menus reuse existing tabs without changing their instances or opening settings', () => {
   let state = createWorkbenchTabs('user:local:a', tabTarget('home'));
@@ -64,4 +64,17 @@ test('reordering retains instances and selection, and bulk closes use the displa
   expect(all.tabs.map(tab => tab.key)).toEqual(['home']);
   expect(all.tabs[0].instance).toBe(state.nextInstance);
   expect(all.active).toBe('home');
+});
+
+test('restoring validates scope and page targets while retaining order, selection and instance sequence', () => {
+  let state = createWorkbenchTabs('alice:local:a', tabTarget('home'));
+  state = openWorkbenchTab(state, tabTarget('knowledge', '?view=knowledge&kb=example'));
+  state = reorderWorkbenchTabs(state, [1, 0]);
+  const restored = restoreWorkbenchTabs(state.scope, structuredClone(state))!;
+  expect(restored.tabs.map(tab => tab.key)).toEqual(['knowledge', 'home']);
+  expect(restored.active).toBe('knowledge');
+  expect(restored.nextInstance).toBe(2);
+  expect(restoreWorkbenchTabs('alice:server:a', state)).toBeNull();
+  expect(restoreWorkbenchTabs('bob:local:a', state)).toBeNull();
+  expect(restoreWorkbenchTabs(state.scope, { ...state, tabs: [{ view: 'settings', instance: 4, search: '?view=settings' }] })).toBeNull();
 });

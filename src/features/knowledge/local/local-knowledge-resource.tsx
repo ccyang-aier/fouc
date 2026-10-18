@@ -5,6 +5,7 @@ import { knowledgeMessages } from './local-knowledge-resource.messages';
 /** Local storage is a resource capability, independent of account identity. */
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { usePageSessionState } from '@/lib/page-session-state';
 import { FilePlus } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { AppAlert } from '@/components/app-alert';
@@ -71,14 +72,13 @@ export function LocalKnowledgeResource({
   const visibleIds = useMemo(() => new Set(knowledgeBases.filter((item) => item.source === 'local').map((item) => item.id)), [knowledgeBases]);
   const base = library.bases.find((item) => item.id === selectedKnowledgeBaseId && visibleIds.has(item.id));
   const knowledgeBaseId = base?.id ?? '';
-  const [view, setView] = useState<View>('all-documents');
-  const [folderId, setFolderId] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(
-    () => currentDocumentLinkTarget(knowledgeBaseId, 'local')?.pageId ?? null,
-  );
-  const [collapsed, setCollapsed] = useState(false);
-  const [editorSidebarOpen, setEditorSidebarOpen] = useState(false);
-  const [activeTagId, setActiveTagId] = useState<string | null>(null);
+  const [view, setView] = usePageSessionState<View>('view', 'all-documents');
+  const [folderId, setFolderId] = usePageSessionState<string | null>('folder', null);
+  const linkedPage = currentDocumentLinkTarget(knowledgeBaseId, 'local')?.pageId ?? null;
+  const [selectedId, setSelectedId] = usePageSessionState<string | null>('page', linkedPage, { preferInitial: Boolean(linkedPage) });
+  const [collapsed, setCollapsed] = usePageSessionState('sidebar', false);
+  const [editorSidebarOpen, setEditorSidebarOpen] = usePageSessionState('editorSidebar', false);
+  const [activeTagId, setActiveTagId] = usePageSessionState<string | null>('tag', null);
   const [creation, setCreation] = useState<'document' | 'folder' | null>(null);
   const { notify } = useAppAlert();
   useEffect(
@@ -95,7 +95,7 @@ export function LocalKnowledgeResource({
         setSelectedId(page.id);
         setEditorSidebarOpen(false);
       }),
-    [store, setBaseId, visibleIds],
+    [store, setBaseId, visibleIds, setSelectedId, setEditorSidebarOpen],
   );
   const documents = library.documents.filter((item) => item.baseId === base?.id);
   const folders = library.folders.filter((folder) => folder.knowledgeBaseId === base?.id);

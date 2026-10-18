@@ -3,6 +3,7 @@
 import { useTranslation } from '@/lib/i18n';
 import { knowledgeMessages } from './editor-layout.messages';
 import type { CSSProperties, ReactNode } from 'react';
+import { PageSessionNamespace, usePageScrollKey } from '@/lib/page-session-state';
 import { EditorContent } from '@tiptap/react';
 import type { Editor } from '@tiptap/react';
 import styles from './editor-layout.module.css';
@@ -38,13 +39,13 @@ export function DocumentEditorFrame({
   const { t: knowledgeT } = useTranslation(knowledgeMessages);
 
   return (
-    <DocumentAppearanceProvider key={appearanceScope} scope={appearanceScope}>
+    <PageSessionNamespace name={`document:${appearanceScope}`}><DocumentAppearanceProvider key={appearanceScope} scope={appearanceScope}>
       <section data-knowledge-editor aria-label={knowledgeT('pageEditor')} className={styles.frame}>
         <DocumentNavigationTools {...navigation} header={header} sidebar={sidebar}>
           {children}
         </DocumentNavigationTools>
       </section>
-    </DocumentAppearanceProvider>
+    </DocumentAppearanceProvider></PageSessionNamespace>
   );
 }
 
@@ -99,13 +100,14 @@ export function DocumentEditorBody({
   editor: Editor | null;
   before?: ReactNode;
 }) {
+  const scrollKey = usePageScrollKey('editor');
   const { appearance } = useDocumentAppearance();
   const font = documentFonts.find(({ id }) => id === appearance.font)!;
   const codeFont = documentCodeFonts.find(({ id }) => id === appearance.codeFont)!;
   const size = documentSizes.find(({ id }) => id === appearance.size)!;
   const spacing = documentParagraphSpacings.find(({ id }) => id === appearance.paragraphSpacing)!;
   return (
-    <div className={styles.scrollArea} data-document-scroll>
+    <div className={styles.scrollArea} data-document-scroll data-page-scroll={scrollKey}>
       <div
         className={styles.document}
         data-width={appearance.width}

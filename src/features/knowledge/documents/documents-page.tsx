@@ -2,6 +2,7 @@
 import { useTranslation } from '@/lib/i18n';
 import { knowledgeMessages } from './documents-page.messages';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { usePageSessionState, usePageScrollKey } from '@/lib/page-session-state';
 import { CaretRight, FileText, X } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import styles from './documents-page.module.css';
@@ -38,12 +39,13 @@ export function DocumentsPage({
   const { locale, t: knowledgeT } = useTranslation(knowledgeMessages);
 
   const uploadDialog = useRef<HTMLDialogElement>(null);
-  const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState('all');
-  const [ascending, setAscending] = useState(false);
-  const [layout, setLayout] = useState<'table' | 'grid'>('table');
+  const [search, setSearch] = usePageSessionState('documents.search', '');
+  const [filter, setFilter] = usePageSessionState('documents.filter', 'all');
+  const [ascending, setAscending] = usePageSessionState('documents.ascending', false);
+  const [layout, setLayout] = usePageSessionState<'table' | 'grid'>('documents.layout', 'table');
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [allFolders, setAllFolders] = useState(false);
+  const [allFolders, setAllFolders] = usePageSessionState('documents.folders', false);
+  const scrollKey = usePageScrollKey('documents');
   const [uploadOpen, setUploadOpen] = useState(false);
   useEffect(() => {
     if (uploadOpen) uploadDialog.current?.showModal();
@@ -130,7 +132,7 @@ export function DocumentsPage({
           setAllFolders(false);
         }}
       />
-      <div className={styles.content}>
+      <div className={styles.content} data-page-scroll={scrollKey}>
         <div className={styles.sectionHeading}>
           <h2>
             {knowledgeT(folders.length === 1 ? 'oneFolderHeading' : 'folderHeading', {

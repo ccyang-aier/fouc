@@ -80,13 +80,13 @@ async function render(board = initialBoard) { currentBoard = board; await act(as
 function control(label: string) { return host.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)!; }
 function panel() { return host.querySelector<HTMLElement>('[role="dialog"]'); }
 function inviteButton() { return [...host.querySelectorAll<HTMLButtonElement>('button')].find(button => button.textContent === '邀请')!; }
-async function pointer(target: HTMLElement) { await act(async () => target.dispatchEvent(new browser.PointerEvent('pointerdown', { bubbles: true, button: 0, pointerType: 'mouse' }))); }
-async function escape() { await act(async () => document.dispatchEvent(new browser.KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))); }
+async function pointer(target: HTMLElement) { await act(async () => target.dispatchEvent(new browser.PointerEvent('pointerdown', { bubbles: true, button: 0, pointerType: 'mouse' }) as unknown as Event)); }
+async function escape() { await act(async () => document.dispatchEvent(new browser.KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }) as unknown as Event)); }
 async function type(label: string, value: string) {
   const input = host.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)!;
   await act(async () => {
     Object.getOwnPropertyDescriptor(browser.HTMLInputElement.prototype, 'value')!.set!.call(input, value);
-    input.dispatchEvent(new browser.Event('input', { bubbles: true }));
+    input.dispatchEvent(new browser.Event('input', { bubbles: true }) as unknown as Event);
   });
 }
 function listedNames() { return [...panel()!.querySelectorAll('section[aria-label="看板成员"] [data-portrait]')].map(person => person.getAttribute('data-portrait')); }

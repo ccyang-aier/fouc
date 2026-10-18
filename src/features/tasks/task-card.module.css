@@ -19,8 +19,10 @@
 }
 .card:hover { background: var(--interaction-hover-bg); }
 .card:focus-visible { background: var(--interaction-active-bg); }
+.card:is(:hover, :active, :focus-visible, :focus-within, :has([aria-expanded="true"]))::after { content: ''; position: absolute; inset: 0; border: 1px dashed var(--resource-card-border); border-radius: inherit; pointer-events: none; }
 .card[data-dragging] { opacity: .25; }
-.card[data-drag-preview] { transform: rotate(-3deg); background: var(--panel); box-shadow: var(--floating-shadow); opacity: 1; }
+.card[data-drag-preview] { transform: none; background: var(--panel); box-shadow: var(--floating-shadow); opacity: 1; }
+.card[data-drag-preview]::after { display: none; }
 .cardTop { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 24px; margin-bottom: 8px; }
 .taskReference { display: flex; align-items: center; gap: 7px; min-width: 0; color: var(--muted-strong); font-size: 11px; font-variant-numeric: tabular-nums; }
 .taskReference > svg { color: var(--muted); }

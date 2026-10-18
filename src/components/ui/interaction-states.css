@@ -10,6 +10,14 @@
   --action-state-bg: var(--action-surface-hover-bg);
 }
 
+/* 浅灰白色工具按钮：常态用共享 hover 灰度，交互时用共享激活灰度。 */
+.fouc-action[data-surface="muted"] {
+  --action-state-bg: var(--interaction-active-bg);
+}
+html button.fouc-action[data-surface="muted"] {
+  background: var(--interaction-hover-bg);
+}
+
 /* 底色即时出现；颜色、描边与按下位移仍可柔和过渡。 */
 html .fouc-action {
   transition-property: color, border-color, box-shadow, transform;
@@ -77,7 +85,7 @@ html .fouc-action:is(:hover, :focus-visible, :active, [aria-expanded="true"]:not
 }
 
 /* 按下、展开与有效筛选用全局“灰白色”；不覆盖其它功能色控件。 */
-html .fouc-action[data-surface="plain"]:is(:active, [aria-expanded="true"]:not([data-variant="collapsible"]), [aria-pressed="true"], [data-active="true"], [data-filter-active]):not(:disabled):not([aria-disabled="true"]):not([data-disabled]) {
+html .fouc-action:is([data-surface="plain"], [data-surface="muted"]):is(:active, [aria-expanded="true"]:not([data-variant="collapsible"]), [aria-pressed="true"], [data-active="true"], [data-filter-active]):not(:disabled):not([aria-disabled="true"]):not([data-disabled]) {
   background: var(--action-active-bg);
   color: var(--ink);
 }

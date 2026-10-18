@@ -83,7 +83,7 @@ test('search keeps text editing inside the menu, supports arrow navigation and c
   await act(async () => {
     input.focus();
     Object.getOwnPropertyDescriptor(browser.HTMLInputElement.prototype, 'value')!.set!.call(input, 'be');
-    input.dispatchEvent(new browser.Event('input', { bubbles: true }));
+    input.dispatchEvent(new browser.Event('input', { bubbles: true }) as unknown as Event);
   });
   expect([...document.querySelectorAll('[role="menuitem"]')].map(item => item.textContent)).toEqual(['Ben']);
   expect(document.activeElement).toBe(input);

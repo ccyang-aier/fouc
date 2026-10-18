@@ -20,7 +20,7 @@ export function createTaskDragPreview(source: HTMLElement, event: { clientX: num
   document.body.append(host);
   event.dataTransfer.setDragImage(host, event.clientX - bounds.left + previewInset, event.clientY - bounds.top + previewInset);
   // The browser captures this rendered copy before the next paint. Keep its
-  // padding so the rotated card and floating shadow fit inside the drag image.
+  // padding so the floating shadow fits inside the drag image.
   const frame = window.requestAnimationFrame(() => host.remove());
   return () => { window.cancelAnimationFrame(frame); host.remove(); };
 }

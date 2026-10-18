@@ -6,7 +6,6 @@ import { Kanban, LockSimple, Plus, Users } from '@phosphor-icons/react';
 import type { TaskBoardDetail, TaskBoardSummary, TaskColumn } from '@fouc/shared/tasks';
 import { AppAlert } from '@/components/app-alert';
 import { useAppAlert } from '@/components/app-alert-provider';
-import { UserAvatar } from '@/components/user-avatar';
 import { Button } from '@/components/ui/button';
 import { useIdentity } from '@/features/identity/identity-provider';
 import { useProjectResources } from '@/features/project/project-resources';
@@ -40,7 +39,7 @@ function TaskBoardScope({ projectId, actorId }: { projectId: string; actorId: st
 }
 
 type Confirmation = { kind: 'board' | 'task' | 'column'; boardId: string; id: string; name: string };
-type BoardDialog = { kind: 'create' } | { kind: 'settings' | 'members'; boardId: string };
+type BoardDialog = { kind: 'create' } | { kind: 'settings'; boardId: string };
 function TaskBoardsContent({ projectId, actorId }: { projectId: string; actorId: string }) {
   const { t } = useTranslation(messages);
   const { notify } = useAppAlert();
@@ -62,7 +61,6 @@ function TaskBoardsContent({ projectId, actorId }: { projectId: string; actorId:
   const board = accessRevoked ? undefined : boardQuery.data;
   const loadFailed = (boardsQuery.isError && !boardsQuery.data) || accessRevoked || (boardQuery.isError && !boardQuery.data);
   const backgroundFailed = !loadFailed && (boardsQuery.isError || boardQuery.isError);
-  const membersQuery = useQuery({ queryKey: ['task-members'], queryFn: ({ signal }) => client.projectMembers(signal), enabled: dialog?.kind === 'members' && visible });
 
   function publish(next: TaskBoardDetail) {
     void query.cancelQueries({ queryKey: ['task-board', next.id] });
@@ -104,12 +102,10 @@ function TaskBoardsContent({ projectId, actorId }: { projectId: string; actorId:
   return <section className={styles.page} aria-label={t('tasks')}>
     <header className={styles.header}>
       <div className={styles.titleRow}><div className={styles.titleIdentity}><TaskBoardPicker boards={boards} selected={selected} onSelect={id => { setSelectedId(id); setDetail(null); setColumn(null); setConfirmation(null); setDialog(null); }} onCreate={() => setDialog({ kind: 'create' })} />
-        {selected && <span className={styles.visibility}>{selected.visibility === 'private' ? <LockSimple size={12} weight="duotone" /> : <Users size={12} weight="duotone" />}{t(selected.visibility)}</span>}
+        {selected && <span className={styles.visibility}>{selected.visibility === 'private' ? <LockSimple size={12} /> : <Users size={12} />}{t(selected.visibility)}</span>}
       </div>
       <div className={styles.headerActions}>
-        {board && <button type="button" className={`fouc-action ${styles.accessButton}`} onClick={() => setDialog({ kind: 'members', boardId: board.id })} aria-label={t('members')}>
-          <span className={styles.headerAvatars}>{board.members.slice(0, 3).map(member => <UserAvatar key={member.userId} name={member.name} image={member.image} />)}</span>
-        </button>}
+        {board && <TaskBoardMembers key={board.id} board={board} client={client} onChanged={publish} onEditSettings={() => setDialog({ kind: 'settings', boardId: board.id })} />}
         {!selected && <Button size="sm" onClick={() => setDialog({ kind: 'create' })}><Plus size={15} />{t('createBoard')}</Button>}
       </div></div>
     </header>
@@ -120,7 +116,6 @@ function TaskBoardsContent({ projectId, actorId }: { projectId: string; actorId:
       : <div className={styles.empty}><EmptyBoardIllustration /><h2>{t('noBoards')}</h2><p>{t('emptyDescription')}</p><Button size="sm" onClick={() => setDialog({ kind: 'create' })}><Plus size={15} />{t('createBoard')}</Button><span className={styles.emptyPrivacy}><LockSimple size={12} />{t('privateDefault')}</span></div>}
     {dialog?.kind === 'create' && <TaskBoardForm onClose={() => setDialog(null)} onSubmit={async draft => { const ok = await mutate(async () => { const next = await client.create(draft); setSelectedId(next.id); return next; }); return ok; }} />}
     {dialog?.kind === 'settings' && board && dialog.boardId === board.id && <TaskBoardForm key={`settings:${board.id}`} board={board} onClose={() => setDialog(null)} onSubmit={draft => mutate(() => client.update(dialog.boardId, draft))} />}
-    {dialog?.kind === 'members' && board && dialog.boardId === board.id && <TaskBoardMembers key={`members:${board.id}`} board={board} projectMembers={membersQuery.data ?? []} membersLoading={membersQuery.isPending} membersError={membersQuery.isError} onRetry={() => { void membersQuery.refetch(); }} client={client} onChanged={publish} onClose={() => setDialog(null)} onEditSettings={() => setDialog({ kind: 'settings', boardId: board.id })} />}
     {column && board && column.boardId === board.id && <TaskColumnForm key={column.value?.id ?? `${column.boardId}:new`} column={column.value ?? undefined} onClose={() => setColumn(null)} onSubmit={draft => mutate(() => column.value ? client.updateColumn(column.boardId, column.value.id, draft) : client.addColumn(column.boardId, draft))} />}
     {detail && board && detail.boardId === board.id && (!detail.taskId || board.tasks.some(task => task.id === detail.taskId)) && <TaskDetail key={`${board.id}:${detail.taskId ?? `new:${detail.columnId}`}`} board={board} task={board.tasks.find(task => task.id === detail.taskId) ?? null} columnId={detail.columnId} actorId={actorId} client={client} onClose={() => setDetail(null)} onSave={saveTask} onDelete={taskId => mutate(() => client.removeTask(detail.boardId, taskId), 'deleted')} onCommentsChanged={refresh} />}
     {confirmation && confirmation.boardId === board?.id && <TaskConfirm title={t(confirmation.kind === 'board' ? 'removeBoard' : confirmation.kind === 'task' ? 'removeTask' : 'removeColumn')} description={t(confirmation.kind === 'board' ? 'removeBoardDescription' : confirmation.kind === 'task' ? 'removeTaskDescription' : 'removeColumnDescription', { name: confirmation.name })} onConfirm={removeConfirmed} onClose={() => setConfirmation(null)} />}

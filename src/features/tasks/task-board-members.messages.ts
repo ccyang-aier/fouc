@@ -2,7 +2,9 @@ import { defineMessages } from '@/lib/i18n';
 
 export const messages = defineMessages({
   title: ['成员与权限', 'Members & access'],
-  done: ['完成', 'Done'],
+  close: ['关闭', 'Close'],
+  invite: ['邀请', 'Invite'],
+  lastUpdated: ['最近更新：{time}', 'Last updated: {time}'],
   private: ['仅自己可见', 'Only you can view'],
   privateDescription: ['调整可见范围后，可添加项目成员。', 'Change visibility to add project members.'],
   project: ['项目成员可见', 'Visible to project members'],

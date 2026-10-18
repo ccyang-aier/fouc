@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { ArrowDownUp, Check, ChevronDown, Clock3, Columns2, Ellipsis, Funnel, LockKeyhole, Pencil, Plus, RotateCw, Search, Trash2, Users, X, Zap } from 'lucide-react';
+import { ArrowDownUp, ChevronDown, Clock3, Columns2, Ellipsis, Funnel, LockKeyhole, Pencil, Plus, RotateCw, Search, Trash2, Users, X, Zap } from 'lucide-react';
 import type { TaskBoardDetail } from '@fouc/shared/tasks';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { useTranslation } from '@/lib/i18n';
 import { emptyTaskFilters, hasTaskFilters, type TaskFilters, type TaskSort } from './task-board-model';
 import { TaskBoardViewSwitcher } from './task-board-view-switcher';
+import { TaskBoardProgress } from './task-board-progress';
 import { messages } from './task-board.messages';
 import styles from './task-board.module.css';
 
@@ -24,27 +25,25 @@ export function TaskBoardToolbar({ board, filters, onFilters, sort, onSort, onRe
   const searchInput = useRef<HTMLInputElement>(null);
   const searchOpen = searchExpanded || Boolean(filters.query);
   function closeSearch() { onFilters({ ...filters, query: '' }); setSearchExpanded(false); searchTrigger.current?.focus(); }
-  const completion = board.taskCount ? Math.round(board.completedCount / board.taskCount * 100) : 0;
+  const assigneeLabel = filters.assignee === 'all' ? t('allMembers') : filters.assignee === 'me' ? t('myTasks') : filters.assignee === 'unassigned' ? t('unassigned') : board.members.find(member => member.userId === filters.assignee)?.name;
   const labels = [...new Set(board.tasks.flatMap(task => task.labels))].sort();
   const filterCount = Number(filters.priority !== 'all') + Number(filters.due !== 'all') + Number(Boolean(filters.label));
   const activeFilters = [filters.query.trim() && `“${filters.query.trim()}”`, filters.assignee !== 'all' && (filters.assignee === 'me' ? t('myTasks') : filters.assignee === 'unassigned' ? t('unassigned') : board.members.find(member => member.userId === filters.assignee)?.name), filters.priority !== 'all' && t(filters.priority), filters.due !== 'all' && t(filters.due), filters.label].filter(Boolean);
   return <>
     <div className={styles.toolbar}>
       <div className={styles.summary}>
-        <span>{t('summary', { total: board.taskCount })}</span><span className={styles.summaryDivider} />
-        <span><Check size={12} />{t('completed', { count: board.completedCount })}</span>
-        <span className={styles.summaryProgress} role="progressbar" aria-label={t('completion', { percent: completion })} aria-valuenow={board.completedCount} aria-valuemax={Math.max(1, board.taskCount)} aria-valuemin={0}><i style={{ width: `${completion}%` }} /></span>
+        <TaskBoardProgress completed={board.completedCount} total={board.taskCount} />
         {board.permission === 'viewer' && <span className={styles.readOnly}><LockKeyhole size={11} />{t('readOnly')}</span>}
       </div>
       <div className={styles.toolbarRight}>
-        <DropdownMenu><DropdownMenuTrigger className={styles.toolbarButton} aria-label={t('allMembers')} data-filter-active={filters.assignee !== 'all' || undefined}><Users size={15} /><span className={styles.memberFilterLabel}>{filters.assignee === 'all' ? t('allMembers') : filters.assignee === 'me' ? t('myTasks') : filters.assignee === 'unassigned' ? t('unassigned') : board.members.find(member => member.userId === filters.assignee)?.name}</span><ChevronDown size={10} /></DropdownMenuTrigger>
+        <TaskBoardViewSwitcher />
+        <div className={styles.toolbarControls}>
+        <DropdownMenu><Tooltip><TooltipTrigger asChild><DropdownMenuTrigger className={styles.toolbarIcon} aria-label={t('allMembers')} data-filter-active={filters.assignee !== 'all' || undefined}><Users size={16} />{filters.assignee !== 'all' && <span className={styles.filterCount}>1</span>}</DropdownMenuTrigger></TooltipTrigger><TooltipContent>{assigneeLabel}</TooltipContent></Tooltip>
           <DropdownMenuContent align="end" className={styles.filterMenu}><DropdownMenuRadioGroup value={filters.assignee} onValueChange={assignee => onFilters({ ...filters, assignee })}>
             <DropdownMenuRadioItem value="all">{t('allMembers')}</DropdownMenuRadioItem><DropdownMenuRadioItem value="me">{t('myTasks')}</DropdownMenuRadioItem><DropdownMenuRadioItem value="unassigned">{t('unassigned')}</DropdownMenuRadioItem>
             <DropdownMenuSeparator />{board.members.map(member => <DropdownMenuRadioItem key={member.userId} value={member.userId}>{member.name}</DropdownMenuRadioItem>)}
           </DropdownMenuRadioGroup></DropdownMenuContent>
         </DropdownMenu>
-        <TaskBoardViewSwitcher />
-        <div className={styles.toolbarControls}>
         <DropdownMenu><Tooltip><TooltipTrigger asChild><DropdownMenuTrigger className={styles.toolbarIcon} aria-label={t('filter')} data-filter-active={filterCount > 0 || undefined}><Funnel size={16} />{filterCount > 0 && <span className={styles.filterCount}>{filterCount}</span>}</DropdownMenuTrigger></TooltipTrigger><TooltipContent>{t('filter')}</TooltipContent></Tooltip>
           <DropdownMenuContent align="end"><DropdownMenuSub><DropdownMenuSubTrigger>{t('priority')}</DropdownMenuSubTrigger><DropdownMenuSubContent>
             <DropdownMenuRadioGroup value={filters.priority} onValueChange={priority => onFilters({ ...filters, priority: priority as TaskFilters['priority'] })}>{(['all', 'urgent', 'high', 'medium', 'low'] as const).map(value => <DropdownMenuRadioItem key={value} value={value}>{t(value === 'all' ? 'allPriorities' : value)}</DropdownMenuRadioItem>)}</DropdownMenuRadioGroup>

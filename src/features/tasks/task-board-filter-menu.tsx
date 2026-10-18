@@ -24,7 +24,7 @@ export function TaskBoardAssigneeFilter({ members, actorId, value, onChange }: {
     <DropdownMenuContent align="end" density="compact" className={styles.selectionMenu}>
       <DropdownMenuSearch value={query} onValueChange={setQuery} placeholder={t('searchAssignees')} clearLabel={t('reset')} />
       <div className={styles.filterOptions}><DropdownMenuRadioGroup value={selectedId}>
-        {matching.map(member => <DropdownMenuRadioItem key={member.userId} value={member.userId} onSelect={() => onChange(selectedId === member.userId ? 'all' : member.userId)} className={styles.filterOption}><UserAvatar className={styles.filterAvatar} name={member.name} image={member.image} /><span>{member.name}</span></DropdownMenuRadioItem>)}
+        {matching.map(member => <DropdownMenuRadioItem indicator="none" key={member.userId} value={member.userId} onSelect={() => onChange(selectedId === member.userId ? 'all' : member.userId)} className={styles.filterOption}><UserAvatar className={styles.filterAvatar} name={member.name} image={member.image} /><span>{member.name}</span></DropdownMenuRadioItem>)}
       </DropdownMenuRadioGroup>{!matching.length && <p className={styles.filterEmpty}>{t('noFilterResults')}</p>}</div>
     </DropdownMenuContent>
   </DropdownMenu>;
@@ -40,7 +40,7 @@ export function TaskBoardLabelFilter({ labels, value, onChange }: { labels: stri
     <DropdownMenuSubContent density="compact" className={styles.selectionMenu}>
       <DropdownMenuSearch value={query} onValueChange={setQuery} placeholder={t('searchLabels')} clearLabel={t('reset')} />
       <div className={styles.filterOptions}><DropdownMenuRadioGroup value={value} onValueChange={onChange}>
-        {matching.map(option => <DropdownMenuRadioItem key={option.value} value={option.value}><Tag />{option.label}</DropdownMenuRadioItem>)}
+        {matching.map(option => <DropdownMenuRadioItem indicator="none" key={option.value} value={option.value}><Tag />{option.label}</DropdownMenuRadioItem>)}
       </DropdownMenuRadioGroup>{!matching.length && <p className={styles.filterEmpty}>{t('noFilterResults')}</p>}</div>
     </DropdownMenuSubContent>
   </DropdownMenuSub>;

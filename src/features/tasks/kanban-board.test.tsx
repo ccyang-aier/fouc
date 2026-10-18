@@ -55,11 +55,11 @@ afterAll(async () => { await act(async () => root.unmount()); await browser.happ
 
 function card(id: string) { return host.querySelector<HTMLElement>(`[data-task-id="${id}"]`)!; }
 function column(id: string) { return host.querySelector<HTMLElement>(`[data-column-id="${id}"]`)!; }
-function transfer() { return new browser.DataTransfer(); }
+function transfer() { return Object.assign(new browser.DataTransfer(), { setDragImage: mock<(image: Element, x: number, y: number) => void>(() => {}) }); }
 function drag(target: HTMLElement, type: string, dataTransfer: ReturnType<typeof transfer>, clientY = 10) {
   // happy-dom aliases DragEvent to Event, so provide the native payload explicitly.
   const event = new browser.Event(type, { bubbles: true, cancelable: true });
-  Object.defineProperties(event, { dataTransfer: { value: dataTransfer }, clientY: { value: clientY } });
+  Object.defineProperties(event, { dataTransfer: { value: dataTransfer }, clientX: { value: 20 }, clientY: { value: clientY } });
   target.dispatchEvent(event as unknown as Event);
 }
 
@@ -91,4 +91,36 @@ test('card metadata keeps both counters visible at zero and renders the actual c
   expect(card('first').querySelector('[aria-label="0 个附件"]')?.textContent).toBe('0');
   expect(card('first').querySelector('[aria-label="0 条评论"]')?.textContent).toBe('0');
   expect(card('second').querySelector('[aria-label="3 条评论"]')?.textContent).toBe('3');
+});
+
+test('drag preview copies the card and a full-height placeholder stays stable until a cross-column drop', async () => {
+  const source = card('second');
+  Object.defineProperty(source, 'getBoundingClientRect', { value: () => ({ left: 0, top: 0, width: 248, height: 210 }) });
+  const dataTransfer = transfer();
+  await act(async () => { drag(source, 'dragstart', dataTransfer); drag(column('done'), 'dragover', dataTransfer); });
+  const preview = dataTransfer.setDragImage.mock.calls[0][0] as HTMLElement;
+  expect(preview.getAttribute('aria-hidden')).toBe('true');
+  expect(preview.querySelector('[data-drag-preview="true"]')?.textContent).toContain('Second task');
+  expect(preview.querySelector('[data-task-id]')).toBeNull();
+  expect(source.getAttribute('data-dragging')).toBe('true');
+  const placeholder = column('done').querySelector<HTMLElement>('[data-drop-placeholder]')!;
+  expect(placeholder.style.height).toBe('210px');
+  await act(async () => drag(placeholder, 'dragover', dataTransfer));
+  expect(column('done').querySelector('[data-drop-placeholder]')).toBe(placeholder);
+  expect(moved.mock.calls).toHaveLength(0);
+  await act(async () => drag(placeholder, 'drop', dataTransfer));
+  expect(moved.mock.calls).toEqual([['second', 'done', null]]);
+  expect(host.querySelector('[data-drop-placeholder]')).toBeNull();
+  expect(host.querySelector('[data-dragging]')).toBeNull();
+});
+
+test('ending a drag without dropping clears the placeholder without moving a task', async () => {
+  const source = card('second');
+  const dataTransfer = transfer();
+  await act(async () => { drag(source, 'dragstart', dataTransfer); drag(column('done'), 'dragover', dataTransfer); });
+  expect(column('done').querySelector('[data-drop-placeholder]')).not.toBeNull();
+  await act(async () => drag(source, 'dragend', dataTransfer));
+  expect(host.querySelector('[data-drop-placeholder]')).toBeNull();
+  expect(host.querySelector('[data-dragging]')).toBeNull();
+  expect(moved.mock.calls).toHaveLength(0);
 });

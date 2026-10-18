@@ -124,34 +124,38 @@ function DropdownMenuCheckboxItem({
   className,
   children,
   checked,
+  indicator = "check",
   ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.CheckboxItem>) {
+}: React.ComponentProps<typeof DropdownMenuPrimitive.CheckboxItem> & { indicator?: "check" | "none" }) {
   return (
     <DropdownMenuPrimitive.CheckboxItem
       className={cn(
         "fouc-menu-item relative flex h-8 select-none items-center gap-2 rounded-[5px] py-1.5 pr-2 pl-8 text-[12px] outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-45 [&>svg]:size-4 [&>svg]:shrink-0",
+        indicator === "none" && "pl-2.5",
         className,
       )}
+      data-indicator={indicator}
       checked={checked}
       {...props}
     >
-      <span className="fouc-menu-checkbox absolute left-2.5" aria-hidden>
+      {indicator === "check" && <span className="fouc-menu-checkbox absolute left-2.5" aria-hidden>
         <DropdownMenuPrimitive.ItemIndicator>
           <Check className="size-3.5" weight="bold" />
         </DropdownMenuPrimitive.ItemIndicator>
-      </span>
+      </span>}
       {children}
     </DropdownMenuPrimitive.CheckboxItem>
   )
 }
 
 const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup
-function DropdownMenuRadioItem({ className, children, ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.RadioItem>) {
+function DropdownMenuRadioItem({ className, children, indicator = "check", ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.RadioItem> & { indicator?: "check" | "none" }) {
   return <DropdownMenuPrimitive.RadioItem
-    className={cn("fouc-menu-item relative flex h-8 select-none items-center gap-2 rounded-[5px] py-1.5 pr-2 pl-8 text-[12px] outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-45 [&>svg]:size-4 [&>svg]:shrink-0", className)}
+    className={cn("fouc-menu-item relative flex h-8 select-none items-center gap-2 rounded-[5px] py-1.5 pr-2 pl-8 text-[12px] outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-45 [&>svg]:size-4 [&>svg]:shrink-0", indicator === "none" && "pl-2.5", className)}
+    data-indicator={indicator}
     {...props}
   >
-    <span className="absolute left-2.5 flex size-4 items-center justify-center"><DropdownMenuPrimitive.ItemIndicator><Check className="size-3.5" weight="bold" /></DropdownMenuPrimitive.ItemIndicator></span>
+    {indicator === "check" && <span className="absolute left-2.5 flex size-4 items-center justify-center"><DropdownMenuPrimitive.ItemIndicator><Check className="size-3.5" weight="bold" /></DropdownMenuPrimitive.ItemIndicator></span>}
     {children}
   </DropdownMenuPrimitive.RadioItem>
 }

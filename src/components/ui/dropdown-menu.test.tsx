@@ -9,6 +9,7 @@ let overlay: HTMLElement;
 let renderMenu: () => ReactNode;
 let renderSearchMenu: () => ReactNode;
 let renderSearchSubMenu: () => ReactNode;
+let renderChoiceMenu: () => ReactNode;
 
 beforeAll(async () => {
   browser = new Window({ url: 'http://localhost:3000/' });
@@ -22,7 +23,7 @@ beforeAll(async () => {
   globals.cancelAnimationFrame = browser.cancelAnimationFrame.bind(browser);
   mock.module('@/lib/overlay-root', () => ({ getOverlayRoot: () => overlay }));
   mock.module('@phosphor-icons/react', () => Object.fromEntries(['Check', 'CaretRight', 'MagnifyingGlass', 'X'].map(name => [name, () => <svg aria-hidden />])));
-  const { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSearch, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } = await import('./dropdown-menu');
+  const { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSearch, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuCheckboxItem } = await import('./dropdown-menu');
   renderMenu = () => <DropdownMenu><DropdownMenuTrigger>Open menu</DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem>Move task</DropdownMenuItem></DropdownMenuContent></DropdownMenu>;
   function SearchMenu() {
     const [query, setQuery] = useState('');
@@ -36,6 +37,10 @@ beforeAll(async () => {
     <DropdownMenuSub><DropdownMenuSubTrigger>Move to</DropdownMenuSubTrigger><DropdownMenuSubContent>
       <DropdownMenuSearch value="" onValueChange={() => {}} placeholder="Search statuses" clearLabel="Clear search" /><DropdownMenuItem>In progress</DropdownMenuItem>
     </DropdownMenuSubContent></DropdownMenuSub>
+  </DropdownMenuContent></DropdownMenu>;
+  renderChoiceMenu = () => <DropdownMenu><DropdownMenuTrigger>Choose option</DropdownMenuTrigger><DropdownMenuContent>
+    <DropdownMenuRadioGroup value="icon"><DropdownMenuRadioItem value="icon" indicator="none"><svg data-option-icon />With icon</DropdownMenuRadioItem><DropdownMenuRadioItem value="plain">Plain option</DropdownMenuRadioItem></DropdownMenuRadioGroup>
+    <DropdownMenuCheckboxItem checked indicator="none"><svg data-option-icon />Member portrait</DropdownMenuCheckboxItem>
   </DropdownMenuContent></DropdownMenu>;
   const { createRoot } = await import('react-dom/client');
   const host = document.createElement('div');
@@ -101,4 +106,19 @@ test('keyboard entry into a searchable submenu focuses its search after the Radi
   for (let turn = 0; turn < 40 && document.activeElement?.getAttribute('aria-label') !== 'Search statuses'; turn++) await act(async () => { await Bun.sleep(0); });
   expect(document.querySelectorAll('[role="menu"]').length).toBe(2);
   expect(document.activeElement?.getAttribute('aria-label')).toBe('Search statuses');
+});
+
+test('icon choices keep checked semantics without a second indicator or its spacer', async () => {
+  await act(async () => root.render(null));
+  await act(async () => root.render(renderChoiceMenu()));
+  const trigger = [...document.querySelectorAll<HTMLButtonElement>('button')].find(button => button.textContent === 'Choose option')!;
+  await act(async () => trigger.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerType: 'mouse' })));
+  const icon = document.querySelector<HTMLElement>('[role="menuitemradio"][data-indicator="none"]')!;
+  expect(icon.getAttribute('aria-checked')).toBe('true');
+  expect(icon.children.length).toBe(1);
+  expect(icon.querySelector('[data-option-icon]')).not.toBeNull();
+  expect(document.querySelector('[role="menuitemradio"][data-indicator="check"] > span')).not.toBeNull();
+  const checkbox = document.querySelector('[role="menuitemcheckbox"]')!;
+  expect(checkbox.getAttribute('aria-checked')).toBe('true');
+  expect(checkbox.querySelector('span')).toBeNull();
 });

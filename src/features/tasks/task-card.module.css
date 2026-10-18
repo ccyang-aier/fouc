@@ -5,7 +5,9 @@
   --task-priority-urgent: #cd3d4a;
   position: relative;
   padding: 12px 14px;
+  border: 0;
   border-radius: 9px;
+  background: var(--panel);
   cursor: pointer;
   outline: none;
 }
@@ -15,9 +17,10 @@
   --task-priority-high: #f8be58;
   --task-priority-urgent: #ff8690;
 }
-.card:focus-visible { border-color: var(--ink); }
-.card[data-dragging] { opacity: .35; }
-.card[data-insert-before]::before { content: ''; position: absolute; inset: -8px 0 auto; height: var(--drag-indicator-width); background: var(--drag-indicator-color); pointer-events: none; }
+.card:hover { background: var(--interaction-hover-bg); }
+.card:focus-visible { background: var(--interaction-active-bg); }
+.card[data-dragging] { opacity: .25; }
+.card[data-drag-preview] { transform: rotate(-3deg); background: var(--panel); box-shadow: var(--floating-shadow); opacity: 1; }
 .cardTop { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 24px; margin-bottom: 8px; }
 .taskReference { display: flex; align-items: center; gap: 7px; min-width: 0; color: var(--muted-strong); font-size: 11px; font-variant-numeric: tabular-nums; }
 .taskReference > svg { color: var(--muted); }

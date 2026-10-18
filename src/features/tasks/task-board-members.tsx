@@ -195,8 +195,8 @@ export function TaskBoardMembers({ board, client, onChanged, onEditSettings }: {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" density="compact" className={styles.permissionMenu} data-task-members-menu={popoverId}>
                 <DropdownMenuRadioGroup value={member.role} onValueChange={next => setAccess(member.userId, next)}>
-                  <DropdownMenuRadioItem value="viewer" className={styles.roleChoice}><Eye size={15} aria-hidden />{t('viewer')}</DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="editor" className={styles.roleChoice}><PencilSimple size={15} aria-hidden />{t('editor')}</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem indicator="none" value="viewer" className={styles.roleChoice}><Eye size={15} aria-hidden />{t('viewer')}</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem indicator="none" value="editor" className={styles.roleChoice}><PencilSimple size={15} aria-hidden />{t('editor')}</DropdownMenuRadioItem>
                 </DropdownMenuRadioGroup>
                 {board.visibility === 'invited' ? <>
                   <DropdownMenuSeparator />
@@ -229,8 +229,8 @@ export function TaskBoardMembers({ board, client, onChanged, onEditSettings }: {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" density="compact" className={styles.permissionMenu} data-task-members-menu={popoverId}>
                 <DropdownMenuRadioGroup value={role} onValueChange={next => { if (next === 'viewer' || next === 'editor') setRole(next); }}>
-                  <DropdownMenuRadioItem value="viewer" className={styles.roleChoice}><Eye size={15} aria-hidden />{t('viewer')}</DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="editor" className={styles.roleChoice}><PencilSimple size={15} aria-hidden />{t('editor')}</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem indicator="none" value="viewer" className={styles.roleChoice}><Eye size={15} aria-hidden />{t('viewer')}</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem indicator="none" value="editor" className={styles.roleChoice}><PencilSimple size={15} aria-hidden />{t('editor')}</DropdownMenuRadioItem>
                 </DropdownMenuRadioGroup>
               </DropdownMenuContent>
             </DropdownMenu>

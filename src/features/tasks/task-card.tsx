@@ -6,7 +6,6 @@ import type { BoardTask, TaskBoardDetail } from '@fouc/shared/tasks';
 import { AvatarGroup } from '@/components/avatar-group';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSearch, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useTranslation } from '@/lib/i18n';
-import resourceStyles from '@/components/ui/resource-card.module.css';
 import { isTaskOverdue, taskReference } from './task-board-model';
 import { TaskStatusIcon } from './task-status-icon';
 import { TaskPriorityIcon } from './task-priority-icon';
@@ -16,10 +15,10 @@ import { messages as progressMessages } from './task-progress.messages';
 import { messages } from './task-board.messages';
 import styles from './task-card.module.css';
 
-export function TaskCard({ task, board, editable, draggable, dragging, insertBefore, onOpen, onRemove, onMove, onDragStart, onDragEnd }: {
-  task: BoardTask; board: TaskBoardDetail; editable: boolean; draggable: boolean; dragging: boolean; insertBefore: boolean;
+export function TaskCard({ task, board, editable, draggable, dragging, onOpen, onRemove, onMove, onDragStart, onDragEnd }: {
+  task: BoardTask; board: TaskBoardDetail; editable: boolean; draggable: boolean; dragging: boolean;
   onOpen: () => void; onRemove: () => void; onMove: (columnId: string) => void;
-  onDragStart: (event: React.DragEvent) => void; onDragEnd: () => void;
+  onDragStart: (event: React.DragEvent<HTMLElement>) => void; onDragEnd: () => void;
 }) {
   const { t } = useTranslation(messages);
   const { t: progressText } = useTranslation(progressMessages);
@@ -30,8 +29,8 @@ export function TaskCard({ task, board, editable, draggable, dragging, insertBef
   const done = column?.isDone;
   const progress = taskProgress(task, Boolean(done));
   const assigned = board.members.filter(member => task.assigneeIds.includes(member.userId));
-  return <article className={`${resourceStyles.card} ${styles.card}`} role="button" tabIndex={0}
-    aria-label={t('openTask', { title: task.title })} data-task-id={task.id} data-dragging={dragging || undefined} data-insert-before={insertBefore || undefined}
+  return <article className={styles.card} role="button" tabIndex={0}
+    aria-label={t('openTask', { title: task.title })} data-task-id={task.id} data-dragging={dragging || undefined}
     draggable={draggable} onDragStart={onDragStart} onDragEnd={onDragEnd}
     onClick={onOpen} onKeyDown={event => { if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); onOpen(); } }}>
     <div className={styles.cardTop}>

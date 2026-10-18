@@ -9,7 +9,7 @@
 .headerActions { display:flex; align-items:center; flex-shrink:0; gap:10px; }
 .headerActions > button[data-slot="button"] { height:30px; border-radius:6px; font-size:12px; box-shadow:none; }
 .readOnly { display:inline-flex; align-items:center; gap:4px; color:var(--muted-strong); font-size:11px; }
-.toolbar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; flex-shrink:0; gap:12px 24px; padding:12px 30px; border-bottom:1px solid var(--line); }
+.toolbar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; flex-shrink:0; gap:12px 24px; padding:12px 30px; }
 .toolbarLeft { display:flex; align-items:center; flex-wrap:wrap; gap:12px; min-width:0; }
 .toolbarRight { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:12px; min-width:0; max-width:100%; margin-left:auto; }
 .toolbarControls { display:flex; align-items:center; flex-shrink:0; flex-wrap:nowrap; gap:6px; max-width:100%; }
@@ -20,10 +20,8 @@
 .viewSegment[aria-pressed="true"] { color:var(--ink); font-weight:600; }
 .viewSegment:disabled { opacity:1; cursor:default; }
 .plannedView { display:flex; }
-.createGroup { display:flex; align-items:stretch; flex-shrink:0; width:96px; height:30px; border-radius:6px; background:var(--accent); color:var(--accent-foreground); }
-.createGroup .createButton { width:72px; height:30px; gap:5px; padding:0; border-radius:6px 0 0 6px; box-shadow:none; font-size:12px; font-weight:500; }
-.createGroup .createMenu { --action-state-bg:var(--accent-strong); --action-state-ink:var(--accent-foreground); display:grid; place-items:center; flex-shrink:0; width:24px; border-left:1px solid color-mix(in srgb,var(--accent-foreground) 18%,transparent); border-radius:0 6px 6px 0; cursor:pointer; }
-.createMenu:disabled { opacity:.45; cursor:default; }
+.createButton { display:grid; place-items:center; flex-shrink:0; width:30px; height:30px; padding:0; border:0; border-radius:50%; background:transparent; color:var(--muted-strong); cursor:pointer; }
+.createButton:disabled { opacity:.45; cursor:default; }
 .filterCount { position:absolute; top:-4px; right:-4px; display:grid; place-items:center; min-width:15px; height:15px; padding:0 3px; border:2px solid var(--panel); border-radius:6px; background:var(--accent); color:var(--accent-foreground); font-size:8px; }
 .searchControl { display:flex; align-items:center; flex-shrink:1; min-width:30px; height:30px; border-radius:6px; }
 .searchControl[data-expanded] { border:1px solid var(--control-border); }
@@ -72,7 +70,8 @@
 .addColumn { align-self:flex-start; display:flex; align-items:center; gap:6px; flex:0 0 auto; height:28px; border-radius:5px; padding:0 6px; margin-top:10px; font-size:11px; color:var(--muted); cursor:pointer; }
 .addColumn span { display:none; }
 .addColumn:hover span, .addColumn:focus-visible span { display:inline; }
-.dropEnd { flex-shrink:0; height:var(--drag-indicator-width); background:var(--drag-indicator-color); }
+.dropPlaceholder { flex-shrink:0; border:1px dashed var(--control-border); border-radius:9px; background:var(--panel); }
+.dragPreviewHost { position:fixed; z-index:60; padding:18px; pointer-events:none; }
 .columnEmpty { display:flex; align-items:center; justify-content:center; min-height:100px; border:1px dashed var(--line-strong); border-radius:8px; font-size:11px; color:var(--muted); }
 .resultCount { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 30px 0; font-size:10px; color:var(--muted); background:var(--panel); }
 .resultCount strong { font-weight:400; }
@@ -87,6 +86,7 @@
 .boardOption { height:auto; min-height:56px; gap:10px; padding:8px; }
 .boardOption > span:nth-child(2) { flex:1; min-width:0; }
 .boardOption strong { display:block; font-size:12px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.boardOption[aria-checked="true"] strong { font-weight:600; }
 .boardOption small { display:flex; align-items:center; gap:4px; color:var(--muted); font-size:10px; margin-top:4px; }
 .boardOptionIcon { display:grid; place-items:center; width:31px; height:31px; flex-shrink:0; border:1px solid var(--line); border-radius:6px; color:var(--sidebar-icon); }
 .boardOptionIcon > svg { width:18px; height:18px; }

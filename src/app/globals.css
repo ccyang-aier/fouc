@@ -392,6 +392,9 @@ input {
 .menu-surface[data-density="compact"] { border-color: var(--line-strong); border-radius: 6px; box-shadow: var(--menu-compact-shadow); animation: none; }
 .menu-surface[data-density="compact"] .fouc-menu-item { height: 26px; min-height: 26px; gap: 8px; padding-inline: 8px; border-radius: 3px; font-size: 13px; font-weight: 500; animation: none; }
 .menu-surface[data-density="compact"] [role="menuitemcheckbox"], .menu-surface[data-density="compact"] [role="menuitemradio"] { padding-left: 30px; }
+/* 带语义图标的选项不再叠加勾选标记与占位，选中状态保留加粗和 ARIA。 */
+.menu-surface[data-density="compact"] .fouc-menu-item[data-indicator="none"] { padding-left: 8px; }
+.fouc-menu-item[data-indicator="none"][data-state="checked"] { font-weight: 600; }
 /* 共享菜单项契约；Radix 与原生菜单均使用 fouc-menu-item，禁用项不响应高亮。 */
 .fouc-menu-item {
   --menu-state-bg: var(--menu-item-hover-bg);

@@ -16,8 +16,7 @@
 .roleBadge { padding: 4px 7px; border-radius: 5px; color: var(--muted-strong); font-size: 11px; white-space: nowrap; }
 .roleButton { gap: 5px; padding-inline: 7px; color: var(--muted-strong); font-size: 11px; }
 .permissionMenu[data-density='compact'] { width: 128px; min-width: 128px; }
-.permissionMenu[data-density='compact'] .roleChoice[role='menuitemradio'] { gap: 8px; padding-left: 9px; padding-right: 26px; }
-.roleChoice > span:first-child { right: 7px; left: auto; }
+.permissionMenu[data-density='compact'] .roleChoice[role='menuitemradio'] { gap: 8px; padding-inline: 9px; }
 .addMember { padding-top: 12px; border-top: 1px solid var(--separator-color); }
 .search { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--control-border); border-radius: 7px; color: var(--muted); }
 .search:focus-within { border-color: var(--ink); }

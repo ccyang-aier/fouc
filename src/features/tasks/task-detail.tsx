@@ -229,7 +229,7 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className={styles.memberMenu} align="start">
                   <DropdownMenuLabel>{t('chooseAssignees')}</DropdownMenuLabel>
-                  {board.members.map((member) => <DropdownMenuCheckboxItem key={member.userId} checked={draft.assigneeIds.includes(member.userId)}
+                  {board.members.map((member) => <DropdownMenuCheckboxItem indicator="none" key={member.userId} checked={draft.assigneeIds.includes(member.userId)}
                     onSelect={(event) => event.preventDefault()}
                     onCheckedChange={(checked) => update('assigneeIds', checked ? [...draft.assigneeIds, member.userId] : draft.assigneeIds.filter((id) => id !== member.userId))}>
                     <UserAvatar name={member.name} image={member.image} className={styles.menuAvatar} /><span className={styles.memberIdentity}><span>{member.name}</span><small>{member.email}</small></span>

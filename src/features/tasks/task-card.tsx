@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarBlank, ChatCircle, DotsThree, Flag, LinkSimple, PencilSimple, Trash, ArrowRight } from '@phosphor-icons/react';
+import { CalendarDots, ChatText, DotsThree, LinkSimple, Paperclip, PencilSimple, Trash, ArrowRight } from '@phosphor-icons/react';
 import { useState } from 'react';
 import type { BoardTask, TaskBoardDetail } from '@fouc/shared/tasks';
 import { AvatarGroup } from '@/components/avatar-group';
@@ -9,6 +9,7 @@ import { useTranslation } from '@/lib/i18n';
 import resourceStyles from '@/components/ui/resource-card.module.css';
 import { isTaskOverdue, taskReference } from './task-board-model';
 import { TaskStatusIcon } from './task-status-icon';
+import { TaskPriorityIcon } from './task-priority-icon';
 import { TaskProgress } from './task-progress';
 import { taskProgress } from './task-progress-model';
 import { messages as progressMessages } from './task-progress.messages';
@@ -52,7 +53,7 @@ export function TaskCard({ task, board, editable, draggable, dragging, insertBef
     {task.description && <p className={styles.cardDescription}>{task.description}</p>}
     <div className={styles.cardTags}>
       <div className={styles.labels}>{task.labels.slice(0, 3).map(label => <span key={label} className={styles.label}>{label}</span>)}</div>
-      <span className={styles.priority} data-priority={task.priority}><Flag size={12} weight={task.priority === 'urgent' || task.priority === 'high' ? 'fill' : 'regular'} />{t(task.priority)}</span>
+      <span className={styles.priority} data-priority={task.priority}><TaskPriorityIcon priority={task.priority} size={12} />{t(task.priority)}</span>
     </div>
     <div className={styles.cardFooter}>
       <div className={styles.assigneesRow}>
@@ -62,9 +63,13 @@ export function TaskCard({ task, board, editable, draggable, dragging, insertBef
       </div>
       <div className={styles.metadataRow}>
         <span className={styles.date} data-overdue={overdue || undefined} data-empty={!task.dueDate || undefined}>
-          <CalendarBlank size={14} />{task.dueDate ? <time dateTime={task.dueDate}>{task.dueDate.split('-').reverse().join('/')}</time> : progressText('noDueDate')}
+          <CalendarDots size={18} />{task.dueDate ? <time dateTime={task.dueDate}>{task.dueDate.split('-').reverse().join('/')}</time> : progressText('noDueDate')}
         </span>
-        <div className={styles.metrics}>{task.commentCount > 0 && <span aria-label={t('comments', { count: task.commentCount })}><ChatCircle size={14} />{task.commentCount}</span>}</div>
+        <div className={styles.metrics}>
+          {/* Tasks do not yet accept attachments, so their current count is zero. */}
+          <span aria-label={t('attachments', { count: 0 })}><Paperclip size={18} />0</span>
+          <span aria-label={t('comments', { count: task.commentCount })}><ChatText size={18} />{task.commentCount}</span>
+        </div>
       </div>
     </div>
   </article>;

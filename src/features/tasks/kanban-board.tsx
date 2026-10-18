@@ -60,10 +60,10 @@ export function KanbanBoard({ board, tasks, canDrag, busy, onOpen, onCreate, onR
           <header className={styles.columnHeader}><TaskStatusIcon column={column} /><h2>{column.name}</h2><span className={styles.columnCount}>{columnTasks.length}{columnTasks.length !== total && <span>/{total}</span>}</span>
             {editable && <div className={styles.columnActions}>
               <DropdownMenu><DropdownMenuTrigger className={styles.iconButton} aria-label={t('statusActions', { name: column.name })}><DotsSixVertical size={17} weight="bold" /></DropdownMenuTrigger><DropdownMenuContent align="end" density="compact">
-                <DropdownMenuItem onSelect={() => onColumn(column)}><PencilSimple weight="duotone" />{t('editColumn')}</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => onColumn(column)}><PencilSimple />{t('editColumn')}</DropdownMenuItem>
                 <DropdownMenuItem disabled={index === 0 || busy} onSelect={() => moveColumn(index, -1)}><ArrowLeft />{t('moveLeft')}</DropdownMenuItem>
                 <DropdownMenuItem disabled={index === board.columns.length - 1 || busy} onSelect={() => moveColumn(index, 1)}><ArrowRight />{t('moveRight')}</DropdownMenuItem>
-                <DropdownMenuSeparator /><DropdownMenuItem variant="destructive" disabled={total > 0 || board.columns.length === 1 || busy} onSelect={() => onRemoveColumn(column)}><Trash weight="duotone" />{t('removeColumn')}</DropdownMenuItem>
+                <DropdownMenuSeparator /><DropdownMenuItem variant="destructive" disabled={total > 0 || board.columns.length === 1 || busy} onSelect={() => onRemoveColumn(column)}><Trash />{t('removeColumn')}</DropdownMenuItem>
                 {(total > 0 || board.columns.length === 1) && <DropdownMenuLabel className={styles.menuHint}>{t(total > 0 ? 'columnHasTasks' : 'lastColumn')}</DropdownMenuLabel>}
               </DropdownMenuContent></DropdownMenu>
               <button className={`fouc-action ${styles.iconButton}`} type="button" aria-label={`${t('addTask')} · ${column.name}`} onClick={() => onCreate(column.id)}><Plus size={16} /></button>

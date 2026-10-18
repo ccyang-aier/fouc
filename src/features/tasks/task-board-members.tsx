@@ -170,8 +170,8 @@ export function TaskBoardMembers({ board, client, onChanged, onEditSettings }: {
 
   return <div ref={controls} className={styles.controls}>
     <span className={styles.updated} title={updatedLabel}><ClockCounterClockwise size={14} /><time dateTime={board.updatedAt} aria-label={updatedLabel}>{formatRelativeTime(updatedAt.getTime(), locale)}</time></span>
-    <button type="button" className={`fouc-action ${styles.avatarTrigger}`} aria-label={t('count', { count: members.length })} aria-haspopup="dialog" aria-expanded={displayed} aria-controls={displayed ? popoverId : undefined} onClick={event => openPanel(event.currentTarget, false)}>
-      <AvatarGroup members={members.map(({ userId, name, image }) => ({ id: userId, name, image }))} maxVisible={3} size={28} />
+    <button type="button" className={styles.avatarTrigger} aria-label={t('count', { count: members.length })} aria-haspopup="dialog" aria-expanded={displayed} aria-controls={displayed ? popoverId : undefined} onClick={event => openPanel(event.currentTarget, false)}>
+      <AvatarGroup className={styles.avatarStack} members={members.map(({ userId, name, image }) => ({ id: userId, name, image }))} maxVisible={3} size={28} />
     </button>
     {isOwner ? <Button type="button" size="sm" className={styles.invite} aria-haspopup="dialog" aria-expanded={displayed} aria-controls={displayed ? popoverId : undefined} onClick={event => openPanel(event.currentTarget, true)}><Users size={15} weight="fill" />{t('invite')}</Button> : null}
     {displayed && host ? createPortal(<div ref={panel} id={popoverId} className={`menu-surface ${styles.popover}`} style={position} role="dialog" aria-modal="false" aria-label={t('title')} tabIndex={-1}>

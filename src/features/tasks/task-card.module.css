@@ -2,7 +2,6 @@
   --task-progress-blue: #4f86df;
   --task-progress-risk: #d24752;
   --task-priority-high: #b46c00;
-  --task-priority-high-icon: #e5a12a;
   --task-priority-urgent: #cd3d4a;
   position: relative;
   padding: 12px 14px;
@@ -14,7 +13,6 @@
   --task-progress-blue: #83adfa;
   --task-progress-risk: #ff8690;
   --task-priority-high: #f8be58;
-  --task-priority-high-icon: #f8be58;
   --task-priority-urgent: #ff8690;
 }
 .card:focus-visible { border-color: var(--ink); }
@@ -38,17 +36,17 @@
 .priority { display: inline-flex; align-items: center; flex-shrink: 0; gap: 4px; font-size: 10px; color: var(--muted); }
 .priority[data-priority='urgent'] { color: var(--task-priority-urgent); }
 .priority[data-priority='high'] { color: var(--task-priority-high); }
-.priority[data-priority='high'] > svg { color: var(--task-priority-high-icon); }
 .cardFooter { display: flex; flex-direction: column; gap: 8px; margin-top: 13px; }
 .assigneesRow, .metadataRow { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 24px; }
 .assignedLabel { color: var(--muted-strong); font-size: 11px; }
 .unassigned { color: var(--muted); font-size: 10px; }
-.metadataRow { min-height: 18px; color: var(--muted-strong); font-size: 10px; }
+.metadataRow { min-height: 20px; color: var(--muted-strong); font-size: 11px; line-height: 20px; }
 .date, .metrics, .metrics > span { display: inline-flex; align-items: center; gap: 4px; }
 .date { min-width: 0; font-variant-numeric: tabular-nums; }
 .date[data-overdue] { color: var(--err-ink); }
 .date[data-empty] { color: var(--muted); }
 .metrics { justify-content: flex-end; flex-shrink: 0; gap: 10px; }
+.metadataRow svg { flex-shrink: 0; }
 .progressIndicator { display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; width: 18px; height: 18px; border: 1px solid transparent; border-radius: 4px; outline: none; color: var(--task-progress-blue); }
 .progressIndicator[data-risk] { color: var(--task-progress-risk); }
 .progressIndicator:focus-visible { border-color: var(--ink); }

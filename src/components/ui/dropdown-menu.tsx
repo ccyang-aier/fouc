@@ -129,7 +129,7 @@ function DropdownMenuCheckboxItem({
   return (
     <DropdownMenuPrimitive.CheckboxItem
       className={cn(
-        "fouc-menu-item relative flex h-8 select-none items-center rounded-[5px] py-1.5 pr-2 pl-8 text-[12px] outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-45",
+        "fouc-menu-item relative flex h-8 select-none items-center gap-2 rounded-[5px] py-1.5 pr-2 pl-8 text-[12px] outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-45 [&>svg]:size-4 [&>svg]:shrink-0",
         className,
       )}
       checked={checked}
@@ -148,7 +148,7 @@ function DropdownMenuCheckboxItem({
 const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup
 function DropdownMenuRadioItem({ className, children, ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.RadioItem>) {
   return <DropdownMenuPrimitive.RadioItem
-    className={cn("fouc-menu-item relative flex h-8 select-none items-center rounded-[5px] py-1.5 pr-2 pl-8 text-[12px] outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-45", className)}
+    className={cn("fouc-menu-item relative flex h-8 select-none items-center gap-2 rounded-[5px] py-1.5 pr-2 pl-8 text-[12px] outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-45 [&>svg]:size-4 [&>svg]:shrink-0", className)}
     {...props}
   >
     <span className="absolute left-2.5 flex size-4 items-center justify-center"><DropdownMenuPrimitive.ItemIndicator><Check className="size-3.5" weight="bold" /></DropdownMenuPrimitive.ItemIndicator></span>
@@ -191,7 +191,7 @@ function DropdownMenuSubTrigger({
   return (
     <DropdownMenuPrimitive.SubTrigger
       className={cn(
-        "fouc-menu-item flex h-8 items-center gap-2 rounded-[5px] px-2.5 text-[12px] outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-45",
+        "fouc-menu-item flex h-8 items-center gap-2 rounded-[5px] px-2.5 text-[12px] outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-45 [&>svg]:size-4 [&>svg]:shrink-0",
         className,
       )}
       {...props}

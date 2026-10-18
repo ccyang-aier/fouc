@@ -1,0 +1,5 @@
+.icon { flex-shrink: 0; color: var(--muted-strong); }
+.icon[data-priority='high'] { color: #e5a12a; }
+.icon[data-priority='urgent'] { color: #cd3d4a; }
+:global(html[data-theme='dark']) .icon[data-priority='high'] { color: #f8be58; }
+:global(html[data-theme='dark']) .icon[data-priority='urgent'] { color: #ff8690; }

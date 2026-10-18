@@ -35,7 +35,7 @@ export async function taskBoardDetail({ db, board, permission }: TaskBoardContex
   const members = await taskBoardMembers(db, board);
   const eligible = new Set(members.map(member => member.userId));
   const done = new Set(columns.filter(column => column.isDone).map(column => column.id));
-  const tasks: BoardTask[] = rows.map(row => ({ id: row.id, columnId: row.columnId, title: row.title, description: row.description,
+  const tasks: BoardTask[] = rows.map(row => ({ id: row.id, number: row.number, columnId: row.columnId, title: row.title, description: row.description,
     priority: row.priority, assigneeIds: row.assigneeIds.filter(id => eligible.has(id)), labels: row.labels, dueDate: row.dueDate, checklist: row.checklist,
     position: row.position, createdBy: row.createdBy, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString(), commentCount: commentCounts.get(row.id) ?? 0 }));
   const updatedAt = new Date(Math.max(board.updatedAt.getTime(), ...rows.map(row => row.updatedAt.getTime())));

@@ -1,12 +1,13 @@
 'use client';
 
-import { CalendarBlank, ChatCircle, CheckSquare, DotsThree, Flag, DotsSixVertical, PencilSimple, Trash, ArrowRight } from '@phosphor-icons/react';
+import { CalendarBlank, ChatCircle, CheckSquare, DotsThree, Flag, DotsSixVertical, LinkSimple, PencilSimple, Trash, ArrowRight } from '@phosphor-icons/react';
 import type { BoardTask, TaskBoardDetail } from '@fouc/shared/tasks';
 import { UserAvatar } from '@/components/user-avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useTranslation } from '@/lib/i18n';
 import resourceStyles from '@/components/ui/resource-card.module.css';
-import { isTaskOverdue } from './task-board-model';
+import { isTaskOverdue, taskReference } from './task-board-model';
+import { TaskStatusIcon } from './task-status-icon';
 import { messages } from './task-board.messages';
 import styles from './task-board.module.css';
 
@@ -19,17 +20,16 @@ export function TaskCard({ task, board, editable, draggable, dragging, insertBef
   const checked = task.checklist.filter(item => item.done).length;
   const progress = task.checklist.length ? Math.round(checked / task.checklist.length * 100) : 0;
   const overdue = isTaskOverdue(task, board);
-  const done = board.columns.find(column => column.id === task.columnId)?.isDone;
+  const column = board.columns.find(column => column.id === task.columnId);
+  const done = column?.isDone;
   const assigned = board.members.filter(member => task.assigneeIds.includes(member.userId));
   return <article className={`${resourceStyles.card} ${styles.card}`} role="button" tabIndex={0}
     aria-label={t('openTask', { title: task.title })} data-task-id={task.id} data-dragging={dragging || undefined} data-insert-before={insertBefore || undefined}
     draggable={draggable} onDragStart={onDragStart} onDragEnd={onDragEnd}
     onClick={onOpen} onKeyDown={event => { if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); onOpen(); } }}>
     <div className={styles.cardTop}>
-      <div className={styles.labels}>{task.labels.slice(0, 3).map(label => <span key={label} className={styles.label}>{label}</span>)}</div>
-      <span className={styles.priority} data-priority={task.priority}><Flag size={12} weight={task.priority === 'urgent' || task.priority === 'high' ? 'fill' : 'duotone'} />{t(task.priority)}</span>
-    </div>
-    <div className={styles.cardHeading}><h3 data-completed={done || undefined}>{task.title}</h3>{editable && <span onClick={event => event.stopPropagation()} onKeyDown={event => event.stopPropagation()}>
+      <span className={styles.taskReference}><LinkSimple size={14} /><span>{taskReference(task)}</span>{column && <span title={column.name}><TaskStatusIcon column={column} /></span>}</span>
+      {editable && <span onClick={event => event.stopPropagation()} onKeyDown={event => event.stopPropagation()}>
       <DropdownMenu><DropdownMenuTrigger className={styles.cardMenu} aria-label={t('taskMenu', { title: task.title })} draggable={false}><DotsThree size={19} weight="bold" /></DropdownMenuTrigger>
         <DropdownMenuContent align="end" density="compact">
           <DropdownMenuItem onSelect={onOpen}><PencilSimple weight="duotone" />{t('editTask')}</DropdownMenuItem>
@@ -40,7 +40,12 @@ export function TaskCard({ task, board, editable, draggable, dragging, insertBef
         </DropdownMenuContent>
       </DropdownMenu>
     </span>}</div>
+    <div className={styles.cardHeading}><h3 data-completed={done || undefined}>{task.title}</h3></div>
     {task.description && <p className={styles.cardDescription}>{task.description}</p>}
+    <div className={styles.cardTags}>
+      <div className={styles.labels}>{task.labels.slice(0, 3).map(label => <span key={label} className={styles.label}>{label}</span>)}</div>
+      <span className={styles.priority} data-priority={task.priority}><Flag size={12} weight={task.priority === 'urgent' || task.priority === 'high' ? 'fill' : 'duotone'} />{t(task.priority)}</span>
+    </div>
     {task.checklist.length > 0 && <div className={styles.checklistProgress} aria-label={`${t('progress')} ${checked}/${task.checklist.length}`}>
       <div><span><CheckSquare size={14} weight="duotone" />{t('progress')}</span><span>{checked}<span className={styles.faint}> / {task.checklist.length}</span></span></div>
       <div className={styles.progressTrack}><span style={{ width: `${progress}%` }} data-done={progress === 100 || undefined} /></div>

@@ -5,10 +5,10 @@ import { createRoot, type Root } from 'react-dom/client';
 import type { BoardTask, TaskBoardDetail } from '@fouc/shared/tasks';
 
 const first: BoardTask = {
-  id: 'first', columnId: 'todo', title: 'First task', description: '', priority: 'medium', assigneeIds: [], labels: [],
+  id: 'first', number: 1, columnId: 'todo', title: 'First task', description: '', priority: 'medium', assigneeIds: [], labels: [],
   dueDate: null, checklist: [], position: 0, createdBy: 'owner', createdAt: '2026-10-18T00:00:00Z', updatedAt: '2026-10-18T00:00:00Z', commentCount: 0,
 };
-const second = { ...first, id: 'second', title: 'Second task', position: 1 };
+const second = { ...first, id: 'second', number: 2, title: 'Second task', position: 1 };
 const board: TaskBoardDetail = {
   id: 'board', projectId: 'project', name: 'Team tasks', description: '', visibility: 'project', ownerId: 'owner', permission: 'owner',
   taskCount: 2, completedCount: 0, createdAt: first.createdAt, updatedAt: first.updatedAt, members: [], tasks: [first, second],
@@ -29,7 +29,7 @@ beforeAll(async () => {
   globals.window = browser;
   globals.IS_REACT_ACT_ENVIRONMENT = true;
   const icon = () => <svg aria-hidden />;
-  mock.module('@phosphor-icons/react', () => Object.fromEntries(['ArrowLeft', 'ArrowRight', 'Check', 'DotsThree', 'PencilSimple', 'Plus', 'Trash', 'CalendarBlank', 'ChatCircle', 'CheckSquare', 'Flag', 'DotsSixVertical'].map(name => [name, icon])));
+  mock.module('@phosphor-icons/react', () => Object.fromEntries(['ArrowLeft', 'ArrowRight', 'Check', 'DotsThree', 'PencilSimple', 'Plus', 'Trash', 'CalendarBlank', 'ChatCircle', 'CheckSquare', 'Flag', 'DotsSixVertical', 'LinkSimple'].map(name => [name, icon])));
   mock.module('@/components/user-avatar', () => ({ UserAvatar: () => <span /> }));
   const group = ({ children }: { children: ReactNode }) => <>{children}</>;
   const control = (props: ComponentProps<'button'>) => <button type="button" aria-label={props['aria-label']}>{props.children}</button>;

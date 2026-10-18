@@ -39,6 +39,7 @@ export interface TaskChecklistItem { id: string; title: string; done: boolean }
 
 export interface BoardTask {
   id: string;
+  number: number;
   columnId: string;
   title: string;
   description: string;

@@ -12,7 +12,7 @@ const board: TaskBoardDetail = {
   createdAt: '2026-10-18T00:00:00Z', updatedAt: '2026-10-18T00:00:00Z',
   columns: [{ id: 'todo', name: 'To do', color: 'slate', isDone: false, position: 0 }],
   members: [{ userId: 'owner', name: 'Owner', email: 'owner@example.test', image: null, role: 'owner' }],
-  tasks: [{ id: 'task', columnId: 'todo', title: 'Original task', description: '', priority: 'medium',
+  tasks: [{ id: 'task', number: 1, columnId: 'todo', title: 'Original task', description: '', priority: 'medium',
     assigneeIds: [], labels: [], dueDate: null, checklist: [], position: 0, createdBy: 'owner',
     createdAt: '2026-10-18T00:00:00Z', updatedAt: '2026-10-18T00:00:00Z', commentCount: 0 }],
 };

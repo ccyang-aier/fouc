@@ -8,7 +8,7 @@ import type { TaskDetailProps } from './task-detail';
 
 function makeBoard(id: string, name: string): TaskBoardDetail {
   const task: BoardTask = {
-    id: `${id}-task`, columnId: `${id}-todo`, title: `${name} task`, description: '', priority: 'medium',
+    id: `${id}-task`, number: 1, columnId: `${id}-todo`, title: `${name} task`, description: '', priority: 'medium',
     assigneeIds: [], labels: [], dueDate: null, checklist: [], position: 0, createdBy: 'owner',
     createdAt: '2026-10-18T00:00:00Z', updatedAt: '2026-10-18T00:00:00Z', commentCount: 0,
   };
@@ -92,7 +92,7 @@ beforeAll(async () => {
     TaskBoardError: class extends Error { constructor(public code: string, message: string, public status: number) { super(message); } },
   }));
   mock.module('./task-board-picker', () => ({ TaskBoardPicker: ({ selected }: { selected?: TaskBoardSummary }) => <h1 data-current-board>{selected?.name}</h1> }));
-  mock.module('./task-board-toolbar', () => ({ TaskBoardToolbar: () => null }));
+  mock.module('./task-board-toolbar', () => ({ TaskBoardToolbar: ({ onSettings, onRemoveBoard }: { onSettings: () => void; onRemoveBoard: () => void }) => <><MenuItem onSelect={onSettings}>看板设置</MenuItem><MenuItem onSelect={onRemoveBoard}>删除看板</MenuItem></> }));
   mock.module('./kanban-board', () => ({ KanbanBoard: ({ board, onOpen }: { board: TaskBoardDetail; onOpen: (task: BoardTask) => void }) => <button type="button" data-open-task onClick={() => onOpen(board.tasks[0])}>Open task</button> }));
   mock.module('./task-board-members', () => ({ TaskBoardMembers: () => null }));
   mock.module('./task-board-dialogs', () => ({

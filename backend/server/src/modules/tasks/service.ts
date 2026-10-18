@@ -189,7 +189,9 @@ export function createTaskBoardService(pool: Pool) {
       return withTaskBoard(pool, identity, scope, 'edit', async context => {
         await requireColumn(context, data.columnId);
         await validateAssignees(context, data.assigneeIds);
-        await context.db.insert(boardTask).values({ ...scope, ...data, id: randomUUID(), checklist: checklist(data.checklist), assigneeIds: [...new Set(data.assigneeIds)], labels: [...new Set(data.labels)], position: await nextTaskPosition(context, data.columnId), createdBy: context.userId });
+        const allocated = await context.db.execute<{ number: number }>(sql`SELECT resources.allocate_task_number(${scope.projectId}::uuid, ${scope.boardId}::uuid) AS number`);
+        const number = allocated.rows[0]!.number;
+        await context.db.insert(boardTask).values({ ...scope, ...data, id: randomUUID(), number, checklist: checklist(data.checklist), assigneeIds: [...new Set(data.assigneeIds)], labels: [...new Set(data.labels)], position: await nextTaskPosition(context, data.columnId), createdBy: context.userId });
         return taskBoardDetail(context);
       });
     },

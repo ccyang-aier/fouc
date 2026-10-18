@@ -3,7 +3,7 @@ import { allApplicationTables, resourceTables } from './schema';
 import { resourcePoliciesForTable } from './resources/rls';
 import { assertFoucApplicationRole } from './initialize-role';
 import type { FoucSqlConnection } from './initialize-role';
-import { taskBoardPermissionBody } from './resources/task-rls';
+import { allocateTaskNumberBody, taskBoardPermissionBody } from './resources/task-rls';
 
 export const foucDatabaseSchemas = ['resources', 'auth', 'catalog'] as const;
 const requiredExtensions = ['ltree', 'pg_search', 'vector'];
@@ -78,19 +78,25 @@ export async function inspectFoucDatabase(admin: FoucSqlConnection, application:
   `, [[...foucDatabaseSchemas]]);
 
   const key = (schema: string, name: string) => `${schema}.${name}`;
-  const taskPermission = await admin.query<{ source: string; definer: boolean; volatility: string; config: string[]; result: string; args: string; bypass: boolean }>(`
-    SELECT p.prosrc AS source, p.prosecdef AS definer, p.provolatile AS volatility, p.proconfig AS config,
+  const taskFunctions = await admin.query<{ name: string; source: string; definer: boolean; volatility: string; config: string[]; result: string; args: string; bypass: boolean }>(`
+    SELECT p.proname AS name, p.prosrc AS source, p.prosecdef AS definer, p.provolatile AS volatility, p.proconfig AS config,
       pg_get_function_result(p.oid) AS result, pg_get_function_identity_arguments(p.oid) AS args,
       r.rolsuper OR r.rolbypassrls AS bypass
     FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace JOIN pg_roles r ON r.oid=p.proowner
-    WHERE n.nspname='resources' AND p.proname='task_board_permission'
+    WHERE n.nspname='resources' AND p.proname IN ('task_board_permission', 'allocate_task_number')
   `);
-  const permission = taskPermission.rows[0];
-  if (taskPermission.rowCount !== 1 || !permission || permission.source.trim() !== taskBoardPermissionBody.trim()
-    || !permission.definer || !permission.bypass || permission.volatility !== 's' || permission.result !== 'text'
-    || permission.args !== 'target_project uuid, target_board uuid'
-    || JSON.stringify([...(permission.config ?? [])].sort()) !== JSON.stringify(['row_security=off', 'search_path=pg_catalog, pg_temp'])) {
-    issues.push('Task-board permission function differs from current definition');
+  for (const expected of [
+    { name: 'task_board_permission', body: taskBoardPermissionBody, volatility: 's', result: 'text', label: 'Task-board permission' },
+    { name: 'allocate_task_number', body: allocateTaskNumberBody, volatility: 'v', result: 'integer', label: 'Task-number allocation' },
+  ]) {
+    const matches = taskFunctions.rows.filter(row => row.name === expected.name);
+    const definition = matches[0];
+    if (matches.length !== 1 || !definition || definition.source.trim() !== expected.body.trim()
+      || !definition.definer || !definition.bypass || definition.volatility !== expected.volatility || definition.result !== expected.result
+      || definition.args !== 'target_project uuid, target_board uuid'
+      || JSON.stringify([...(definition.config ?? [])].sort()) !== JSON.stringify(['row_security=off', 'search_path=pg_catalog, pg_temp'])) {
+      issues.push(`${expected.label} function differs from current definition`);
+    }
   }
   const expectedTables = new Set(allApplicationTables.map((table) => { const config = getTableConfig(table); return key(config.schema!, config.name); }));
   for (const relation of relations.rows) if (!expectedTables.has(key(relation.schema, relation.name))) issues.push('Unexpected table in Fouc schemas');

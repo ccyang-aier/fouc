@@ -5,7 +5,7 @@ import type { TaskBoardDetail, TaskBoardSummary, TaskComment } from '@fouc/share
 import { boardTask, taskBoard, taskBoardMember, taskColumn, taskComment } from '../../platform/database/resources/schema';
 import { withProject } from '../../platform/database/resources/transaction';
 import { inspectFoucDatabase } from '../../platform/database/initialize-status';
-import { taskBoardPermissionSql } from '../../platform/database/resources/task-rls';
+import { allocateTaskNumberSql, taskBoardPermissionSql } from '../../platform/database/resources/task-rls';
 import { createAuthTestServer, responseCookie, testPassword } from '../../platform/identity/auth-test-server';
 import type { AuthTestServer } from '../../platform/identity/auth-test-server';
 import { createProjectRoutes } from '../projects/http';
@@ -106,6 +106,35 @@ test('project boards start read-only and explicit editors cannot administer them
   expect(withTask.tasks[0]?.assigneeIds).toEqual([viewer.userId]);
   await request(owner, `/${created.id}/members/${editor.userId}`, 'DELETE');
   expect((await detail(await request(editor, `/${created.id}`))).permission).toBe('viewer');
+});
+
+test('task numbers are board-scoped, immutable and never reused; editors allocate without board administration', async () => {
+  const created = await board('project');
+  await detail(await request(owner, `/${created.id}/members`, 'POST', { userId: editor.userId, role: 'editor' }));
+  const results = await Promise.all(['One', 'Two', 'Three'].map(async title => {
+    const result = await detail(await request(editor, `/${created.id}/tasks`, 'POST', { title, columnId: created.columns[0]!.id }));
+    return result.tasks.find(task => task.title === title)!;
+  }));
+  expect(results.map(task => task.number).sort()).toEqual([1, 2, 3]);
+  const first = results.find(task => task.number === 1)!;
+  let next = await detail(await request(editor, `/${created.id}/tasks/${first.id}`, 'PATCH', { title: 'Renamed' }));
+  expect(next.tasks.find(task => task.id === first.id)?.number).toBe(1);
+  next = await detail(await request(editor, `/${created.id}/tasks/${first.id}/move`, 'POST', { columnId: created.columns[3]!.id, beforeTaskId: null }));
+  expect(next.tasks.find(task => task.id === first.id)?.number).toBe(1);
+  expect((await request(editor, `/${created.id}/tasks/${first.id}`, 'PATCH', { number: 99 })).status).toBe(400);
+  await detail(await request(editor, `/${created.id}/tasks/${results.find(task => task.number === 3)!.id}`, 'DELETE'));
+  next = await detail(await request(editor, `/${created.id}/tasks`, 'POST', { title: 'Four', columnId: created.columns[0]!.id }));
+  expect(next.tasks.find(task => task.title === 'Four')?.number).toBe(4);
+  expect((await request(editor, `/${created.id}`, 'PATCH', { name: 'Denied' })).status).toBe(403);
+  const privateBoard = await board();
+  await withProject(server.database.pool, projectId, viewer.sessionId, async db => {
+    for (const boardId of [created.id, privateBoard.id]) {
+      const result = await db.execute<{ number: number | null }>(sql`SELECT resources.allocate_task_number(${projectId}::uuid,${boardId}::uuid) AS number`);
+      expect(result.rows[0]?.number).toBeNull();
+    }
+  });
+  const own = await detail(await request(owner, `/${privateBoard.id}/tasks`, 'POST', { title: 'Own first', columnId: privateBoard.columns[0]!.id }));
+  expect(own.tasks[0]?.number).toBe(1);
 });
 
 test('invitation ACL, assignment and stale project membership are enforced on each request', async () => {
@@ -251,7 +280,7 @@ test('PostgreSQL RLS itself hides private board content and prevents viewer writ
   let failed = false;
   try {
     await withProject(server.database.pool, projectId, viewer.sessionId, async db => {
-      await db.execute(sql`INSERT INTO resources.board_task(project_id,board_id,id,column_id,title,position,created_by) VALUES (${projectId}::uuid,${visible.id}::uuid,${randomUUID()}::uuid,${visible.columns[0]!.id}::uuid,'Denied direct SQL',1,${viewer.userId}::uuid)`);
+      await db.execute(sql`INSERT INTO resources.board_task(project_id,board_id,id,number,column_id,title,position,created_by) VALUES (${projectId}::uuid,${visible.id}::uuid,${randomUUID()}::uuid,1,${visible.columns[0]!.id}::uuid,'Denied direct SQL',1,${viewer.userId}::uuid)`);
     });
   } catch { failed = true; }
   expect(failed).toBe(true);
@@ -267,5 +296,16 @@ test('deployment validation detects a weakened board permission function', async
     expect(status.issues).toContain('Task-board permission function differs from current definition');
   } finally {
     await server.database.admin.query(taskBoardPermissionSql.replace('CREATE FUNCTION', 'CREATE OR REPLACE FUNCTION'));
+  }
+});
+
+test('deployment validation detects a replaced task-number allocator', async () => {
+  try {
+    await server.database.admin.query('CREATE OR REPLACE FUNCTION resources.allocate_task_number(target_project uuid, target_board uuid) RETURNS integer LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path=pg_catalog,pg_temp SET row_security=off AS $$ SELECT 1 $$');
+    const status = await inspectFoucDatabase(server.database.admin, server.database.pool);
+    expect(status.state).toBe('incomplete');
+    expect(status.issues).toContain('Task-number allocation function differs from current definition');
+  } finally {
+    await server.database.admin.query(allocateTaskNumberSql.replace('CREATE FUNCTION', 'CREATE OR REPLACE FUNCTION'));
   }
 });

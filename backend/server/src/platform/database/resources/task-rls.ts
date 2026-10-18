@@ -26,6 +26,16 @@ export const taskBoardPermissionBody = `
 export const taskBoardPermissionSql = `CREATE FUNCTION resources.task_board_permission(target_project uuid, target_board uuid)
 RETURNS text LANGUAGE sql STABLE SECURITY DEFINER SET search_path = pg_catalog, pg_temp SET row_security = off AS $permission$${taskBoardPermissionBody}$permission$;`;
 
+// Editors allocate numbers without gaining permission to change board settings.
+export const allocateTaskNumberBody = `
+  UPDATE resources.task_board AS b SET next_task_number = b.next_task_number + 1
+  WHERE b.project_id = target_project AND b.id = target_board
+    AND resources.task_board_permission(target_project, target_board) IN ('owner', 'editor')
+  RETURNING b.next_task_number - 1
+`;
+export const allocateTaskNumberSql = `CREATE FUNCTION resources.allocate_task_number(target_project uuid, target_board uuid)
+RETURNS integer LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path = pg_catalog, pg_temp SET row_security = off AS $number$${allocateTaskNumberBody}$number$;`;
+
 export function taskPoliciesForTable(name: string, verifiedIdentityUser: string): ResourceRlsPolicy[] {
   const board = name === 'task_board' ? '"id"' : '"board_id"';
   const permission = `resources.task_board_permission("project_id", ${board})`;

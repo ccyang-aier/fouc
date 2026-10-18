@@ -7,7 +7,18 @@ import { Check, CaretRight } from "@phosphor-icons/react"
 import { getOverlayRoot } from "@/lib/overlay-root"
 import { cn } from "@/lib/utils"
 
-const DropdownMenu = DropdownMenuPrimitive.Root
+const DropdownMenuContainer = React.createContext<HTMLElement | undefined>(undefined)
+
+function DropdownMenu({ onOpenChange, ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {
+  const [container, setContainer] = React.useState<HTMLElement>()
+  return <DropdownMenuContainer.Provider value={container}>
+    <DropdownMenuPrimitive.Root {...props} onOpenChange={open => {
+      // Resolve on opening: a native dialog may have closed since the last render.
+      if (open) setContainer(getOverlayRoot())
+      onOpenChange?.(open)
+    }} />
+  </DropdownMenuContainer.Provider>
+}
 function DropdownMenuTrigger({
   className,
   ...props
@@ -31,8 +42,9 @@ function DropdownMenuContent({
   density = "regular",
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Content> & { density?: "regular" | "compact" }) {
+  const container = React.useContext(DropdownMenuContainer) ?? getOverlayRoot()
   return (
-    <DropdownMenuPrimitive.Portal container={getOverlayRoot()}>
+    <DropdownMenuPrimitive.Portal container={container}>
       <DropdownMenuPrimitive.Content
         data-density={density}
         sideOffset={sideOffset}
@@ -164,8 +176,9 @@ function DropdownMenuSubContent({
   density = "regular",
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.SubContent> & { density?: "regular" | "compact" }) {
+  const container = React.useContext(DropdownMenuContainer) ?? getOverlayRoot()
   return (
-    <DropdownMenuPrimitive.Portal container={getOverlayRoot()}>
+    <DropdownMenuPrimitive.Portal container={container}>
       <DropdownMenuPrimitive.SubContent
         data-density={density}
         sideOffset={sideOffset}

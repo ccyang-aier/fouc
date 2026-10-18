@@ -1,12 +1,13 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, Check, DotsThree, PencilSimple, Plus, Trash } from '@phosphor-icons/react';
+import { ArrowLeft, ArrowRight, DotsSixVertical, PencilSimple, Plus, Trash } from '@phosphor-icons/react';
 import type { BoardTask, TaskBoardDetail, TaskColumn } from '@fouc/shared/tasks';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { usePageScrollKey } from '@/lib/page-session-state';
 import { useTranslation } from '@/lib/i18n';
 import { TaskCard } from './task-card';
+import { TaskStatusIcon } from './task-status-icon';
 import { messages } from './task-board.messages';
 import styles from './task-board.module.css';
 
@@ -56,15 +57,16 @@ export function KanbanBoard({ board, tasks, canDrag, busy, onOpen, onCreate, onR
             accept(event, { columnId: column.id, beforeTaskId: before?.dataset.taskId ?? null });
           }}
           onDrop={event => { const { taskId, target } = gesture.current; if (!taskId || !target || target.columnId !== column.id) return; event.preventDefault(); event.stopPropagation(); onMove(taskId, target.columnId, target.beforeTaskId); endDrag(); }}>
-          <header className={styles.columnHeader}><span className={styles.statusDot} data-color={column.color}>{column.isDone && <Check size={10} weight="bold" />}</span><h2>{column.name}</h2><span className={styles.columnCount}>{columnTasks.length}{columnTasks.length !== total && <span>/{total}</span>}</span>
-            {editable && <div className={styles.columnActions}><button className={`fouc-action ${styles.iconButton}`} type="button" aria-label={`${t('addTask')} · ${column.name}`} onClick={() => onCreate(column.id)}><Plus size={16} /></button>
-              <DropdownMenu><DropdownMenuTrigger className={styles.iconButton} aria-label={t('statusActions', { name: column.name })}><DotsThree size={19} weight="bold" /></DropdownMenuTrigger><DropdownMenuContent align="end" density="compact">
+          <header className={styles.columnHeader}><TaskStatusIcon column={column} /><h2>{column.name}</h2><span className={styles.columnCount}>{columnTasks.length}{columnTasks.length !== total && <span>/{total}</span>}</span>
+            {editable && <div className={styles.columnActions}>
+              <DropdownMenu><DropdownMenuTrigger className={styles.iconButton} aria-label={t('statusActions', { name: column.name })}><DotsSixVertical size={17} weight="bold" /></DropdownMenuTrigger><DropdownMenuContent align="end" density="compact">
                 <DropdownMenuItem onSelect={() => onColumn(column)}><PencilSimple weight="duotone" />{t('editColumn')}</DropdownMenuItem>
                 <DropdownMenuItem disabled={index === 0 || busy} onSelect={() => moveColumn(index, -1)}><ArrowLeft />{t('moveLeft')}</DropdownMenuItem>
                 <DropdownMenuItem disabled={index === board.columns.length - 1 || busy} onSelect={() => moveColumn(index, 1)}><ArrowRight />{t('moveRight')}</DropdownMenuItem>
                 <DropdownMenuSeparator /><DropdownMenuItem variant="destructive" disabled={total > 0 || board.columns.length === 1 || busy} onSelect={() => onRemoveColumn(column)}><Trash weight="duotone" />{t('removeColumn')}</DropdownMenuItem>
                 {(total > 0 || board.columns.length === 1) && <DropdownMenuLabel className={styles.menuHint}>{t(total > 0 ? 'columnHasTasks' : 'lastColumn')}</DropdownMenuLabel>}
               </DropdownMenuContent></DropdownMenu>
+              <button className={`fouc-action ${styles.iconButton}`} type="button" aria-label={`${t('addTask')} · ${column.name}`} onClick={() => onCreate(column.id)}><Plus size={16} /></button>
             </div>}
           </header>
           <div className={styles.cardList}>

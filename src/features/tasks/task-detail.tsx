@@ -11,6 +11,7 @@ import { useTranslation } from '@/lib/i18n';
 import { usePageVisible } from '@/lib/page-visibility';
 import type { TaskBoardClient, TaskDraft } from './task-board-client';
 import { TaskComments } from './task-comments';
+import { taskReference } from './task-board-model';
 import { messages } from './task-detail.messages';
 import styles from './task-detail.module.css';
 
@@ -190,7 +191,7 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
       }}>
       <div className={styles.surface}>
         <header className={styles.header}>
-          <div className={styles.breadcrumb}><Kanban size={16} weight="duotone" aria-hidden /><span>{board.name}</span><span className={styles.slash}>/</span><h2 id={titleId}>{t(task ? 'taskDetails' : 'newTask')}</h2></div>
+          <div className={styles.breadcrumb}><Kanban size={16} weight="duotone" aria-hidden /><span>{board.name}</span><span className={styles.slash}>/</span><h2 id={titleId}>{t(task ? 'taskDetails' : 'newTask')}{task && ` · ${taskReference(task)}`}</h2></div>
           <Button variant="ghost" size="icon-sm" className={styles.iconButton} aria-label={t('close')} onClick={requestClose} disabled={Boolean(busy)}><X size={17} /></Button>
         </header>
         <div className={styles.body}>

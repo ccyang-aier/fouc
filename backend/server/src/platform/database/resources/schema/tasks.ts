@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { boolean, check, date, doublePrecision, foreignKey, index, jsonb, primaryKey, text, uuid, varchar } from 'drizzle-orm/pg-core';
+import { boolean, check, date, doublePrecision, foreignKey, index, integer, jsonb, primaryKey, text, unique, uuid, varchar } from 'drizzle-orm/pg-core';
 import type { TaskBoardMemberRole, TaskBoardVisibility, TaskChecklistItem, TaskColumnColor, TaskPriority } from '@fouc/shared/tasks';
 import { authUser } from '../../identity/schema';
 import { resourcesNamespace } from './namespaces';
@@ -13,12 +13,14 @@ export const taskBoard = resourcesNamespace.table('task_board', {
   description: text('description').notNull().default(''),
   visibility: varchar('visibility', { length: 12 }).$type<TaskBoardVisibility>().notNull().default('private'),
   ownerId: uuid('owner_id').notNull().references(() => authUser.id),
+  nextTaskNumber: integer('next_task_number').notNull().default(1),
   createdAt: instant('created_at').notNull().defaultNow(),
   updatedAt: instant('updated_at').notNull().defaultNow(),
 }, (table) => [
   primaryKey({ columns: [table.projectId, table.id] }),
   check('task_board_name_not_empty', sql`length(btrim(${table.name})) > 0`),
   check('task_board_visibility_valid', sql`${table.visibility} IN ('private', 'project', 'invited')`),
+  check('task_board_next_number_positive', sql`${table.nextTaskNumber} > 0`),
   index('task_board_project_updated_idx').on(table.projectId, table.updatedAt),
 ]);
 
@@ -55,6 +57,7 @@ export const boardTask = resourcesNamespace.table('board_task', {
   projectId: uuid('project_id').notNull(),
   boardId: uuid('board_id').notNull(),
   id: uuid('id').notNull(),
+  number: integer('number').notNull(),
   columnId: uuid('column_id').notNull(),
   title: varchar('title', { length: 240 }).notNull(),
   description: text('description').notNull().default(''),
@@ -69,6 +72,8 @@ export const boardTask = resourcesNamespace.table('board_task', {
   updatedAt: instant('updated_at').notNull().defaultNow(),
 }, (table) => [
   primaryKey({ columns: [table.projectId, table.boardId, table.id] }),
+  unique('board_task_number_unique').on(table.projectId, table.boardId, table.number),
+  check('board_task_number_positive', sql`${table.number} > 0`),
   foreignKey({ name: 'board_task_column_fk', columns: [table.projectId, table.boardId, table.columnId], foreignColumns: [taskColumn.projectId, taskColumn.boardId, taskColumn.id] }),
   foreignKey({ name: 'board_task_board_fk', columns: [table.projectId, table.boardId], foreignColumns: [taskBoard.projectId, taskBoard.id] }).onDelete('cascade'),
   check('board_task_title_not_empty', sql`length(btrim(${table.title})) > 0`),

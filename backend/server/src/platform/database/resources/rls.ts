@@ -2,7 +2,7 @@ import { getTableConfig } from 'drizzle-orm/pg-core';
 import type { PgTable } from 'drizzle-orm/pg-core';
 import type { PoolClient } from 'pg';
 import { resourceTables } from './schema';
-import { taskBoardPermissionSql, taskPoliciesForTable, taskTableNames } from './task-rls';
+import { allocateTaskNumberSql, taskBoardPermissionSql, taskPoliciesForTable, taskTableNames } from './task-rls';
 
 const identifier = (value: string) => `"${value.replaceAll('"', '""')}"`;
 const currentKnowledgeBase = `(SELECT NULLIF(current_setting('app.knowledge_base_id', true), '')::uuid)`;
@@ -75,5 +75,6 @@ export function resourceRlsSql(tables: readonly PgTable[] = resourceTables): str
 /** Install once inside the same admin transaction that creates current.sql. */
 export async function installResourceRls(client: Pick<PoolClient, 'query'>): Promise<void> {
   await client.query(taskBoardPermissionSql);
+  await client.query(allocateTaskNumberSql);
   await client.query(resourceRlsSql());
 }

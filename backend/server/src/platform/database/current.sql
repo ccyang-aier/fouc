@@ -183,6 +183,7 @@ CREATE TABLE "resources"."board_task" (
 	"project_id" uuid NOT NULL,
 	"board_id" uuid NOT NULL,
 	"id" uuid NOT NULL,
+	"number" integer NOT NULL,
 	"column_id" uuid NOT NULL,
 	"title" varchar(240) NOT NULL,
 	"description" text DEFAULT '' NOT NULL,
@@ -196,6 +197,8 @@ CREATE TABLE "resources"."board_task" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "board_task_project_id_board_id_id_pk" PRIMARY KEY("project_id","board_id","id"),
+	CONSTRAINT "board_task_number_unique" UNIQUE("project_id","board_id","number"),
+	CONSTRAINT "board_task_number_positive" CHECK ("resources"."board_task"."number" > 0),
 	CONSTRAINT "board_task_title_not_empty" CHECK (length(btrim("resources"."board_task"."title")) > 0),
 	CONSTRAINT "board_task_priority_valid" CHECK ("resources"."board_task"."priority" IN ('low', 'medium', 'high', 'urgent')),
 	CONSTRAINT "board_task_checklist_array" CHECK (jsonb_typeof("resources"."board_task"."checklist") = 'array')
@@ -479,11 +482,13 @@ CREATE TABLE "resources"."task_board" (
 	"description" text DEFAULT '' NOT NULL,
 	"visibility" varchar(12) DEFAULT 'private' NOT NULL,
 	"owner_id" uuid NOT NULL,
+	"next_task_number" integer DEFAULT 1 NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "task_board_project_id_id_pk" PRIMARY KEY("project_id","id"),
 	CONSTRAINT "task_board_name_not_empty" CHECK (length(btrim("resources"."task_board"."name")) > 0),
-	CONSTRAINT "task_board_visibility_valid" CHECK ("resources"."task_board"."visibility" IN ('private', 'project', 'invited'))
+	CONSTRAINT "task_board_visibility_valid" CHECK ("resources"."task_board"."visibility" IN ('private', 'project', 'invited')),
+	CONSTRAINT "task_board_next_number_positive" CHECK ("resources"."task_board"."next_task_number" > 0)
 );
 
 CREATE TABLE "resources"."task_board_member" (

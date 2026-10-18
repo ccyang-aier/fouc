@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, DotsThree, Kanban, ListChecks, LockSimple, PencilSimple, Plus, Trash, Users } from '@phosphor-icons/react';
+import { DotsThree, Kanban, LockSimple, PencilSimple, Plus, Trash, Users } from '@phosphor-icons/react';
 import type { TaskBoardDetail, TaskBoardSummary, TaskColumn } from '@fouc/shared/tasks';
 import { AppAlert } from '@/components/app-alert';
 import { useAppAlert } from '@/components/app-alert-provider';
@@ -30,7 +30,6 @@ export function TaskBoardsPage() {
   const { selectedProject, scopeKey } = useProjectResources();
   const { session, openSignIn } = useIdentity();
   if (selectedProject?.source !== 'server' || session.status !== 'authenticated') return <section className={styles.page} aria-label={t('tasks')}>
-    <header className={styles.header}><div className={styles.sectionLabel}><ListChecks size={17} weight="duotone" />{t('tasks')}</div></header>
     <div className={styles.empty}><EmptyBoardIllustration /><h1>{t('teamProject')}</h1><p>{t(session.status === 'authenticated' ? 'localDescription' : 'signInDescription')}</p>{session.status !== 'authenticated' && <Button size="sm" onClick={openSignIn}>{t('signIn')}</Button>}</div>
   </section>;
   return <TaskBoardScope key={scopeKey} projectId={selectedProject.id} actorId={session.user.id} />;
@@ -105,7 +104,6 @@ function TaskBoardsContent({ projectId, actorId }: { projectId: string; actorId:
   function saveTask(draft: TaskDraft, taskId?: string) { return mutate(() => taskId ? client.updateTask(board!.id, taskId, draft) : client.addTask(board!.id, draft)); }
   return <section className={styles.page} aria-label={t('tasks')}>
     <header className={styles.header}>
-      <div className={styles.sectionLabel}><ListChecks size={16} weight="duotone" />{t('tasks')}<span>/</span><span>{t('boards')}</span></div>
       <div className={styles.titleRow}><div className={styles.titleIdentity}><TaskBoardPicker boards={boards} selected={selected} onSelect={id => { setSelectedId(id); setDetail(null); setColumn(null); setConfirmation(null); setDialog(null); }} onCreate={() => setDialog({ kind: 'create' })} />
         {selected && <span className={styles.visibility}>{selected.visibility === 'private' ? <LockSimple size={12} weight="duotone" /> : <Users size={12} weight="duotone" />}{t(selected.visibility)}</span>}
       </div>
@@ -115,7 +113,6 @@ function TaskBoardsContent({ projectId, actorId }: { projectId: string; actorId:
         </button>{board.permission === 'owner' && <DropdownMenu><DropdownMenuTrigger className={styles.iconButton} aria-label={t('settings')}><DotsThree size={21} weight="bold" /></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onSelect={() => setDialog({ kind: 'settings', boardId: board.id })}><PencilSimple weight="duotone" />{t('settings')}</DropdownMenuItem><DropdownMenuItem onSelect={() => setDialog({ kind: 'create' })}><Plus />{t('createBoard')}</DropdownMenuItem><DropdownMenuSeparator /><DropdownMenuItem variant="destructive" onSelect={() => setConfirmation({ kind: 'board', boardId: board.id, id: board.id, name: board.name })}><Trash weight="duotone" />{t('removeBoard')}</DropdownMenuItem></DropdownMenuContent></DropdownMenu>}</>}
         {board && board.permission !== 'viewer' ? <Button size="sm" onClick={() => setDetail({ boardId: board.id, taskId: null, columnId: board.columns[0].id })}><Plus size={15} />{t('newTask')}</Button> : !selected && <Button size="sm" onClick={() => setDialog({ kind: 'create' })}><Plus size={15} />{t('createBoard')}</Button>}
       </div></div>
-      {selected && <div className={styles.boardInfo}>{selected.description && <p>{selected.description}</p>}<div className={styles.summary}><span>{t('summary', { total: selected.taskCount })}</span><span className={styles.summaryDivider} /><span><Check size={12} />{t('completed', { count: selected.completedCount })}</span><span className={styles.summaryProgress} role="progressbar" aria-label={t('completion', { percent: selected.taskCount ? Math.round(selected.completedCount / selected.taskCount * 100) : 0 })} aria-valuenow={selected.completedCount} aria-valuemax={Math.max(1, selected.taskCount)} aria-valuemin={0}><i style={{ width: `${selected.taskCount ? selected.completedCount / selected.taskCount * 100 : 0}%` }} /></span>{board?.permission === 'viewer' && <span className={styles.readOnly}><LockSimple size={11} />{t('readOnly')}</span>}</div></div>}
     </header>
     {backgroundFailed && <div className={styles.syncError}><AppAlert tone="warning" title={t('syncFailed')} action={<button type="button" onClick={refresh}>{t('retry')}</button>} /></div>}
     {boardsQuery.isPending || (selected && boardQuery.isPending) ? <BoardSkeleton />

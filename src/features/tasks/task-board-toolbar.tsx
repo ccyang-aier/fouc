@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowClockwise, CalendarBlank, CaretDown, FunnelSimple, Kanban, ListBullets, MagnifyingGlass, SortAscending, Users, X } from '@phosphor-icons/react';
+import { ArrowClockwise, CalendarBlank, CaretDown, Check, FunnelSimple, Kanban, ListBullets, LockSimple, MagnifyingGlass, SortAscending, Users, X } from '@phosphor-icons/react';
 import type { TaskBoardDetail } from '@fouc/shared/tasks';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useTranslation } from '@/lib/i18n';
@@ -14,17 +14,18 @@ export function TaskBoardToolbar({ board, filters, onFilters, sort, onSort, onRe
   onSort: (value: TaskSort) => void; onRefresh: () => void; refreshing: boolean;
 }) {
   const { t } = useTranslation(messages);
+  const completion = board.taskCount ? Math.round(board.completedCount / board.taskCount * 100) : 0;
   const labels = [...new Set(board.tasks.flatMap(task => task.labels))].sort();
   const filterCount = Number(filters.priority !== 'all') + Number(filters.due !== 'all') + Number(Boolean(filters.label));
   const activeFilters = [filters.query.trim() && `“${filters.query.trim()}”`, filters.assignee !== 'all' && (filters.assignee === 'me' ? t('myTasks') : filters.assignee === 'unassigned' ? t('unassigned') : board.members.find(member => member.userId === filters.assignee)?.name), filters.priority !== 'all' && t(filters.priority), filters.due !== 'all' && t(filters.due), filters.label].filter(Boolean);
   return <>
     <div className={styles.toolbar}>
-      <DropdownMenu><DropdownMenuTrigger className={styles.viewButton} aria-label={t('views')}><Kanban size={16} weight="duotone" /><span>{t('kanban')}</span><CaretDown size={11} /></DropdownMenuTrigger>
-        <DropdownMenuContent align="start"><DropdownMenuItem><Kanban weight="duotone" />{t('kanban')}</DropdownMenuItem><DropdownMenuSeparator />
-          <DropdownMenuItem disabled><CalendarBlank weight="duotone" />{t('timeline')}<span className={styles.planned}>{t('planned')}</span></DropdownMenuItem>
-          <DropdownMenuItem disabled><ListBullets />{t('list')}<span className={styles.planned}>{t('planned')}</span></DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <div className={styles.summary}>
+        <span>{t('summary', { total: board.taskCount })}</span><span className={styles.summaryDivider} />
+        <span><Check size={12} />{t('completed', { count: board.completedCount })}</span>
+        <span className={styles.summaryProgress} role="progressbar" aria-label={t('completion', { percent: completion })} aria-valuenow={board.completedCount} aria-valuemax={Math.max(1, board.taskCount)} aria-valuemin={0}><i style={{ width: `${completion}%` }} /></span>
+        {board.permission === 'viewer' && <span className={styles.readOnly}><LockSimple size={11} />{t('readOnly')}</span>}
+      </div>
       <div className={styles.toolbarRight}>
         <label className={styles.search}><MagnifyingGlass size={15} /><input value={filters.query} onChange={event => onFilters({ ...filters, query: event.target.value })} placeholder={t('searchTasks')} aria-label={t('searchTasks')} />{filters.query && <button type="button" className={`fouc-action ${styles.searchClear}`} aria-label={t('reset')} onClick={() => onFilters({ ...filters, query: '' })}><X size={12} /></button>}</label>
         <DropdownMenu><DropdownMenuTrigger className={styles.toolbarButton} aria-label={t('allMembers')} data-filter-active={filters.assignee !== 'all' || undefined}><Users size={15} weight="duotone" /><span className={styles.memberFilterLabel}>{filters.assignee === 'all' ? t('allMembers') : filters.assignee === 'me' ? t('myTasks') : filters.assignee === 'unassigned' ? t('unassigned') : board.members.find(member => member.userId === filters.assignee)?.name}</span><CaretDown size={10} /></DropdownMenuTrigger>
@@ -43,6 +44,12 @@ export function TaskBoardToolbar({ board, filters, onFilters, sort, onSort, onRe
           </DropdownMenuContent>
         </DropdownMenu>
         <DropdownMenu><DropdownMenuTrigger className={styles.toolbarButton} aria-label={t('sort')}><SortAscending size={15} /><span>{t(sort === 'manual' ? 'sort' : sortLabels[sort])}</span></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuLabel>{t('sort')}</DropdownMenuLabel><DropdownMenuRadioGroup value={sort} onValueChange={value => onSort(value as TaskSort)}>{(Object.keys(sortLabels) as TaskSort[]).map(value => <DropdownMenuRadioItem key={value} value={value}>{t(sortLabels[value])}</DropdownMenuRadioItem>)}</DropdownMenuRadioGroup></DropdownMenuContent></DropdownMenu>
+        <DropdownMenu><DropdownMenuTrigger className={styles.viewButton} aria-label={t('views')}><Kanban size={16} weight="duotone" /><span>{t('kanban')}</span><CaretDown size={11} /></DropdownMenuTrigger>
+          <DropdownMenuContent align="end"><DropdownMenuItem><Kanban weight="duotone" />{t('kanban')}</DropdownMenuItem><DropdownMenuSeparator />
+            <DropdownMenuItem disabled><CalendarBlank weight="duotone" />{t('timeline')}<span className={styles.planned}>{t('planned')}</span></DropdownMenuItem>
+            <DropdownMenuItem disabled><ListBullets />{t('list')}<span className={styles.planned}>{t('planned')}</span></DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <button type="button" className={`fouc-action ${styles.iconButton}`} aria-label={t('refresh')} onClick={onRefresh} disabled={refreshing}><ArrowClockwise size={16} className={refreshing ? styles.refreshing : undefined} /></button>
       </div>
     </div>

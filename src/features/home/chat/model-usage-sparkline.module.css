@@ -1,5 +1,6 @@
 .sparkline {
-  --usage-line: #45bca4;
+  --usage-line: #438567;
+  --usage-fill-opacity: .13;
   display: block;
   flex: 0 0 52px;
   width: 52px;
@@ -7,12 +8,22 @@
   overflow: visible;
 }
 
-.sparkline path {
+.line {
   fill: none;
   stroke: var(--usage-line);
-  stroke-width: 1.5;
+  stroke-width: .9;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.fillTop {
+  stop-color: var(--usage-line);
+  stop-opacity: var(--usage-fill-opacity);
+}
+
+.fillBottom {
+  stop-color: var(--usage-line);
+  stop-opacity: 0;
 }
 
 .sparkline > svg {
@@ -52,5 +63,6 @@
 }
 
 :global(html[data-theme="dark"]) .sparkline {
-  --usage-line: #66d4bd;
+  --usage-line: #75b99a;
+  --usage-fill-opacity: .16;
 }

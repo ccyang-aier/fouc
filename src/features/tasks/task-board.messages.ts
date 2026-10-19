@@ -7,7 +7,7 @@ export const messages = defineMessages({
   owner: ['创建人', 'Owner'], editor: ['可编辑', 'Can edit'], viewer: ['只读', 'View only'],
   settings: ['看板设置', 'Board settings'], members: ['成员与权限', 'Members & access'], removeBoard: ['删除看板', 'Delete board'],
   removeBoardDescription: ['将永久删除“{name}”及其所有任务和评论。此操作无法撤销。', 'Permanently delete “{name}” and all its tasks and comments. This cannot be undone.'],
-  kanban: ['看板', 'Kanban'], calendar: ['日历', 'Calendar'], spreadsheet: ['表格', 'Spreadsheet'], planned: ['规划中', 'Planned'], views: ['切换视图', 'Switch view'],
+  kanban: ['看板', 'Kanban'], calendar: ['日历', 'Calendar'], spreadsheet: ['表格', 'Table'], views: ['切换视图', 'Switch view'],
   searchTasks: ['搜索任务…', 'Search tasks…'], filter: ['筛选', 'Filter'], sort: ['排序', 'Sort'],
   closeSearch: ['关闭搜索', 'Close search'], boardActions: ['看板操作', 'Board actions'], quickFilters: ['快捷筛选', 'Quick filters'],
   allMembers: ['全部负责人', 'All assignees'], myTasks: ['分配给我', 'Assigned to me'], unassigned: ['未分配', 'Unassigned'],

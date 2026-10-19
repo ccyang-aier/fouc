@@ -1,0 +1,3 @@
+.columnMenu { width:220px; }
+.columnOptions { max-height:260px; overflow-y:auto; }
+.menuEmpty { margin:0; padding:12px 8px; color:var(--muted-strong); font-size:11px; }

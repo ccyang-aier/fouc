@@ -6,6 +6,7 @@ export const messages = defineMessages({
   searchOrCreate: ['搜索或新建标签…', 'Search or create a label…'],
   labelName: ['标签名称', 'Label name'],
   color: ['标签颜色', 'Label color'],
+  chooseColor: ['标签颜色：{color}', 'Label color: {color}'],
   nameRequired: ['请输入标签名称。', 'Enter a label name.'],
   nameTooLong: ['标签名称最多 40 个字符。', 'Use 40 characters or fewer.'],
   alreadyAdded: ['此任务已添加该标签。', 'This task already has this label.'],

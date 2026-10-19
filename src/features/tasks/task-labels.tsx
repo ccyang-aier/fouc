@@ -1,6 +1,6 @@
 'use client';
 
-import { Plus, X } from '@phosphor-icons/react';
+import { CaretDown, Plus, X } from '@phosphor-icons/react';
 import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { TASK_LABEL_COLORS, type TaskLabel, type TaskLabelColor } from '@fouc/shared/tasks';
 import { AnchoredPopover } from '@/components/ui/anchored-popover';
@@ -43,8 +43,10 @@ function TaskLabelPicker({ labels, availableLabels, onAdd }: { labels: TaskLabel
   const { t } = useTranslation(messages);
   const [name, setName] = useState('');
   const [color, setColor] = useState<TaskLabelColor>('blue');
+  const [colorsOpen, setColorsOpen] = useState(false);
   const [error, setError] = useState<TaskLabelIssue | null>(null);
   const optionsRef = useRef<HTMLDivElement>(null);
+  const colorTriggerRef = useRef<HTMLButtonElement>(null);
   const nameId = useId(), errorId = useId(), colorsId = useId();
   const normalized = name.trim().toLocaleLowerCase();
   const uniqueLabels = collectTaskLabels([{ labels: availableLabels }]);
@@ -66,21 +68,28 @@ function TaskLabelPicker({ labels, availableLabels, onAdd }: { labels: TaskLabel
   }
   return <form className={styles.picker} onSubmit={event => { event.preventDefault(); add(name, color); }}>
     <label className={styles.srOnly} htmlFor={nameId}>{t('labelName')}</label>
-    <input id={nameId} data-autofocus className={styles.name} value={name} autoComplete="off" maxLength={120}
-      placeholder={t('searchOrCreate')} aria-invalid={Boolean(error)} aria-describedby={error ? errorId : undefined}
-      onChange={event => { setName(event.target.value); setError(null); }} onKeyDown={event => { if (event.key === 'ArrowDown' || event.key === 'ArrowUp') navigateOptions(event); }} />
+    <div className={styles.searchRow}>
+      <input id={nameId} data-autofocus className={styles.name} value={name} autoComplete="off" maxLength={120}
+        placeholder={t('searchOrCreate')} aria-invalid={Boolean(error)} aria-describedby={error ? errorId : undefined}
+        onChange={event => { setName(event.target.value); setError(null); setColorsOpen(false); }} onKeyDown={event => { if (event.key === 'ArrowDown' || event.key === 'ArrowUp') navigateOptions(event); }} />
+      {!existing && <button ref={colorTriggerRef} type="button" className={`fouc-action ${styles.color} ${styles.colorTrigger}`} data-surface="plain" data-label-color={color}
+        aria-label={t('chooseColor', { color: t(color) })} aria-expanded={colorsOpen} aria-controls={colorsId} onClick={() => setColorsOpen(open => !open)}>
+        <span aria-hidden /><CaretDown size={10} aria-hidden />
+      </button>}
+    </div>
+    {!existing && colorsOpen && <fieldset id={colorsId} className={styles.colors}>
+      <legend className={styles.srOnly}>{t('color')}</legend>
+      {TASK_LABEL_COLORS.map(option => <label key={option} className={`fouc-action ${styles.color} ${styles.colorSwatch}`} data-label-color={option} title={t(option)}>
+        <input className={styles.colorInput} type="radio" name="task-label-color" value={option} checked={color === option} onChange={() => setColor(option)}
+          onClick={() => { setColorsOpen(false); colorTriggerRef.current?.focus({ preventScroll: true }); }} aria-label={t(option)} />
+        <span aria-hidden />
+      </label>)}
+    </fieldset>}
     {matches.length > 0 && <div ref={optionsRef} className={styles.options} onKeyDown={navigateOptions}>
       {matches.map(label => <button key={label.name} type="button" className={`fouc-menu-item ${styles.option}`} onClick={() => add(label.name, label.color)}>
         <TaskLabelBadge label={label} />
       </button>)}
     </div>}
-    {!existing && <fieldset className={styles.colors} aria-labelledby={colorsId}>
-      <legend id={colorsId} className={styles.srOnly}>{t('color')}</legend>
-      {TASK_LABEL_COLORS.map(option => <label key={option} className={`fouc-action ${styles.color} ${styles.colorSwatch}`} data-label-color={option} title={t(option)}>
-        <input className={styles.colorInput} type="radio" name="task-label-color" value={option} checked={color === option} onChange={() => setColor(option)} aria-label={t(option)} />
-        <span aria-hidden />
-      </label>)}
-    </fieldset>}
     {error && <p id={errorId} className={styles.error} role="alert">{t(error)}</p>}
     <Button type="submit" size="sm" className={styles.submit}>{t('addLabel')}</Button>
   </form>;

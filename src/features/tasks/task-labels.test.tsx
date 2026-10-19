@@ -21,7 +21,7 @@ beforeAll(async () => {
   globals.window = browser; globals.IS_REACT_ACT_ENVIRONMENT = true;
   browser.localStorage.setItem('fouc.language', 'en-US');
   const icon = () => <svg aria-hidden />;
-  mock.module('@phosphor-icons/react', () => ({ Plus: icon, X: icon }));
+  mock.module('@phosphor-icons/react', () => ({ CaretDown: icon, Plus: icon, X: icon }));
   mock.module('@/components/ui/button', () => ({ Button: ({ children, ...props }: ComponentProps<'button'>) => <button {...props}>{children}</button> }));
   // The shared popover owns positioning, Escape, outside-click and return-focus tests.
   mock.module('@/components/ui/anchored-popover', () => ({ AnchoredPopover: ({ children, label }: { children: ReactNode; label: string }) => <div role="dialog" aria-label={label}>{children}</div> }));
@@ -48,8 +48,18 @@ async function submit() { await act(async () => host.querySelector('form')!.disp
 
 test('creating a colored label changes only the draft and closes the picker', async () => {
   await render(); await click('Add label'); await type('  Research  ');
+  expect(host.querySelector('fieldset')).toBeNull();
+  await click('Label color: Blue');
   expect(host.querySelectorAll('input[type="radio"]')).toHaveLength(8);
   await act(async () => host.querySelector<HTMLInputElement>('[aria-label="Teal"]')!.click());
+  expect(host.querySelector('fieldset')).toBeNull();
+  const trigger = host.querySelector<HTMLButtonElement>('[aria-label="Label color: Teal"]')!;
+  expect(trigger.getAttribute('aria-expanded')).toBe('false');
+  expect(document.activeElement === trigger).toBe(true);
+  expect(host.querySelector<HTMLInputElement>('input:not([type="radio"])')!.value).toBe('  Research  ');
+  await click('Label color: Teal');
+  await act(async () => host.querySelector<HTMLInputElement>('[aria-label="Teal"]')!.click());
+  expect(host.querySelector('fieldset')).toBeNull();
   await submit();
   expect(onChange.mock.calls).toEqual([[[{ name: 'Research', color: 'teal' }]]]);
   expect(host.querySelector('[role="dialog"]')).toBeNull();
@@ -58,7 +68,7 @@ test('creating a colored label changes only the draft and closes the picker', as
 
 test('existing labels are searchable and selected with their saved colors', async () => {
   await render(); await click('Add label'); await type('Des');
-  const options = host.querySelector('form')!.querySelectorAll('button[type="button"]');
+  const options = host.querySelector('form')!.querySelectorAll('button.fouc-menu-item');
   expect([...options].map(option => option.textContent)).toEqual(['Design']);
   await act(async () => (options[0] as HTMLButtonElement).click());
   expect(onChange.mock.calls[0][0]).toEqual([{ name: 'Design', color: 'violet' }]);

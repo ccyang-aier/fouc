@@ -106,7 +106,7 @@ export function TaskComments({
   return (
     <section className={styles.section} aria-label={t('comments')}>
       <div className={styles.heading}>
-        <ChatCircle size={17} weight="duotone" aria-hidden />
+        <ChatCircle size={17} aria-hidden />
         <h3>{t('comments')}</h3>
         {!loading && !failed && <span className={styles.count}>{comments.length}</span>}
       </div>
@@ -141,7 +141,7 @@ export function TaskComments({
                     <Button variant="ghost" size="icon-sm" className={styles.delete}
                       data-variant="destructive" aria-label={t('delete')}
                       disabled={Boolean(removing)} onClick={() => setConfirming(comment.id)}>
-                      <Trash size={14} weight="duotone" />
+                      <Trash size={14} />
                     </Button>
                   )}
                 </div>

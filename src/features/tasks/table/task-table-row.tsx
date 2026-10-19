@@ -5,6 +5,7 @@ import { AvatarGroup } from '@/components/avatar-group';
 import { useTranslation } from '@/lib/i18n';
 import { TaskActionsMenu } from '../task-actions-menu';
 import { taskReference } from '../task-board-model';
+import { TaskLabelBadge } from '../task-labels';
 import { TaskPriorityIcon } from '../task-priority-icon';
 import { TaskStatusIcon } from '../task-status-icon';
 import { messages as boardMessages } from '../task-board.messages';
@@ -33,7 +34,7 @@ export function TaskTableRow({ task, column, board, busy, selected, onSelect, on
     <td className={styles.date}>{task.schedule ? <time dateTime={task.schedule.startsAt} title={new Date(task.schedule.startsAt).toLocaleString(locale)}>{new Date(task.schedule.startsAt).toLocaleDateString(locale, { year: 'numeric', month: '2-digit', day: '2-digit' })}</time> : <span className={styles.placeholder}>{t('notScheduled')}</span>}</td>
     <td><span className={styles.priority} data-priority={task.priority}><TaskPriorityIcon priority={task.priority} size={12} />{boardText(task.priority)}</span></td>
     <td>{editable ? <TaskTableStatusMenu columns={board.columns} currentIds={[task.columnId]} disabled={busy} label={t('changeStatus', { title: task.title })} onChange={onMove}>{status}</TaskTableStatusMenu> : status}</td>
-    <td><div className={styles.labels}>{task.labels.length ? <>{task.labels.slice(0, 2).map(label => <span key={label} className={styles.label} title={label}>{label}</span>)}{task.labels.length > 2 && <span className={styles.labelOverflow} title={task.labels.slice(2).join(' · ')}>+{task.labels.length - 2}</span>}</> : <span className={styles.placeholder} aria-label={t('noLabels')}>—</span>}</div></td>
+    <td><div className={styles.labels}>{task.labels.length ? <>{task.labels.slice(0, 2).map(label => <TaskLabelBadge key={label.name} label={label} className={styles.label} />)}{task.labels.length > 2 && <span className={styles.labelOverflow} title={task.labels.slice(2).map(label => label.name).join(' · ')}>+{task.labels.length - 2}</span>}</> : <span className={styles.placeholder} aria-label={t('noLabels')}>—</span>}</div></td>
     <td className={styles.actionsCell}>{editable && <TaskActionsMenu task={task} board={board} disabled={busy} className={styles.rowMenu} onOpen={onOpen} onMove={onMove} onRemove={onRemove} />}</td>
   </tr>;
 }

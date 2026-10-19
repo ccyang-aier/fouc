@@ -89,7 +89,7 @@
   /* 全局中性反馈，取自系统侧栏：
      “浅灰白色” = hover（#f7f7f7）；“灰白色” = active（#efefef）。
      菜单、侧栏与页面工具栏共用这两个角色，业务组件不另配灰度。 */
-  --interaction-hover-bg: #f7f7f7;
+  --interaction-hover-bg: #fafafa;
   --interaction-active-bg: #efefef;
   --action-hover-bg: var(--interaction-hover-bg);
   --action-active-bg: var(--interaction-active-bg);
@@ -395,6 +395,7 @@ input {
 /* 带语义图标的选项不再叠加勾选标记与占位，选中状态保留加粗和 ARIA。 */
 .menu-surface[data-density="compact"] .fouc-menu-item[data-indicator="none"] { padding-left: 8px; }
 .fouc-menu-item[data-indicator="none"][data-state="checked"] { font-weight: 600; }
+.fouc-menu-item[data-emphasize-selection="false"][data-state="checked"] { font-weight: 400; }
 /* 共享菜单项契约；Radix 与原生菜单均使用 fouc-menu-item，禁用项不响应高亮。 */
 .fouc-menu-item {
   --menu-state-bg: var(--menu-item-hover-bg);

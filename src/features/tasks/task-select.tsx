@@ -16,10 +16,10 @@ export type TaskSelectOption<Value extends string = string> = {
   value: Value; label: string; icon?: ReactNode; keywords?: string;
 };
 
-export function TaskSelect<Value extends string>({ value, onValueChange, options, ariaLabel, id, disabled, placeholder, searchable = false, searchPlaceholder, className = '', triggerRef }: {
+export function TaskSelect<Value extends string>({ value, onValueChange, options, ariaLabel, id, disabled, placeholder, searchable = false, searchPlaceholder, surface, className = '', triggerRef }: {
   value: Value; onValueChange: (value: Value) => void; options: readonly TaskSelectOption<Value>[];
   ariaLabel: string; id?: string; disabled?: boolean; placeholder?: string; searchable?: boolean;
-  searchPlaceholder?: string; className?: string; triggerRef?: Ref<HTMLButtonElement>;
+  searchPlaceholder?: string; surface?: 'plain' | 'muted'; className?: string; triggerRef?: Ref<HTMLButtonElement>;
 }) {
   const { t } = useTranslation(messages);
   const [query, setQuery] = useState('');
@@ -28,7 +28,7 @@ export function TaskSelect<Value extends string>({ value, onValueChange, options
   const matches = options.filter(option => `${option.label} ${option.keywords ?? ''}`.toLocaleLowerCase().includes(normalizedQuery));
 
   return <DropdownMenu onOpenChange={open => { if (open) setQuery(''); }}>
-    <DropdownMenuTrigger type="button" id={id} ref={triggerRef} disabled={disabled} aria-label={ariaLabel} className={`${styles.trigger} ${className}`}>
+    <DropdownMenuTrigger type="button" id={id} ref={triggerRef} disabled={disabled} aria-label={ariaLabel} data-surface={surface} className={`${styles.trigger} ${className}`}>
       {selected?.icon && <span className={styles.optionIcon}>{selected.icon}</span>}
       <span className={styles.value} data-placeholder={!selected || undefined}>{selected?.label ?? placeholder}</span>
       <CaretDown className={styles.caret} size={12} aria-hidden />

@@ -2,6 +2,7 @@
   --task-progress-blue: #4f86df;
   --task-progress-risk: #d24752;
   --task-priority-high: #b46c00;
+  --task-priority-medium: #4878bb;
   --task-priority-urgent: #cd3d4a;
   position: relative;
   padding: 12px 14px;
@@ -15,6 +16,7 @@
   --task-progress-blue: #83adfa;
   --task-progress-risk: #ff8690;
   --task-priority-high: #f8be58;
+  --task-priority-medium: #9bbcf0;
   --task-priority-urgent: #ff8690;
 }
 .card:is(:hover, :active, :focus-visible, :focus-within, :has([aria-expanded="true"]))::after { content: ''; position: absolute; inset: 0; border: 1px dashed var(--resource-card-border); border-radius: inherit; pointer-events: none; }
@@ -32,10 +34,11 @@
 .cardDescription { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; margin: 8px 0 0; font-size: 12px; line-height: 1.75; color: var(--muted-strong); white-space: pre-line; }
 .cardTags { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 18px; margin-top: 12px; }
 .labels { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; min-width: 0; }
-.label { max-width: 110px; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 500; line-height: 1.4; color: var(--info-ink); background: var(--info-soft); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.label { max-width: 110px; line-height: 14px; }
 .priority { display: inline-flex; align-items: center; flex-shrink: 0; gap: 4px; font-size: 10px; color: var(--muted); }
 .priority[data-priority='urgent'] { color: var(--task-priority-urgent); }
 .priority[data-priority='high'] { color: var(--task-priority-high); }
+.priority[data-priority='medium'] { color: var(--task-priority-medium); }
 .cardFooter { display: flex; flex-direction: column; gap: 8px; margin-top: 13px; }
 .assigneesRow, .metadataRow { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 24px; }
 .assignedLabel { color: var(--muted-strong); font-size: 11px; }

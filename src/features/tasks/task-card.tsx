@@ -6,6 +6,7 @@ import { AvatarGroup } from '@/components/avatar-group';
 import { useTranslation } from '@/lib/i18n';
 import { isTaskOverdue, taskReference } from './task-board-model';
 import { TaskActionsMenu } from './task-actions-menu';
+import { TaskLabelBadge } from './task-labels';
 import { TaskPriorityIcon } from './task-priority-icon';
 import { TaskProgress } from './task-progress';
 import { taskProgress } from './task-progress-model';
@@ -35,7 +36,7 @@ export function TaskCard({ task, board, editable, draggable, dragging, onOpen, o
     <div className={styles.cardHeading}><h3 data-completed={done || undefined}>{task.title}</h3></div>
     {task.description && <p className={styles.cardDescription}>{task.description}</p>}
     <div className={styles.cardTags}>
-      <div className={styles.labels}>{task.labels.slice(0, 3).map(label => <span key={label} className={styles.label}>{label}</span>)}</div>
+      <div className={styles.labels}>{task.labels.slice(0, 3).map(label => <TaskLabelBadge key={label.name} label={label} className={styles.label} />)}</div>
       <span className={styles.priority} data-priority={task.priority}><TaskPriorityIcon priority={task.priority} size={12} />{t(task.priority)}</span>
     </div>
     <div className={styles.cardFooter}>

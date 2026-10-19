@@ -29,11 +29,11 @@ type WorkspaceProps = Omit<React.ComponentProps<typeof KanbanBoard>, 'tasks' | '
 
 export function TaskBoardWorkspace({ onCreateView, onRenameView, ...props }: WorkspaceProps) {
   const [selectedId, setSelectedId] = usePageSessionState<string | null>(`tasks:${props.board.id}:active-view`, null);
-  const [editing, setEditing] = useState<{ view: TaskBoardView | null } | null>(null);
+  const [editing, setEditing] = useState<{ view: TaskBoardView | null; anchor: HTMLElement } | null>(null);
   const active = props.board.views.find(view => view.id === selectedId) ?? props.board.views[0] ?? null;
   return <PageSessionNamespace name={`task-view:${active?.id ?? 'empty'}`}>
-    <TaskBoardViewContent key={active?.id ?? 'empty'} {...props} view={active} onSelectView={setSelectedId} onNewView={() => setEditing({ view: null })} onRequestRenameView={view => setEditing({ view })} />
-    {editing && props.board.permission !== 'viewer' && (!editing.view || props.board.views.some(view => view.id === editing.view!.id)) && <TaskViewForm key={`edit-view:${editing.view?.id ?? 'new'}`} view={editing.view ?? undefined} onClose={() => setEditing(null)} onSave={async draft => {
+    <TaskBoardViewContent key={active?.id ?? 'empty'} {...props} view={active} creatingView={editing?.view === null} onSelectView={setSelectedId} onNewView={anchor => setEditing(current => current?.view === null && current.anchor === anchor ? null : { view: null, anchor })} onRequestRenameView={(view, anchor) => setEditing({ view, anchor })} />
+    {editing && props.board.permission !== 'viewer' && (!editing.view || props.board.views.some(view => view.id === editing.view!.id)) && <TaskViewForm key={`edit-view:${editing.view?.id ?? 'new'}`} anchor={editing.anchor} view={editing.view ?? undefined} onClose={() => setEditing(null)} onSave={async draft => {
       if (editing.view) return onRenameView(editing.view, draft.name);
       const created = await onCreateView(draft);
       if (created) setSelectedId(created.id);
@@ -42,8 +42,8 @@ export function TaskBoardWorkspace({ onCreateView, onRenameView, ...props }: Wor
   </PageSessionNamespace>;
 }
 
-function TaskBoardViewContent({ board, actorId, view, onSelectView, onNewView, onRequestRenameView, onRemoveView, onSettings, onRemoveBoard, onSaveTask, onSchedule, onMoveTasks, ...actions }: Omit<WorkspaceProps, 'onCreateView' | 'onRenameView'> & {
-  view: TaskBoardView | null; onSelectView: (id: string) => void; onNewView: () => void; onRequestRenameView: (view: TaskBoardView) => void;
+function TaskBoardViewContent({ board, actorId, view, creatingView, onSelectView, onNewView, onRequestRenameView, onRemoveView, onSettings, onRemoveBoard, onSaveTask, onSchedule, onMoveTasks, ...actions }: Omit<WorkspaceProps, 'onCreateView' | 'onRenameView'> & {
+  view: TaskBoardView | null; creatingView: boolean; onSelectView: (id: string) => void; onNewView: (anchor: HTMLElement) => void; onRequestRenameView: (view: TaskBoardView, anchor: HTMLElement) => void;
 }) {
   const { t } = useTranslation(messages);
   const { t: viewText } = useTranslation(viewMessages);
@@ -53,9 +53,9 @@ function TaskBoardViewContent({ board, actorId, view, onSelectView, onNewView, o
   const filtered = hasTaskFilters(filters);
   const canDrag = board.permission !== 'viewer' && !filtered && sort === 'manual';
   return <>
-    <TaskBoardToolbar board={board} actorId={actorId} filters={filters} onFilters={setFilters} sort={sort} onSort={setSort} onRefresh={actions.onRefresh} refreshing={actions.refreshing} busy={actions.busy} onCreate={() => actions.onCreate(board.columns[0].id)} onCreateColumn={() => actions.onColumn()} onSettings={onSettings} onRemoveBoard={onRemoveBoard} view={view} onView={onSelectView} onCreateView={onNewView} onRenameView={onRequestRenameView} onRemoveView={onRemoveView} />
+    <TaskBoardToolbar board={board} actorId={actorId} filters={filters} onFilters={setFilters} sort={sort} onSort={setSort} onRefresh={actions.onRefresh} refreshing={actions.refreshing} busy={actions.busy} onCreate={() => actions.onCreate(board.columns[0].id)} onCreateColumn={() => actions.onColumn()} onSettings={onSettings} onRemoveBoard={onRemoveBoard} view={view} creatingView={creatingView} onView={onSelectView} onCreateView={onNewView} onRenameView={onRequestRenameView} onRemoveView={onRemoveView} />
     {board.permission === 'viewer' && <p className={styles.permissionNote}><LockSimple size={12} />{t('readOnlyDescription')}</p>}
-    {!view ? <div className={styles.emptyView}><SquaresFour size={28} /><h2>{viewText(board.permission === 'viewer' ? 'empty' : 'firstView')}</h2>{board.permission === 'viewer' ? <p>{viewText('emptyReadOnly')}</p> : <Button size="sm" disabled={actions.busy} onClick={onNewView}><Plus size={14} />{viewText('newView')}</Button>}</div>
+    {!view ? <div className={styles.emptyView}><SquaresFour size={28} /><h2>{viewText(board.permission === 'viewer' ? 'empty' : 'firstView')}</h2>{board.permission === 'viewer' ? <p>{viewText('emptyReadOnly')}</p> : <Button size="sm" disabled={actions.busy} onClick={event => onNewView(event.currentTarget)}><Plus size={14} />{viewText('newView')}</Button>}</div>
       : <>{filtered && <div className={styles.resultCount}>{t('visibleCount', { count: tasks.length, total: board.tasks.length })}{tasks.length === 0 && <strong>{t('noMatches')}</strong>}</div>}
         {view.kind === 'calendar' ? <TaskCalendar board={board} tasks={tasks} busy={actions.busy} onSave={onSaveTask} onSchedule={onSchedule} onDetails={actions.onOpen} />
           : view.kind === 'spreadsheet' ? <TaskTable board={board} tasks={tasks} busy={actions.busy} onOpen={actions.onOpen} onCreate={actions.onCreate} onRemove={actions.onRemove} onMoveTasks={onMoveTasks} />

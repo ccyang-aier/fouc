@@ -8,6 +8,11 @@ export const taskPrioritySchema = z.enum(['low', 'medium', 'high', 'urgent']);
 export const taskColumnColorSchema = z.enum(['slate', 'blue', 'amber', 'green', 'violet', 'rose']);
 export const taskViewKindSchema = z.enum(['kanban', 'calendar', 'spreadsheet']);
 export const TASK_BOARD_VIEW_LIMIT = 24;
+export const TASK_LABEL_COLORS = ['blue', 'violet', 'rose', 'orange', 'amber', 'green', 'teal', 'cyan'] as const;
+export const taskLabelColorSchema = z.enum(TASK_LABEL_COLORS);
+export const taskLabelSchema = z.strictObject({ name: z.string().trim().min(1).max(40), color: taskLabelColorSchema });
+export type TaskLabelColor = z.infer<typeof taskLabelColorSchema>;
+export type TaskLabel = z.infer<typeof taskLabelSchema>;
 
 export type TaskBoardVisibility = z.infer<typeof taskBoardVisibilitySchema>;
 export type TaskBoardPermission = z.infer<typeof taskBoardPermissionSchema>;
@@ -66,7 +71,7 @@ export interface BoardTask {
   description: string;
   priority: TaskPriority;
   assigneeIds: string[];
-  labels: string[];
+  labels: TaskLabel[];
   dueDate: string | null;
   schedule: TaskSchedule | null;
   checklist: TaskChecklistItem[];
@@ -139,7 +144,14 @@ const taskFields = {
   description,
   priority: taskPrioritySchema,
   assigneeIds: z.array(id).max(50),
-  labels: z.array(z.string().trim().min(1).max(40)).max(20),
+  labels: z.array(taskLabelSchema).max(20).transform(labels => {
+    const names = new Set<string>();
+    return labels.filter(label => {
+      if (names.has(label.name)) return false;
+      names.add(label.name);
+      return true;
+    });
+  }),
   dueDate: z.iso.date().nullable(),
   schedule: taskScheduleSchema.nullable(),
   checklist: z.array(taskChecklistItemInputSchema).max(100),

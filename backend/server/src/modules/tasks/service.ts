@@ -222,7 +222,7 @@ export function createTaskBoardService(pool: Pool) {
         await validateAssignees(context, data.assigneeIds);
         const allocated = await context.db.execute<{ number: number }>(sql`SELECT resources.allocate_task_number(${scope.projectId}::uuid, ${scope.boardId}::uuid) AS number`);
         const number = allocated.rows[0]!.number;
-        await context.db.insert(boardTask).values({ ...scope, ...data, id: randomUUID(), number, checklist: checklist(data.checklist), assigneeIds: [...new Set(data.assigneeIds)], labels: [...new Set(data.labels)], position: await nextTaskPosition(context, data.columnId), createdBy: context.userId });
+        await context.db.insert(boardTask).values({ ...scope, ...data, id: randomUUID(), number, checklist: checklist(data.checklist), assigneeIds: [...new Set(data.assigneeIds)], position: await nextTaskPosition(context, data.columnId), createdBy: context.userId });
         return taskBoardDetail(context);
       });
     },
@@ -235,7 +235,6 @@ export function createTaskBoardService(pool: Pool) {
         const { checklist: items, ...fields } = data;
         await context.db.update(boardTask).set({ ...fields, updatedAt: new Date(),
           ...(data.assigneeIds ? { assigneeIds: [...new Set(data.assigneeIds)] } : {}),
-          ...(data.labels ? { labels: [...new Set(data.labels)] } : {}),
           ...(items ? { checklist: checklist(items) } : {}),
           ...(data.columnId && data.columnId !== task.columnId ? { position: await nextTaskPosition(context, data.columnId) } : {}),
         }).where(taskCondition(context, scope.taskId));

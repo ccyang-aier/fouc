@@ -1,0 +1,41 @@
+.color { --label-bg:#eaf1ff; --label-ink:#426aa7; }
+.color[data-label-color='violet'] { --label-bg:#f1ebfc; --label-ink:#7959aa; }
+.color[data-label-color='rose'] { --label-bg:#fcebf2; --label-ink:#a44d6d; }
+.color[data-label-color='orange'] { --label-bg:#fff0e4; --label-ink:#955929; }
+.color[data-label-color='amber'] { --label-bg:#fcf4d9; --label-ink:#86651f; }
+.color[data-label-color='green'] { --label-bg:#eaf5e9; --label-ink:#416e3d; }
+.color[data-label-color='teal'] { --label-bg:#e6f5ef; --label-ink:#34745f; }
+.color[data-label-color='cyan'] { --label-bg:#e6f5f8; --label-ink:#326a79; }
+:global(html[data-theme='dark']) .color { --label-bg:#29374f; --label-ink:#abc9f8; }
+:global(html[data-theme='dark']) .color[data-label-color='violet'] { --label-bg:#3c304d; --label-ink:#ceb4f2; }
+:global(html[data-theme='dark']) .color[data-label-color='rose'] { --label-bg:#4b303e; --label-ink:#f3b3cc; }
+:global(html[data-theme='dark']) .color[data-label-color='orange'] { --label-bg:#48372c; --label-ink:#f0bc91; }
+:global(html[data-theme='dark']) .color[data-label-color='amber'] { --label-bg:#443c28; --label-ink:#e6cd86; }
+:global(html[data-theme='dark']) .color[data-label-color='green'] { --label-bg:#2f402e; --label-ink:#b1d8a9; }
+:global(html[data-theme='dark']) .color[data-label-color='teal'] { --label-bg:#283f37; --label-ink:#a1d8c3; }
+:global(html[data-theme='dark']) .color[data-label-color='cyan'] { --label-bg:#2a3e44; --label-ink:#9fd0df; }
+.badge { display:inline-flex; align-items:center; gap:2px; min-width:0; max-width:100%; padding:2px 6px; border-radius:4px; background:var(--label-bg); color:var(--label-ink); font-size:10px; font-weight:450; line-height:16px; white-space:nowrap; vertical-align:middle; }
+.badgeText { display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.editor { display:flex; align-items:center; gap:5px; min-width:0; min-height:28px; }
+.tokens { display:flex; align-items:center; gap:5px; min-width:0; overflow-x:auto; scrollbar-width:thin; }
+.editableBadge { flex-shrink:0; max-width:148px; }
+.remove { display:grid; place-items:center; flex-shrink:0; width:14px; height:16px; margin-right:-3px; padding:0; border-radius:3px; color:var(--label-ink); opacity:0; cursor:pointer; }
+.editableBadge:is(:hover,:focus-within) .remove { opacity:1; }
+.add { display:grid; place-items:center; flex-shrink:0; width:24px; height:24px; padding:0; border-radius:5px; color:var(--muted-strong); cursor:pointer; }
+.add:disabled { cursor:default; }
+.picker { display:flex; flex-direction:column; gap:10px; padding:8px; }
+.name { width:100%; min-width:0; height:30px; padding:0 8px; border:1px solid var(--control-border); border-radius:5px; background:var(--panel); color:var(--ink); outline:none; box-shadow:none; font:inherit; font-size:11px; }
+.name::placeholder { color:var(--muted); }
+.name:focus { border-color:var(--ink); }
+.name[aria-invalid='true'] { border-color:var(--err-ink); }
+.options { display:flex; flex-direction:column; gap:1px; max-height:160px; overflow-y:auto; margin:-4px -3px; }
+.option { display:flex; align-items:center; width:100%; min-height:29px; padding:4px 6px; border-radius:4px; text-align:left; cursor:pointer; outline:none; }
+.option .badge { max-width:100%; }
+.colors { display:grid; grid-template-columns:repeat(8,1fr); gap:6px; margin:0; padding:1px 0; border:0; }
+.colorSwatch { position:relative; display:grid; place-items:center; width:22px; height:22px; border:1px solid transparent; border-radius:6px; cursor:pointer; }
+.colorSwatch > span { display:block; width:16px; height:16px; border-radius:4px; background:var(--label-bg); border:1px solid color-mix(in srgb,var(--label-ink) 22%,transparent); }
+.colorSwatch:has(input:checked), .colorSwatch:has(input:focus-visible) { border-color:var(--ink); }
+.colorInput { position:absolute; width:100%; height:100%; margin:0; opacity:0; cursor:pointer; }
+.error { margin:0; color:var(--err-ink); font-size:11px; line-height:1.5; }
+.submit { width:100%; height:30px; padding-inline:10px; font-size:11px; }
+.srOnly { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }

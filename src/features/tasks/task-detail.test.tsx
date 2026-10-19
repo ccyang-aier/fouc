@@ -2,7 +2,7 @@ import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 import { Window } from 'happy-dom';
 import { act, useEffect, useState, type ComponentProps, type ReactNode } from 'react';
 import type { Root } from 'react-dom/client';
-import type { TaskBoardDetail } from '@fouc/shared/tasks';
+import type { TaskBoardDetail, TaskLabel } from '@fouc/shared/tasks';
 import type { TaskBoardClient, TaskDraft } from './task-board-client';
 import type { TaskDetail as DetailComponent } from './task-detail';
 
@@ -39,11 +39,12 @@ function CommentsFixture({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
 beforeAll(async () => {
   browser = new Window({ url: 'http://localhost:3000/' });
   const globals = globalThis as Record<string, unknown>;
-  for (const key of ['document', 'navigator', 'HTMLElement', 'HTMLTextAreaElement', 'HTMLDialogElement', 'Element', 'Node', 'Event', 'MouseEvent', 'MutationObserver', 'getComputedStyle']) {
+  for (const key of ['document', 'navigator', 'HTMLElement', 'HTMLTextAreaElement', 'HTMLDialogElement', 'Element', 'Node', 'Event', 'MouseEvent', 'PointerEvent', 'KeyboardEvent', 'MutationObserver', 'getComputedStyle']) {
     globals[key] = (browser as unknown as Record<string, unknown>)[key];
   }
   globals.window = browser;
   globals.IS_REACT_ACT_ENVIRONMENT = true;
+  Object.defineProperties(browser, { innerWidth: { configurable: true, value: 1452 }, innerHeight: { configurable: true, value: 917 } });
   browser.localStorage.setItem('fouc.language', 'en-US');
   Object.defineProperties(browser.HTMLDialogElement.prototype, {
     showModal: { configurable: true, value(this: HTMLDialogElement) { this.setAttribute('open', ''); } },
@@ -52,7 +53,7 @@ beforeAll(async () => {
   const icon = () => <svg aria-hidden />;
   mock.module('@phosphor-icons/react', () => Object.fromEntries([
     'CalendarBlank', 'CaretDown', 'CheckSquare', 'Circle', 'Flag', 'Kanban', 'ListChecks',
-    'LockSimple', 'Plus', 'Tag', 'TextAlignLeft', 'Trash', 'Users', 'Warning', 'X', 'Clock', 'LinkSimple',
+    'LockSimple', 'Plus', 'Tag', 'TextAlignLeft', 'Trash', 'Users', 'Warning', 'X', 'Clock', 'LinkSimple', 'ChatCircle',
   ].map(name => [name, icon])));
   mock.module('@/components/ui/button', () => ({ Button: Control }));
   mock.module('@/components/user-avatar', () => ({ UserAvatar: () => <span /> }));
@@ -64,6 +65,7 @@ beforeAll(async () => {
   }));
   // Keep the card's save/lifecycle logic real; only replace comment networking.
   mock.module('./task-comments', () => ({ TaskComments: CommentsFixture }));
+  mock.module('./task-labels', () => ({ collectTaskLabels: () => [], TaskLabelsEditor: ({ labels, onChange, disabled }: { labels: TaskLabel[]; onChange: (labels: TaskLabel[]) => void; disabled?: boolean }) => <button type="button" data-add-label disabled={disabled} onClick={() => onChange([...labels, { name: 'Design', color: 'rose' }])}>Add label</button> }));
   ({ PageVisibility } = await import('@/lib/page-visibility'));
   ({ TaskDetail } = await import('./task-detail'));
   const { createRoot } = await import('react-dom/client');
@@ -116,10 +118,21 @@ function deferredSave() {
   onSave.mockImplementation(() => result);
   return finish;
 }
+async function tab(value: 'checklist' | 'comments') {
+  await act(async () => host.querySelector<HTMLButtonElement>(`[role="tab"][aria-controls$="-${value}"]`)!.click());
+}
+function geometry() {
+  const style = host.querySelector('dialog')!.style;
+  return { left: parseFloat(style.left), top: parseFloat(style.top), width: parseFloat(style.width), height: parseFloat(style.height) };
+}
+async function pointer(target: EventTarget, type: string, x: number, y: number) {
+  await act(async () => target.dispatchEvent(new PointerEvent(type, { pointerId: 1, button: 0, clientX: x, clientY: y, bubbles: true, cancelable: true })));
+}
 
 test('page visibility closes and reopens the same card without losing task or comment drafts', async () => {
   await render();
   await type('Task title', 'Unfinished task edit');
+  await tab('comments');
   await type('Comment draft', 'Unpublished discussion');
   const dialog = host.querySelector('dialog')!;
   const title = textarea('Task title');
@@ -156,6 +169,7 @@ test('a new comment drafted while a save is pending keeps the card open when tha
   const finish = deferredSave();
   await act(async () => saveButton().click());
   expect(saveButton().disabled).toBe(true);
+  await tab('comments');
   await type('Comment draft', 'Keep this comment after saving');
   await act(async () => finish(true));
 
@@ -184,4 +198,67 @@ test('Escape protects an unsaved task draft until the user explicitly discards i
   await act(async () => discard.click());
   expect(onClose.mock.calls).toHaveLength(1);
   expect(onSave.mock.calls).toHaveLength(0);
+});
+
+test('collaboration tabs keep comments mounted and preserve their draft when returning to subtasks', async () => {
+  await render();
+  expect(host.querySelector('[data-task-detail-main]')).not.toBeNull();
+  expect(host.querySelectorAll('[role="tabpanel"]')).toHaveLength(2);
+  await tab('comments');
+  await type('Comment draft', 'Keep the discussion while checking subtasks');
+  const comment = textarea('Comment draft');
+  await tab('checklist');
+  expect(host.querySelector<HTMLElement>('[data-task-comments]')!.hidden).toBe(true);
+  expect(textarea('Comment draft')).toBe(comment);
+  await tab('comments');
+  expect(host.querySelector<HTMLElement>('[data-task-comments]')!.hidden).toBe(false);
+  expect(comment.value).toBe('Keep the discussion while checking subtasks');
+});
+
+test('moving the card stays in the viewport and Escape restores geometry without discarding text', async () => {
+  await render();
+  await type('Task title', 'Keep this edit while moving');
+  const initial = geometry();
+  const move = host.querySelector<HTMLElement>('[aria-label="Move task details"]')!;
+  await pointer(move, 'pointerdown', 600, 100);
+  await pointer(window, 'pointermove', 10000, 10000);
+  const moved = geometry();
+  expect(moved.left + moved.width).toBeLessThanOrEqual(1440);
+  expect(moved.top + moved.height).toBeLessThanOrEqual(905);
+  expect(host.querySelector('dialog')!.dataset.windowGesture).toBe('move');
+  await act(async () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
+  expect(geometry()).toEqual(initial);
+  expect(host.querySelector('dialog')!.dataset.windowGesture).toBeUndefined();
+  expect(onClose.mock.calls).toHaveLength(0);
+  expect(textarea('Task title').value).toBe('Keep this edit while moving');
+  await pointer(textarea('Task title'), 'pointerdown', 600, 120);
+  expect(host.querySelector('dialog')!.dataset.windowGesture).toBeUndefined();
+});
+
+test('corner resize cancels cleanly and keyboard edge resize honors the fixed opposite edge', async () => {
+  await render();
+  const initial = geometry();
+  const corner = host.querySelector<HTMLElement>('[data-edge="nw"]')!;
+  await pointer(corner, 'pointerdown', initial.left, initial.top);
+  await pointer(window, 'pointermove', -2000, -2000);
+  const resized = geometry();
+  expect(resized.left).toBe(12);
+  expect(resized.top).toBe(52);
+  expect(resized.left + resized.width).toBe(initial.left + initial.width);
+  expect(resized.top + resized.height).toBe(initial.top + initial.height);
+  await pointer(window, 'pointercancel', -2000, -2000);
+  expect(geometry()).toEqual(initial);
+  const west = host.querySelector<HTMLElement>('[data-edge="w"]')!;
+  await act(async () => west.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true })));
+  expect(geometry()).toEqual({ ...initial, left: initial.left - 10, width: initial.width + 10 });
+  await act(async () => west.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', shiftKey: true, bubbles: true, cancelable: true })));
+  expect(geometry()).toEqual({ ...initial, left: initial.left + 30, width: initial.width - 30 });
+  expect(onSave.mock.calls).toHaveLength(0);
+});
+
+test('colored labels remain structured in the task draft sent to save', async () => {
+  await render();
+  await act(async () => host.querySelector<HTMLButtonElement>('[data-add-label]')!.click());
+  await act(async () => saveButton().click());
+  expect(onSave.mock.calls[0][0].labels).toEqual([{ name: 'Design', color: 'rose' }]);
 });

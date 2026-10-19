@@ -49,8 +49,8 @@ function ToolbarFixture({ board, view, onView, onFilters, filters, onCreateView:
     <input aria-label="Current search" value={filters.query} readOnly />
     <button type="button" data-filter-alpha onClick={() => onFilters({ ...filters, query: 'Alpha' })}>Filter Alpha</button>
     <button type="button" data-filter-beta onClick={() => onFilters({ ...filters, query: 'Beta' })}>Filter Beta</button>
-    {editable && <button type="button" data-new-view onClick={create}>New view</button>}
-    {editable && view && <button type="button" data-rename-view onClick={() => rename(view)}>Rename view</button>}
+    {editable && <button type="button" data-new-view onClick={event => create(event.currentTarget)}>New view</button>}
+    {editable && view && <button type="button" data-rename-view onClick={event => rename(view, event.currentTarget)}>Rename view</button>}
   </div>;
 }
 function FormFixture({ view, onSave, onClose }: FormProps) {

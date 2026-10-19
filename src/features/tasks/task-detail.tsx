@@ -1,7 +1,7 @@
 'use client';
 
 import { taskScheduleSchema, type BoardTask, type TaskBoardDetail } from '@fouc/shared/tasks';
-import { CalendarBlank, CaretDown, CheckSquare, Circle, Flag, Kanban, ListChecks, LockSimple, Plus, Tag, TextAlignLeft, Trash, Users, Warning, X } from '@phosphor-icons/react';
+import { CalendarBlank, CaretDown, CheckSquare, Circle, Flag, LockSimple, Plus, Tag, TextAlignLeft, Trash, Users, Warning, X } from '@phosphor-icons/react';
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { AppAlert } from '@/components/app-alert';
 import { Button } from '@/components/ui/button';
@@ -10,12 +10,14 @@ import { UserAvatar } from '@/components/user-avatar';
 import { useTranslation } from '@/lib/i18n';
 import { usePageVisible } from '@/lib/page-visibility';
 import type { TaskBoardClient, TaskDraft } from './task-board-client';
-import { TaskComments } from './task-comments';
 import { taskReference } from './task-board-model';
+import { TaskDetailActivity } from './task-detail-activity';
+import { TaskLabelsEditor, collectTaskLabels } from './task-labels';
 import { TaskPriorityIcon } from './task-priority-icon';
 import { TaskSelect } from './task-select';
 import { TaskStatusIcon } from './task-status-icon';
 import { TaskScheduleSection } from './calendar/task-schedule-section';
+import { useTaskDetailWindow } from './use-task-detail-window';
 import { messages } from './task-detail.messages';
 import styles from './task-detail.module.css';
 
@@ -45,14 +47,13 @@ function initialDraft(task: BoardTask | null, columnId: string): TaskDraft {
   };
 }
 
-function parseLabels(value: string) {
-  return [...new Set(value.split(/[,，]/).map((label) => label.trim()).filter(Boolean))];
-}
+const resizeMessages = { n: 'resizeTop', s: 'resizeBottom', e: 'resizeRight', w: 'resizeLeft', ne: 'resizeTopRight', nw: 'resizeTopLeft', se: 'resizeBottomRight', sw: 'resizeBottomLeft' } as const;
 
 export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, onDelete, client, onCommentsChanged }: TaskDetailProps) {
   const { t } = useTranslation(messages);
   const visible = usePageVisible();
   const dialog = useRef<HTMLDialogElement>(null);
+  const floating = useTaskDetailWindow(visible);
   const active = useRef(true);
   const titleInput = useRef<HTMLTextAreaElement>(null);
   const statusInput = useRef<HTMLButtonElement>(null);
@@ -60,9 +61,9 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
   const titleId = useId();
   const [draft, setDraft] = useState(() => initialDraft(task, columnId));
   const [baseline, setBaseline] = useState(() => JSON.stringify(initialDraft(task, columnId)));
-  const [labelsText, setLabelsText] = useState(task?.labels.join(', ') ?? '');
   const [newItem, setNewItem] = useState('');
   const [memberQuery, setMemberQuery] = useState('');
+  const [mobilePane, setMobilePane] = useState<'details' | 'activity'>('details');
   const [commentDirty, setCommentDirty] = useState(false);
   const commentDirtyRef = useRef(false);
   const changeCommentDirty = useCallback((value: boolean) => { commentDirtyRef.current = value; setCommentDirty(value); }, []);
@@ -71,12 +72,10 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
   const [error, setError] = useState<'saveFailed' | 'deleteFailed' | null>(null);
   const [fieldError, setFieldError] = useState<'titleRequired' | 'statusRequired' | 'labelsLimit' | 'checklistTitleRequired' | 'scheduleInvalid' | null>(null);
   const canEdit = board.permission === 'owner' || board.permission === 'editor';
-  const currentDraft = { ...draft, labels: parseLabels(labelsText) };
-  const dirty = JSON.stringify(currentDraft) !== baseline || Boolean(newItem.trim()) || commentDirty;
+  const dirty = JSON.stringify(draft) !== baseline || Boolean(newItem.trim()) || commentDirty;
   const currentColumn = board.columns.find((column) => column.id === draft.columnId);
   const selectedMembers = board.members.filter((member) => draft.assigneeIds.includes(member.userId));
   const matchingMembers = board.members.filter((member) => `${member.name} ${member.email}`.toLocaleLowerCase().includes(memberQuery.trim().toLocaleLowerCase()));
-  const completed = draft.checklist.filter((item) => item.done).length;
 
   useEffect(() => {
     active.current = true;
@@ -100,7 +99,7 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
     if (!input || !visible) return;
     input.style.height = '0px';
     input.style.height = `${input.scrollHeight + 2}px`;
-  }, [draft.title, visible]);
+  }, [draft.title, visible, floating.rect?.width]);
 
   function update<K extends keyof TaskDraft>(key: K, value: TaskDraft[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
@@ -123,8 +122,9 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
   async function save() {
     if (busy || !canEdit) return;
     const next: TaskDraft = {
-      ...currentDraft,
+      ...draft,
       title: draft.title.trim(),
+      labels: draft.labels.map(label => ({ ...label, name: label.name.trim() })),
       assigneeIds: draft.assigneeIds.filter((id) => board.members.some((member) => member.userId === id)),
       checklist: [
         ...draft.checklist.map((item) => ({ ...item, title: item.title.trim() })),
@@ -141,7 +141,7 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
       statusInput.current?.focus();
       return;
     }
-    if (next.labels.length > 20 || next.labels.some((label) => label.length > 40)) {
+    if (next.labels.length > 20 || next.labels.some(label => !label.name || label.name.length > 40)) {
       setFieldError('labelsLimit');
       return;
     }
@@ -162,7 +162,6 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
       if (saved) {
         if (commentDirtyRef.current) {
           setDraft(next);
-          setLabelsText(next.labels.join(', '));
           setNewItem('');
           setBaseline(JSON.stringify(next));
         } else onClose();
@@ -194,8 +193,8 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
   }
 
   return (
-    <dialog ref={dialog} className={styles.dialog} aria-labelledby={titleId}
-      onCancel={(event) => { event.preventDefault(); requestClose(); }}
+    <dialog ref={dialog} className={styles.dialog} style={floating.style} aria-labelledby={titleId} data-window-gesture={floating.tracking ?? undefined}
+      onCancel={(event) => { event.preventDefault(); if (!floating.cancelGesture()) requestClose(); }}
       onKeyDown={(event) => {
         if (!confirmation && event.key === 'Enter' && (event.metaKey || event.ctrlKey) && !(event.target instanceof Element && event.target.closest('[data-task-comments]'))) {
           event.preventDefault();
@@ -207,98 +206,86 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
         const bounds = event.currentTarget.getBoundingClientRect();
         if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) requestClose();
       }}>
+      <h2 id={titleId} className={styles.srOnly}>{t(task ? 'taskDetails' : 'newTask')}</h2>
+      <span id={`${titleId}-move-hint`} className={styles.srOnly}>{t('moveHint')}</span>
+      <span id={`${titleId}-resize-hint`} className={styles.srOnly}>{t('resizeHint')}</span>
       <div className={styles.surface}>
-        <header className={styles.header}>
-          <div className={styles.headerContext}><span className={styles.reference} title={board.name}><Kanban size={14} aria-hidden />{task ? taskReference(task) : board.name}</span><h2 id={titleId}>{t(task ? 'taskDetails' : 'newTask')}</h2></div>
-          <Button variant="ghost" size="icon-sm" className={styles.iconButton} aria-label={t('close')} onClick={requestClose} disabled={Boolean(busy)}><X size={17} /></Button>
-        </header>
-        <div className={styles.body}>
-          {!canEdit && <div className={styles.readonly}><LockSimple size={14} />{t('readonly')}</div>}
+        <div className={styles.titleArea} onPointerDown={floating.moveProps.onPointerDown}>
+          <span className={styles.reference} role="button" tabIndex={0} aria-label={t('moveWindow')} aria-describedby={`${titleId}-move-hint`} onKeyDown={floating.moveProps.onKeyDown}>{task ? taskReference(task) : t('newTask')}</span>
+          <Button type="button" variant="ghost" size="icon-sm" className={styles.iconButton} aria-label={t('close')} onClick={requestClose} disabled={Boolean(busy)}><X size={16} /></Button>
           {canEdit ? <textarea ref={titleInput} className={styles.titleInput} aria-label={t('title')} placeholder={t('titlePlaceholder')}
             rows={1} maxLength={240} value={draft.title} disabled={Boolean(busy)} aria-invalid={fieldError === 'titleRequired'}
             onChange={(event) => update('title', event.target.value.replace(/\n/g, ' '))} /> : <h3 className={styles.title}>{draft.title}</h3>}
-
-          <fieldset className={styles.fields} disabled={!canEdit || Boolean(busy)}>
-            <div className={styles.fieldRow}>
-              <label htmlFor={`${titleId}-status`}><Circle size={15} />{t('status')}</label>
-              <TaskSelect triggerRef={statusInput} id={`${titleId}-status`} ariaLabel={t('status')} value={currentColumn ? draft.columnId : ''}
-                className={styles.propertyControl} disabled={!canEdit || Boolean(busy)} searchable searchPlaceholder={t('searchStatuses')} placeholder={t('chooseStatus')}
-                onValueChange={value => update('columnId', value)} options={board.columns.map(column => ({ value: column.id, label: column.name, icon: <TaskStatusIcon column={column} /> }))} />
-            </div>
-            <div className={styles.fieldRow}>
-              <label htmlFor={`${titleId}-priority`}><Flag size={15} />{t('priority')}</label>
-              <TaskSelect id={`${titleId}-priority`} ariaLabel={t('priority')} value={draft.priority} className={styles.propertyControl} disabled={!canEdit || Boolean(busy)}
-                onValueChange={value => update('priority', value)} options={(['low', 'medium', 'high', 'urgent'] as const).map(priority => ({ value: priority, label: t(priority), icon: <TaskPriorityIcon priority={priority} size={14} /> }))} />
-            </div>
-            <div className={styles.fieldRow}>
-              <span className={styles.fieldLabel}><Users size={15} />{t('assignees')}</span>
-              <DropdownMenu onOpenChange={open => { if (open) setMemberQuery(''); }}>
-                <DropdownMenuTrigger type="button" disabled={!canEdit || Boolean(busy)} className={styles.assigneeTrigger} aria-label={t('chooseAssignees')}>
-                  {selectedMembers.length ? <><span className={styles.avatars}>{selectedMembers.slice(0, 3).map((member) => <UserAvatar key={member.userId} name={member.name} image={member.image} />)}</span><span className={styles.memberNames}>{selectedMembers.map((member) => member.name).join(', ')}</span></> : <span className={styles.emptyValue}>{t('unassigned')}</span>}
-                  {canEdit && <CaretDown size={12} />}
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className={styles.memberMenu} align="start" density="compact">
-                  <DropdownMenuSearch value={memberQuery} onValueChange={setMemberQuery} placeholder={t('searchMembers')} clearLabel={t('clearSearch')} />
-                  <div className={styles.memberOptions}>{matchingMembers.map((member) => <DropdownMenuCheckboxItem key={member.userId} indicator="none" checked={draft.assigneeIds.includes(member.userId)}
-                    onSelect={(event) => event.preventDefault()}
-                    onCheckedChange={(checked) => update('assigneeIds', checked ? [...draft.assigneeIds, member.userId] : draft.assigneeIds.filter((id) => id !== member.userId))}>
-                    <UserAvatar name={member.name} image={member.image} className={styles.menuAvatar} /><span className={styles.memberIdentity}><span>{member.name}</span><small>{member.email}</small></span>
-                  </DropdownMenuCheckboxItem>)}
-                  {!matchingMembers.length && <p className={styles.noResults}>{t('noResults')}</p>}</div>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <div className={styles.fieldRow}>
-              <label htmlFor={`${titleId}-due`}><CalendarBlank size={15} />{t('dueDate')}</label>
-              <div className={styles.dateWrap}>
-                {canEdit || draft.dueDate ? <input id={`${titleId}-due`} type="date" className={styles.dateInput} value={draft.dueDate ?? ''} onInput={(event) => update('dueDate', event.currentTarget.value || null)} /> : <span className={styles.emptyValue}>{t('noDueDate')}</span>}
-                {canEdit && draft.dueDate && <Button variant="ghost" size="icon-sm" className={styles.clearDate} aria-label={t('clearDate')} onClick={() => update('dueDate', null)}><X size={12} /></Button>}
+        </div>
+        <div className={styles.mobileSwitch} role="group" aria-label={t('detailsPane')}>
+          <button type="button" className="fouc-action" data-surface="plain" aria-pressed={mobilePane === 'details'} onClick={() => setMobilePane('details')}>{t('detailsPane')}</button>
+          <button type="button" className="fouc-action" data-surface="plain" aria-pressed={mobilePane === 'activity'} onClick={() => setMobilePane('activity')}>{t('activity')}</button>
+        </div>
+        <div className={styles.body} data-mobile-pane={mobilePane}>
+          <section className={styles.mainPanel} aria-label={t('detailsPane')} data-task-detail-main>
+            {!canEdit && <div className={styles.readonly}><LockSimple size={13} />{t('readonly')}</div>}
+            <fieldset className={styles.fields} disabled={!canEdit || Boolean(busy)}>
+              <div className={styles.fieldRow}>
+                <label htmlFor={`${titleId}-status`}><Circle size={14} />{t('status')}</label>
+                <TaskSelect triggerRef={statusInput} id={`${titleId}-status`} ariaLabel={t('status')} value={currentColumn ? draft.columnId : ''}
+                  className={styles.propertyControl} surface="muted" disabled={!canEdit || Boolean(busy)} searchable searchPlaceholder={t('searchStatuses')} placeholder={t('chooseStatus')}
+                  onValueChange={value => update('columnId', value)} options={board.columns.map(column => ({ value: column.id, label: column.name, icon: <TaskStatusIcon column={column} /> }))} />
               </div>
-            </div>
-            <div className={styles.fieldRow}>
-              <label htmlFor={`${titleId}-labels`}><Tag size={15} />{t('labels')}</label>
-              <div className={styles.labelsField}>
-                {canEdit && <input id={`${titleId}-labels`} className={styles.labelsInput} placeholder={t('labelsPlaceholder')} value={labelsText} onChange={(event) => { setLabelsText(event.target.value); setFieldError(null); }} />}
-                {currentDraft.labels.length > 0 ? <div className={styles.labels}>{currentDraft.labels.map((label) => <span key={label}>{label}</span>)}</div> : !canEdit && <span className={styles.emptyValue}>{t('noLabels')}</span>}
+              <div className={styles.fieldRow}>
+                <label htmlFor={`${titleId}-priority`}><Flag size={14} />{t('priority')}</label>
+                <TaskSelect id={`${titleId}-priority`} ariaLabel={t('priority')} value={draft.priority} className={styles.propertyControl} surface="muted" disabled={!canEdit || Boolean(busy)}
+                  onValueChange={value => update('priority', value)} options={(['low', 'medium', 'high', 'urgent'] as const).map(priority => ({ value: priority, label: t(priority), icon: <TaskPriorityIcon priority={priority} size={14} /> }))} />
               </div>
-            </div>
-          </fieldset>
-
-          {fieldError && <p role="alert" className={styles.fieldError}>{t(fieldError)}</p>}
-          {error && <AppAlert tone="error" title={t(error)} onClose={() => setError(null)} />}
-
-          <TaskScheduleSection value={draft.schedule} disabled={!canEdit || Boolean(busy)} onChange={value => update('schedule', value)} />
-
-          <section className={styles.section}>
-            <div className={styles.sectionHeading}><TextAlignLeft size={16} aria-hidden /><h3>{t('description')}</h3></div>
-            {canEdit ? <textarea className={styles.description} aria-label={t('description')} rows={4} maxLength={12000} placeholder={t('descriptionPlaceholder')} value={draft.description} disabled={Boolean(busy)} onChange={(event) => update('description', event.target.value)} /> : <p className={styles.descriptionText} data-empty={!draft.description || undefined}>{draft.description || t('noDescription')}</p>}
+              <div className={styles.fieldRow}>
+                <span className={styles.fieldLabel}><Users size={14} />{t('assignees')}</span>
+                <DropdownMenu onOpenChange={open => { if (open) setMemberQuery(''); }}>
+                  <DropdownMenuTrigger type="button" data-surface="muted" disabled={!canEdit || Boolean(busy)} className={styles.assigneeTrigger} aria-label={t('chooseAssignees')}>
+                    {selectedMembers.length ? <><span className={styles.avatars}>{selectedMembers.slice(0, 2).map(member => <UserAvatar key={member.userId} name={member.name} image={member.image} />)}</span><span className={styles.memberNames}>{selectedMembers.map(member => member.name).join(', ')}</span></> : <span className={styles.emptyValue}>{t('unassigned')}</span>}
+                    {canEdit && <CaretDown size={11} />}
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className={styles.memberMenu} align="start" density="compact">
+                    <DropdownMenuSearch value={memberQuery} onValueChange={setMemberQuery} placeholder={t('searchMembers')} clearLabel={t('clearSearch')} />
+                    <div className={styles.memberOptions}>{matchingMembers.map(member => <DropdownMenuCheckboxItem indicator="none" key={member.userId} checked={draft.assigneeIds.includes(member.userId)}
+                      onSelect={event => event.preventDefault()}
+                      onCheckedChange={checked => update('assigneeIds', checked ? [...draft.assigneeIds, member.userId] : draft.assigneeIds.filter(id => id !== member.userId))}>
+                      <UserAvatar name={member.name} image={member.image} className={styles.menuAvatar} /><span className={styles.memberIdentity}>{member.name}</span>
+                    </DropdownMenuCheckboxItem>)}
+                    {!matchingMembers.length && <p className={styles.noResults}>{t('noResults')}</p>}</div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <div className={styles.fieldRow}>
+                <label htmlFor={`${titleId}-due`}><CalendarBlank size={14} />{t('dueDate')}</label>
+                <div className={styles.dateWrap}>
+                  {canEdit || draft.dueDate ? <input id={`${titleId}-due`} type="date" className={styles.dateInput} value={draft.dueDate ?? ''} onInput={event => update('dueDate', event.currentTarget.value || null)} /> : <span className={styles.emptyValue}>{t('noDueDate')}</span>}
+                  {canEdit && draft.dueDate && <Button type="button" variant="ghost" size="icon-sm" className={styles.clearDate} aria-label={t('clearDate')} onClick={() => update('dueDate', null)}><X size={12} /></Button>}
+                </div>
+              </div>
+              <div className={styles.fieldRow}>
+                <span className={styles.fieldLabel}><Tag size={14} />{t('labels')}</span>
+                <div className={styles.labelsField}>{!canEdit && !draft.labels.length ? <span className={styles.emptyValue}>{t('noLabels')}</span> : <TaskLabelsEditor labels={draft.labels} availableLabels={collectTaskLabels(board.tasks)} disabled={!canEdit || Boolean(busy)} onChange={labels => update('labels', labels)} />}</div>
+              </div>
+            </fieldset>
+            {fieldError && <p role="alert" className={styles.fieldError}>{t(fieldError)}</p>}
+            {error && <AppAlert tone="error" title={t(error)} onClose={() => setError(null)} />}
+            <div className={styles.schedule}><TaskScheduleSection value={draft.schedule} disabled={!canEdit || Boolean(busy)} onChange={value => update('schedule', value)} /></div>
+            <section className={styles.section}>
+              <div className={styles.sectionHeading}><TextAlignLeft size={15} aria-hidden /><h3>{t('description')}</h3></div>
+              {canEdit ? <textarea className={styles.description} aria-label={t('description')} rows={4} maxLength={12000} placeholder={t('descriptionPlaceholder')} value={draft.description} disabled={Boolean(busy)} onChange={event => update('description', event.target.value)} /> : <p className={styles.descriptionText} data-empty={!draft.description || undefined}>{draft.description || t('noDescription')}</p>}
+            </section>
           </section>
-
-          <section className={styles.section}>
-            <div className={styles.sectionHeading}><ListChecks size={16} aria-hidden /><h3>{t('checklist')}</h3>{draft.checklist.length > 0 && <span className={styles.progressText}>{t('checklistProgress', { done: completed, total: draft.checklist.length })}</span>}</div>
-            {draft.checklist.length > 0 && <div className={styles.progress} role="progressbar" aria-label={t('checklist')} aria-valuenow={completed} aria-valuemin={0} aria-valuemax={draft.checklist.length}><span style={{ width: `${completed / draft.checklist.length * 100}%` }} /></div>}
-            <ul className={styles.checklist}>
-              {draft.checklist.map((item) => <li key={item.id} data-done={item.done || undefined}>
-                <input type="checkbox" checked={item.done} disabled={!canEdit || Boolean(busy)} aria-label={item.title || t('checklistItem')} onChange={(event) => update('checklist', draft.checklist.map((current) => current.id === item.id ? { ...current, done: event.target.checked } : current))} />
-                {canEdit ? <input type="text" className={styles.checklistTitle} aria-label={t('checklistItem')} maxLength={240} value={item.title} disabled={Boolean(busy)} onChange={(event) => update('checklist', draft.checklist.map((current) => current.id === item.id ? { ...current, title: event.target.value } : current))} /> : <span className={styles.checklistLabel}>{item.title}</span>}
-                {canEdit && <Button variant="ghost" size="icon-sm" className={styles.removeItem} data-variant="destructive" aria-label={t('removeItem')} disabled={Boolean(busy)} onClick={() => update('checklist', draft.checklist.filter((current) => current.id !== item.id))}><Trash size={13} /></Button>}
-              </li>)}
-            </ul>
-            {!canEdit && !draft.checklist.length && <p className={styles.emptyText}>{t('noChecklist')}</p>}
-            {canEdit && draft.checklist.length < 100 && <div className={styles.addItem}>
-              <Plus size={15} aria-hidden /><input ref={checklistInput} placeholder={t('checklistPlaceholder')} aria-label={t('checklistPlaceholder')} maxLength={240} value={newItem} disabled={Boolean(busy)} onChange={(event) => setNewItem(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.metaKey && !event.ctrlKey) { event.preventDefault(); addItem(); } }} />
-              <Button variant="ghost" size="icon-sm" aria-label={t('addItem')} disabled={!newItem.trim() || Boolean(busy)} onClick={addItem}><Plus size={14} /></Button>
-            </div>}
-          </section>
-
-          {task && <div className={styles.comments} data-task-comments><TaskComments board={board} taskId={task.id} actorId={actorId} client={client} onChanged={onCommentsChanged} onDirtyChange={changeCommentDirty} /></div>}
+          <TaskDetailActivity board={board} task={task} actorId={actorId} client={client} checklist={draft.checklist} onChecklist={value => update('checklist', value)}
+            newItem={newItem} onNewItem={setNewItem} onAddItem={addItem} inputRef={checklistInput} editable={canEdit} busy={Boolean(busy)}
+            onCommentsChanged={onCommentsChanged} onCommentDirtyChange={changeCommentDirty} />
         </div>
         <footer className={styles.footer}>
-          {canEdit && task && <Button variant="ghost" className={styles.deleteTask} data-variant="destructive" disabled={Boolean(busy)} onClick={() => setConfirmation('delete')}><Trash size={14} />{t('delete')}</Button>}
-          <Button variant="outline" disabled={Boolean(busy)} onClick={requestClose}>{t(canEdit ? 'cancel' : 'close')}</Button>
-          {canEdit && <Button loading={busy === 'save'} disabled={busy === 'delete'} onClick={() => void save()}>{task ? <CheckSquare size={14} /> : <Plus size={14} />}{t(task ? 'save' : 'create')}</Button>}
+          {canEdit && task && <Button type="button" variant="ghost" className={styles.deleteTask} data-variant="destructive" disabled={Boolean(busy)} onClick={() => setConfirmation('delete')}><Trash size={14} />{t('delete')}</Button>}
+          <Button type="button" variant="outline" disabled={Boolean(busy)} onClick={requestClose}>{t(canEdit ? 'cancel' : 'close')}</Button>
+          {canEdit && <Button type="button" loading={busy === 'save'} disabled={busy === 'delete'} onClick={() => void save()}>{task ? <CheckSquare size={14} /> : <Plus size={14} />}{t(task ? 'save' : 'create')}</Button>}
         </footer>
       </div>
+      {(Object.keys(resizeMessages) as Array<keyof typeof resizeMessages>).map(edge => <button key={edge} type="button" className={`fouc-resize-handle ${styles.resizeHandle}`} data-edge={edge} data-resize-axis={edge.length > 1 ? (edge === 'ne' || edge === 'sw' ? 'ne-sw' : 'nw-se') : edge === 'n' || edge === 's' ? 'y' : 'x'}
+        data-resizing={floating.tracking === edge || undefined} aria-label={t(resizeMessages[edge])} aria-describedby={`${titleId}-resize-hint`} {...floating.resizeProps(edge)} />)}
       {confirmation && <TaskConfirmation kind={confirmation} busy={busy === 'delete'} taskTitle={draft.title}
         onClose={() => { if (!busy) setConfirmation(null); }}
         onConfirm={() => { if (confirmation === 'discard') onClose(); else void remove(); }} />}

@@ -2,8 +2,8 @@ import { expect, test } from 'bun:test';
 import type { BoardTask, TaskBoardDetail } from '@fouc/shared/tasks';
 import { emptyTaskFilters, hasTaskFilters, isTaskOverdue, selectTasks } from './task-board-model';
 
-const base: BoardTask = { id: 'a', number: 1, columnId: 'todo', title: '交付登录界面', description: '完善异常反馈', priority: 'medium', assigneeIds: ['alice'], labels: ['设计'], dueDate: '2026-10-17', schedule: null, checklist: [], position: 0, createdBy: 'alice', createdAt: '2026-10-01T00:00:00Z', updatedAt: '2026-10-01T00:00:00Z', commentCount: 0 };
-const board = { columns: [{ id: 'todo', isDone: false }, { id: 'done', isDone: true }], tasks: [base, { ...base, id: 'b', number: 2, columnId: 'done', title: '已完成', priority: 'urgent', assigneeIds: [], position: 1 }, { ...base, id: 'c', number: 3, title: '发布', labels: ['研发'], priority: 'high', dueDate: '2026-10-24', position: 2 }] } as TaskBoardDetail;
+const base: BoardTask = { id: 'a', number: 1, columnId: 'todo', title: '交付登录界面', description: '完善异常反馈', priority: 'medium', assigneeIds: ['alice'], labels: [{ name: '设计', color: 'violet' }], dueDate: '2026-10-17', schedule: null, checklist: [], position: 0, createdBy: 'alice', createdAt: '2026-10-01T00:00:00Z', updatedAt: '2026-10-01T00:00:00Z', commentCount: 0 };
+const board = { columns: [{ id: 'todo', isDone: false }, { id: 'done', isDone: true }], tasks: [base, { ...base, id: 'b', number: 2, columnId: 'done', title: '已完成', priority: 'urgent', assigneeIds: [], position: 1 }, { ...base, id: 'c', number: 3, title: '发布', labels: [{ name: '研发', color: 'green' }], priority: 'high', dueDate: '2026-10-24', position: 2 }] } as TaskBoardDetail;
 const today = new Date('2026-10-18T12:00:00');
 
 test('search combines title, description and label terms with assignee and priority filters', () => {
@@ -12,6 +12,7 @@ test('search combines title, description and label terms with assignee and prior
   expect(selectTasks(board, { ...emptyTaskFilters, label: '研发' }, 'manual', 'alice', today).map(task => task.id)).toEqual(['c']);
   expect(hasTaskFilters({ ...emptyTaskFilters, query: '   ' })).toBe(false);
   expect(selectTasks(board, { ...emptyTaskFilters, query: 'task-2' }, 'priority', 'alice', today).map(task => task.id)).toEqual(['b']);
+  expect(selectTasks(board, { ...emptyTaskFilters, query: 'violet' }, 'manual', 'alice', today)).toEqual([]);
 });
 test('overdue excludes completed work; upcoming dates use local calendar days', () => {
   expect(isTaskOverdue(board.tasks[1], board, '2026-10-18')).toBe(false);

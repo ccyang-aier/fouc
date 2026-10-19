@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, expect, test } from 'bun:test';
 import { sql } from 'drizzle-orm';
-import type { TaskBoardDetail, TaskBoardSummary, TaskComment } from '@fouc/shared/tasks';
+import type { TaskBoardDetail, TaskBoardSummary, TaskComment, TaskLabel } from '@fouc/shared/tasks';
 import { boardTask, taskBoard, taskBoardMember, taskColumn, taskComment } from '../../platform/database/resources/schema';
 import { withProject } from '../../platform/database/resources/transaction';
 import { inspectFoucDatabase } from '../../platform/database/initialize-status';
@@ -153,6 +153,30 @@ test('task schedules persist independently of deadlines and enforce the existing
   expect(cleared.number).toBe(task.number);
 });
 
+test('task label names and colors persist through creation and patching under board write permissions', async () => {
+  const created = await board('project');
+  await detail(await request(owner, `/${created.id}/members`, 'POST', { userId: editor.userId, role: 'editor' }));
+  const labels = [{ name: ' Design ', color: 'violet' }, { name: 'Design', color: 'rose' }, { name: 'Delivery', color: 'teal' }];
+  const added = await detail(await request(editor, `/${created.id}/tasks`, 'POST', { title: 'Colored labels', columnId: created.columns[0]!.id, labels }));
+  const task = added.tasks[0]!;
+  expect(task.labels).toEqual([{ name: 'Design', color: 'violet' }, { name: 'Delivery', color: 'teal' }]);
+  expect((await detail(await request(viewer, `/${created.id}`))).tasks[0]?.labels).toEqual(task.labels);
+  const revised: TaskLabel[] = [{ name: 'Design', color: 'rose' }, { name: 'Release', color: 'green' }];
+  const changed = await detail(await request(editor, `/${created.id}/tasks/${task.id}`, 'PATCH', { labels: revised }));
+  expect(changed.tasks[0]).toMatchObject({ labels: revised, title: task.title, columnId: task.columnId, number: task.number });
+  expect((await detail(await request(owner, `/${created.id}`))).tasks[0]?.labels).toEqual(revised);
+  expect((await request(viewer, `/${created.id}/tasks/${task.id}`, 'PATCH', { labels: [] })).status).toBe(403);
+  expect((await request(outsider, `/${created.id}/tasks/${task.id}`, 'PATCH', { labels: [] })).status).toBe(404);
+  expect((await request(editor, `/${created.id}/tasks/${task.id}`, 'PATCH', { labels: [] }, randomUUID())).status).toBe(404);
+  for (const invalid of [[{ name: 'Design', color: 'pink' }], [{ name: 'Design' }], ['Design']]) {
+    expect((await request(editor, `/${created.id}/tasks/${task.id}`, 'PATCH', { labels: invalid })).status).toBe(400);
+  }
+  const retained = await detail(await request(editor, `/${created.id}/tasks/${task.id}`, 'PATCH', { title: 'Renamed without recoloring' }));
+  expect(retained.tasks[0]?.labels).toEqual(revised);
+  const cleared = await detail(await request(editor, `/${created.id}/tasks/${task.id}`, 'PATCH', { labels: [] }));
+  expect(cleared.tasks[0]?.labels).toEqual([]);
+});
+
 test('new boards are private; project administration never bypasses board privacy', async () => {
   const created = await board();
   expect(created.visibility).toBe('private');
@@ -251,9 +275,9 @@ test('invitation ACL, assignment and stale project membership are enforced on ea
 test('tasks retain all fields, stable checklist IDs, accurate progress and deterministic moves', async () => {
   let created = await board();
   const [todo, progress, , done] = created.columns;
-  created = await detail(await request(owner, `/${created.id}/tasks`, 'POST', { columnId: todo!.id, title: 'First', description: 'Plain task details', priority: 'urgent', dueDate: '2026-11-04', labels: ['Design', 'Design'], assigneeIds: [owner.userId], checklist: [{ title: 'Outline', done: true }, { title: 'Review' }] }));
+  created = await detail(await request(owner, `/${created.id}/tasks`, 'POST', { columnId: todo!.id, title: 'First', description: 'Plain task details', priority: 'urgent', dueDate: '2026-11-04', labels: [{ name: 'Design', color: 'blue' }, { name: 'Design', color: 'rose' }], assigneeIds: [owner.userId], checklist: [{ title: 'Outline', done: true }, { title: 'Review' }] }));
   const first = created.tasks[0]!;
-  expect(first).toMatchObject({ title: 'First', description: 'Plain task details', priority: 'urgent', dueDate: '2026-11-04', labels: ['Design'], assigneeIds: [owner.userId], commentCount: 0 });
+  expect(first).toMatchObject({ title: 'First', description: 'Plain task details', priority: 'urgent', dueDate: '2026-11-04', labels: [{ name: 'Design', color: 'blue' }], assigneeIds: [owner.userId], commentCount: 0 });
   expect(first.checklist[0]?.id).toBeString();
   expect(first.checklist.map(item => item.done)).toEqual([true, false]);
   created = await detail(await request(owner, `/${created.id}/tasks`, 'POST', { columnId: todo!.id, title: 'Second' }));
@@ -268,7 +292,7 @@ test('tasks retain all fields, stable checklist IDs, accurate progress and deter
   expect(created.taskCount).toBe(2);
   expect(created.completedCount).toBe(1);
   created = await detail(await request(owner, `/${created.id}/tasks/${first.id}`, 'PATCH', { title: 'First refined' }));
-  expect(created.tasks.find(task => task.id === first.id)).toMatchObject({ title: 'First refined', description: 'Plain task details', priority: 'urgent', dueDate: '2026-11-04', assigneeIds: [owner.userId], labels: ['Design'] });
+  expect(created.tasks.find(task => task.id === first.id)).toMatchObject({ title: 'First refined', description: 'Plain task details', priority: 'urgent', dueDate: '2026-11-04', assigneeIds: [owner.userId], labels: [{ name: 'Design', color: 'blue' }] });
   const summary = (await (await request(owner)).json() as { items: TaskBoardSummary[] }).items.find(item => item.id === created.id)!;
   expect(summary).toMatchObject({ taskCount: 2, completedCount: 1 });
   const removed = await detail(await request(owner, `/${created.id}/tasks/${second.id}`, 'DELETE'));

@@ -149,10 +149,11 @@ function DropdownMenuCheckboxItem({
 }
 
 const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup
-function DropdownMenuRadioItem({ className, children, indicator = "check", ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.RadioItem> & { indicator?: "check" | "none" }) {
+function DropdownMenuRadioItem({ className, children, indicator = "check", emphasizeSelection = true, ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.RadioItem> & { indicator?: "check" | "none"; emphasizeSelection?: boolean }) {
   return <DropdownMenuPrimitive.RadioItem
     className={cn("fouc-menu-item relative flex h-8 select-none items-center gap-2 rounded-[5px] py-1.5 pr-2 pl-8 text-[12px] outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-45 [&>svg]:size-4 [&>svg]:shrink-0", indicator === "none" && "pl-2.5", className)}
     data-indicator={indicator}
+    data-emphasize-selection={emphasizeSelection ? undefined : 'false'}
     {...props}
   >
     {indicator === "check" && <span className="absolute left-2.5 flex size-4 items-center justify-center"><DropdownMenuPrimitive.ItemIndicator><Check className="size-3.5" weight="bold" /></DropdownMenuPrimitive.ItemIndicator></span>}

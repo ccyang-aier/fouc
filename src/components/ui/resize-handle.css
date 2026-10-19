@@ -51,6 +51,12 @@ html .fouc-resize-handle[data-resize-axis="y"]:is(:hover, :focus-visible, :activ
   height: var(--drag-indicator-width);
 }
 
+/* 浮窗的角手柄沿对角线缩放，沿用同一根反馈线。 */
+html .fouc-resize-handle.fouc-resize-handle[data-resize-axis="nw-se"] { cursor: nwse-resize; }
+html .fouc-resize-handle.fouc-resize-handle[data-resize-axis="ne-sw"] { cursor: nesw-resize; }
+html .fouc-resize-handle:is([data-resize-axis="nw-se"], [data-resize-axis="ne-sw"])::before { inset-block: 2px; transform: translateX(-50%) rotate(-45deg); }
+html .fouc-resize-handle[data-resize-axis="ne-sw"]::before { transform: translateX(-50%) rotate(45deg); }
+
 /* 拖动高亮互斥：其他手柄可能保留键盘焦点，或因布局移动落在鼠标下方。
    它们在当前手势结束前只显示常态边界，不能同时显示第二条黑线。 */
 html body:has(.fouc-resize-handle[data-resizing="true"]) .fouc-resize-handle:not([data-resizing="true"])::before {
@@ -71,3 +77,7 @@ body:has(.fouc-resize-handle[data-resizing="true"][data-resize-axis="x"]),
 body:has(.fouc-resize-handle[data-resizing="true"][data-resize-axis="x"]) * { cursor: col-resize !important; }
 body:has(.fouc-resize-handle[data-resizing="true"][data-resize-axis="y"]),
 body:has(.fouc-resize-handle[data-resizing="true"][data-resize-axis="y"]) * { cursor: row-resize !important; }
+body:has(.fouc-resize-handle[data-resizing="true"][data-resize-axis="nw-se"]),
+body:has(.fouc-resize-handle[data-resizing="true"][data-resize-axis="nw-se"]) * { cursor: nwse-resize !important; }
+body:has(.fouc-resize-handle[data-resizing="true"][data-resize-axis="ne-sw"]),
+body:has(.fouc-resize-handle[data-resizing="true"][data-resize-axis="ne-sw"]) * { cursor: nesw-resize !important; }

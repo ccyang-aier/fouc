@@ -189,7 +189,7 @@ CREATE TABLE "resources"."board_task" (
 	"description" text DEFAULT '' NOT NULL,
 	"priority" varchar(8) DEFAULT 'medium' NOT NULL,
 	"assignee_ids" uuid[] DEFAULT '{}'::uuid[] NOT NULL,
-	"labels" text[] DEFAULT '{}'::text[] NOT NULL,
+	"labels" jsonb DEFAULT '[]'::jsonb NOT NULL,
 	"due_date" date,
 	"schedule" jsonb,
 	"checklist" jsonb DEFAULT '[]'::jsonb NOT NULL,
@@ -203,6 +203,7 @@ CREATE TABLE "resources"."board_task" (
 	CONSTRAINT "board_task_title_not_empty" CHECK (length(btrim("resources"."board_task"."title")) > 0),
 	CONSTRAINT "board_task_priority_valid" CHECK ("resources"."board_task"."priority" IN ('low', 'medium', 'high', 'urgent')),
 	CONSTRAINT "board_task_checklist_array" CHECK (jsonb_typeof("resources"."board_task"."checklist") = 'array'),
+	CONSTRAINT "board_task_labels_array" CHECK (jsonb_typeof("resources"."board_task"."labels") = 'array' AND jsonb_array_length("resources"."board_task"."labels") <= 20),
 	CONSTRAINT "board_task_schedule_object" CHECK ("resources"."board_task"."schedule" IS NULL OR (jsonb_typeof("resources"."board_task"."schedule") = 'object' AND "resources"."board_task"."schedule" ?& ARRAY['startsAt', 'endsAt', 'url']))
 );
 

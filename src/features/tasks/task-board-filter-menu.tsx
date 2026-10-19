@@ -2,12 +2,13 @@
 
 import { useState } from 'react';
 import { Tag, Users } from '@phosphor-icons/react';
-import type { TaskBoardDetail } from '@fouc/shared/tasks';
+import type { TaskBoardDetail, TaskLabel } from '@fouc/shared/tasks';
 import { UserAvatar } from '@/components/user-avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSearch, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTranslation } from '@/lib/i18n';
 import { messages } from './task-board.messages';
+import { TaskLabelBadge } from './task-labels';
 import styles from './task-board.module.css';
 
 export function TaskBoardAssigneeFilter({ members, actorId, value, onChange }: {
@@ -30,17 +31,18 @@ export function TaskBoardAssigneeFilter({ members, actorId, value, onChange }: {
   </DropdownMenu>;
 }
 
-export function TaskBoardLabelFilter({ labels, value, onChange }: { labels: string[]; value: string; onChange: (value: string) => void }) {
+export function TaskBoardLabelFilter({ labels, value, onChange }: { labels: TaskLabel[]; value: string; onChange: (value: string) => void }) {
   const { t } = useTranslation(messages);
   const [query, setQuery] = useState('');
   const term = query.trim().toLocaleLowerCase();
-  const matching = [{ value: '', label: t('allLabels') }, ...labels.map(label => ({ value: label, label }))].filter(option => option.label.toLocaleLowerCase().includes(term));
+  const matching = labels.filter(label => label.name.toLocaleLowerCase().includes(term));
   return <DropdownMenuSub onOpenChange={open => { if (open) setQuery(''); }}>
     <DropdownMenuSubTrigger><Tag />{t('label')}</DropdownMenuSubTrigger>
-    <DropdownMenuSubContent density="compact" className={styles.selectionMenu}>
+    <DropdownMenuSubContent density="compact" className={styles.labelSelectionMenu}>
       <DropdownMenuSearch value={query} onValueChange={setQuery} placeholder={t('searchLabels')} clearLabel={t('reset')} />
       <div className={styles.filterOptions}><DropdownMenuRadioGroup value={value} onValueChange={onChange}>
-        {matching.map(option => <DropdownMenuRadioItem indicator="none" key={option.value} value={option.value}><Tag />{option.label}</DropdownMenuRadioItem>)}
+        {!term && <DropdownMenuRadioItem indicator="none" emphasizeSelection={false} value=""><Tag />{t('allLabels')}</DropdownMenuRadioItem>}
+        {matching.map(label => <DropdownMenuRadioItem indicator="none" key={label.name} value={label.name}><TaskLabelBadge label={label} /></DropdownMenuRadioItem>)}
       </DropdownMenuRadioGroup>{!matching.length && <p className={styles.filterEmpty}>{t('noFilterResults')}</p>}</div>
     </DropdownMenuSubContent>
   </DropdownMenuSub>;

@@ -19,11 +19,11 @@ export function selectTasks(board: TaskBoardDetail, filters: TaskFilters, sort: 
   const weekEnd = new Date(now); weekEnd.setDate(weekEnd.getDate() + 7);
   const terms = filters.query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
   return board.tasks.filter(task => {
-    const text = `${taskReference(task)} ${task.title} ${task.description} ${task.labels.join(' ')}`.toLocaleLowerCase();
+    const text = `${taskReference(task)} ${task.title} ${task.description} ${task.labels.map(label => label.name).join(' ')}`.toLocaleLowerCase();
     return terms.every(term => text.includes(term))
       && (filters.assignee === 'all' || (filters.assignee === 'unassigned' ? !task.assigneeIds.length : task.assigneeIds.includes(filters.assignee === 'me' ? actorId : filters.assignee)))
       && (filters.priority === 'all' || task.priority === filters.priority)
-      && (!filters.label || task.labels.includes(filters.label))
+      && (!filters.label || task.labels.some(label => label.name === filters.label))
       && (filters.due === 'all' || (filters.due === 'overdue' ? isTaskOverdue(task, board, today) : Boolean(task.dueDate && task.dueDate >= today && task.dueDate <= localDay(weekEnd))));
   }).toSorted((a, b) => {
     const compared = sort === 'priority' ? priorityOrder[a.priority] - priorityOrder[b.priority]

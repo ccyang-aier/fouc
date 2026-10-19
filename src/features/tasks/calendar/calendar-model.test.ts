@@ -5,7 +5,7 @@ import { addDays, dayDate, layoutDayEvents, makeSchedule, scheduleTaskPatch, shi
 
 const monday = dayDate('2026-10-19');
 test('quick editing patches only changed scheduling fields, preserving other task work', () => {
-  const original = { title: 'Review', description: 'Context', columnId: 'todo', priority: 'high', assigneeIds: ['owner'], schedule: null, dueDate: '2026-10-23', labels: ['design'], checklist: [] } as unknown as BoardTask;
+  const original = { title: 'Review', description: 'Context', columnId: 'todo', priority: 'high', assigneeIds: ['owner'], schedule: null, dueDate: '2026-10-23', labels: [{ name: 'design', color: 'violet' }], checklist: [] } as unknown as BoardTask;
   const schedule = makeSchedule(monday);
   expect(scheduleTaskPatch(original, { ...original, schedule })).toEqual({ schedule });
   expect(scheduleTaskPatch(original, { ...original })).toEqual({});

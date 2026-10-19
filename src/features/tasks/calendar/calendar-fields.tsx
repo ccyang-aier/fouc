@@ -3,9 +3,9 @@
 import { CalendarBlank, Clock, LinkSimple } from '@phosphor-icons/react';
 import type { TaskSchedule } from '@fouc/shared/tasks';
 import { useTranslation } from '@/lib/i18n';
-import { localDateTime } from './timeline-model';
-import { messages } from './timeline.messages';
-import styles from './timeline.module.css';
+import { localDateTime } from './calendar-model';
+import { messages } from './calendar.messages';
+import styles from './calendar.module.css';
 
 export function ScheduleFields({ value, onChange, disabled = false }: {
   value: TaskSchedule; onChange: (value: TaskSchedule) => void; disabled?: boolean;

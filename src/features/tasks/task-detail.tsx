@@ -12,7 +12,7 @@ import { usePageVisible } from '@/lib/page-visibility';
 import type { TaskBoardClient, TaskDraft } from './task-board-client';
 import { TaskComments } from './task-comments';
 import { taskReference } from './task-board-model';
-import { TaskScheduleSection } from './timeline/task-schedule-section';
+import { TaskScheduleSection } from './calendar/task-schedule-section';
 import { messages } from './task-detail.messages';
 import styles from './task-detail.module.css';
 

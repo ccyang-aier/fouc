@@ -2,12 +2,12 @@
 
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type RefObject } from 'react';
 import type { BoardTask, TaskSchedule } from '@fouc/shared/tasks';
-import { atMinute, DAY_HEIGHT, makeSchedule, SNAP_MINUTES } from './timeline-model';
+import { atMinute, DAY_HEIGHT, makeSchedule, SNAP_MINUTES } from './calendar-model';
 
 type Gesture = { kind: 'create' | 'move' | 'resize'; task: BoardTask | null; x: number; y: number; origin: Date; offset: number; moved: boolean; schedule: TaskSchedule };
 export type SchedulePreview = { taskId: string | null; schedule: TaskSchedule; resizing: boolean };
 
-export function useTimelineGesture({ surface, days, disabled, onCreate, onUpdate }: {
+export function useCalendarGesture({ surface, days, disabled, onCreate, onUpdate }: {
   surface: RefObject<HTMLDivElement | null>; days: Date[]; disabled: boolean;
   onCreate: (schedule: TaskSchedule, anchor: { x: number; y: number }) => void;
   onUpdate: (task: BoardTask, schedule: TaskSchedule) => Promise<boolean>;

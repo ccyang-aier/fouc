@@ -1,7 +1,7 @@
 import { defineMessages } from '@/lib/i18n';
 
 export const messages = defineMessages({
-  timeline: ['任务时间线', 'Task timeline'], day: ['日', 'Day'], week: ['周', 'Week'], month: ['月', 'Month'],
+  calendar: ['任务日历', 'Task calendar'], day: ['日', 'Day'], week: ['周', 'Week'], month: ['月', 'Month'],
   range: ['时间范围', 'Time range'], today: ['今天', 'Today'], previous: ['上一时段', 'Previous period'], next: ['下一时段', 'Next period'],
   chooseDate: ['跳转到日期', 'Jump to date'], newSchedule: ['新建日程', 'New schedule'], editSchedule: ['编辑日程', 'Edit schedule'],
   allDay: ['截止日', 'Due dates'], now: ['当前时间', 'Current time'], unscheduled: ['未排期', 'Unscheduled'],

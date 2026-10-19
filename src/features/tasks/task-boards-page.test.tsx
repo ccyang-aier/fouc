@@ -77,7 +77,7 @@ beforeAll(async () => {
   mock.module('@/components/app-alert-provider', () => ({ useAppAlert: () => ({ notify: () => 1 }) }));
   mock.module('@/components/app-alert', () => ({ AppAlert: ({ title, action }: { title: string; action?: ReactNode }) => <div data-app-alert>{title}{action}</div> }));
   mock.module('@/components/user-avatar', () => ({ UserAvatar: () => <span /> }));
-  mock.module('./timeline/task-timeline', () => ({ TaskTimeline: () => <div data-timeline /> }));
+  mock.module('./calendar/task-calendar', () => ({ TaskCalendar: () => <div data-calendar /> }));
   mock.module('@/components/ui/button', () => ({ Button: Control }));
   // Menu mechanics and native dialog focus are covered by real-browser checks.
   // These fixtures keep the page's resource selection and query lifecycle real.

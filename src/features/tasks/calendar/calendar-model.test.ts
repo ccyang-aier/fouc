@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test';
 import type { BoardTask } from '@fouc/shared/tasks';
 import { localDay } from '../task-board-model';
-import { addDays, dayDate, layoutDayEvents, makeSchedule, scheduleTaskPatch, shiftAnchor, tasksOnDay, timelineDays } from './timeline-model';
+import { addDays, dayDate, layoutDayEvents, makeSchedule, scheduleTaskPatch, shiftAnchor, tasksOnDay, calendarDays } from './calendar-model';
 
 const monday = dayDate('2026-10-19');
 test('quick editing patches only changed scheduling fields, preserving other task work', () => {
@@ -16,9 +16,9 @@ function task(id: string, start: number, duration: number): BoardTask {
 }
 
 test('day, Monday-based week and month navigate across month and year boundaries', () => {
-  expect(timelineDays('2026-10-25', 'week').map(localDay)).toEqual(['2026-10-19', '2026-10-20', '2026-10-21', '2026-10-22', '2026-10-23', '2026-10-24', '2026-10-25']);
-  expect(timelineDays('2026-10-19', 'month').map(localDay)).toHaveLength(42);
-  expect(localDay(timelineDays('2026-10-19', 'month')[0])).toBe('2026-09-28');
+  expect(calendarDays('2026-10-25', 'week').map(localDay)).toEqual(['2026-10-19', '2026-10-20', '2026-10-21', '2026-10-22', '2026-10-23', '2026-10-24', '2026-10-25']);
+  expect(calendarDays('2026-10-19', 'month').map(localDay)).toHaveLength(42);
+  expect(localDay(calendarDays('2026-10-19', 'month')[0])).toBe('2026-09-28');
   expect(shiftAnchor('2026-01-31', 'month', 1)).toBe('2026-02-01');
   expect(shiftAnchor('2026-12-29', 'week', 1)).toBe('2027-01-05');
   expect(shiftAnchor('2026-01-01', 'day', -1)).toBe('2025-12-31');

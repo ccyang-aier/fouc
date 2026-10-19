@@ -4,10 +4,10 @@ import { Clock, Plus, X } from '@phosphor-icons/react';
 import type { TaskSchedule } from '@fouc/shared/tasks';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/lib/i18n';
-import { ScheduleFields } from './timeline-fields';
-import { makeSchedule } from './timeline-model';
-import { messages } from './timeline.messages';
-import styles from './timeline.module.css';
+import { ScheduleFields } from './calendar-fields';
+import { makeSchedule } from './calendar-model';
+import { messages } from './calendar.messages';
+import styles from './calendar.module.css';
 
 export function TaskScheduleSection({ value, onChange, disabled }: {
   value: TaskSchedule | null; onChange: (value: TaskSchedule | null) => void; disabled: boolean;

@@ -4,11 +4,11 @@ import { Plus } from '@phosphor-icons/react';
 import type { BoardTask, TaskBoardDetail, TaskSchedule } from '@fouc/shared/tasks';
 import { useTranslation } from '@/lib/i18n';
 import { localDay } from '../task-board-model';
-import { makeSchedule, tasksOnDay, timeLabel } from './timeline-model';
-import { messages } from './timeline.messages';
-import styles from './timeline.module.css';
+import { makeSchedule, tasksOnDay, timeLabel } from './calendar-model';
+import { messages } from './calendar.messages';
+import styles from './calendar.module.css';
 
-export function TimelineMonth({ days, anchor, tasks, board, today, busy, onDay, onOpen, onCreate }: {
+export function CalendarMonth({ days, anchor, tasks, board, today, busy, onDay, onOpen, onCreate }: {
   days: Date[]; anchor: string; tasks: BoardTask[]; board: TaskBoardDetail; today: string; busy: boolean;
   onDay: (day: string) => void; onOpen: (task: BoardTask, anchor: { x: number; y: number }) => void;
   onCreate: (schedule: TaskSchedule, anchor: { x: number; y: number }) => void;

@@ -10,9 +10,9 @@ import { AppAlert } from '@/components/app-alert';
 import { useTranslation } from '@/lib/i18n';
 import { usePageVisible } from '@/lib/page-visibility';
 import type { TaskDraft } from '../task-board-client';
-import { ScheduleFields } from './timeline-fields';
-import { messages } from './timeline.messages';
-import styles from './timeline.module.css';
+import { ScheduleFields } from './calendar-fields';
+import { messages } from './calendar.messages';
+import styles from './calendar.module.css';
 
 export interface ScheduleEditor {
   task: BoardTask | null;
@@ -20,7 +20,7 @@ export interface ScheduleEditor {
   anchor: { x: number; y: number };
 }
 
-export function TimelineScheduleForm({ editor, board, onSave, onClose, onDetails, onUnschedule }: {
+export function CalendarScheduleForm({ editor, board, onSave, onClose, onDetails, onUnschedule }: {
   editor: ScheduleEditor; board: TaskBoardDetail;
   onSave: (draft: TaskDraft, original?: BoardTask) => Promise<boolean>;
   onClose: () => void; onDetails: (task: BoardTask) => void;

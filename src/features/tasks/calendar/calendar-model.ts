@@ -1,7 +1,7 @@
 import type { BoardTask, TaskSchedule } from '@fouc/shared/tasks';
 import { localDay } from '../task-board-model';
 
-export type TimelineRange = 'day' | 'week' | 'month';
+export type CalendarRange = 'day' | 'week' | 'month';
 export const HOUR_HEIGHT = 84;
 export const DAY_HEIGHT = HOUR_HEIGHT * 24;
 export const SNAP_MINUTES = 15;
@@ -20,12 +20,12 @@ export function addDays(date: Date, amount: number) {
 export function startOfWeek(date: Date) {
   return addDays(dayDate(localDay(date)), -((date.getDay() + 6) % 7));
 }
-export function timelineDays(anchor: string, range: TimelineRange): Date[] {
+export function calendarDays(anchor: string, range: CalendarRange): Date[] {
   const date = dayDate(anchor);
   const start = range === 'month' ? startOfWeek(new Date(date.getFullYear(), date.getMonth(), 1)) : range === 'week' ? startOfWeek(date) : date;
   return Array.from({ length: range === 'month' ? 42 : range === 'week' ? 7 : 1 }, (_, index) => addDays(start, index));
 }
-export function shiftAnchor(anchor: string, range: TimelineRange, direction: number) {
+export function shiftAnchor(anchor: string, range: CalendarRange, direction: number) {
   const date = dayDate(anchor);
   if (range === 'month') return localDay(new Date(date.getFullYear(), date.getMonth() + direction, 1));
   return localDay(addDays(date, direction * (range === 'week' ? 7 : 1)));
@@ -51,7 +51,7 @@ export function tasksOnDay(tasks: readonly BoardTask[], date: Date) {
     : task.dueDate === localDay(date));
 }
 
-export interface TimelineEvent {
+export interface CalendarEvent {
   task: BoardTask;
   start: number;
   end: number;
@@ -62,16 +62,16 @@ export interface TimelineEvent {
 }
 
 /** Split overnight reservations and assign a stable column to each collision group. */
-export function layoutDayEvents(tasks: readonly BoardTask[], day: Date): TimelineEvent[] {
+export function layoutDayEvents(tasks: readonly BoardTask[], day: Date): CalendarEvent[] {
   const dayStart = day.getTime(), dayEnd = addDays(day, 1).getTime();
   const minutes = (value: string) => { const date = new Date(value); return date.getHours() * 60 + date.getMinutes(); };
-  const events: TimelineEvent[] = tasksOnDay(tasks, day).filter(task => task.schedule).map(task => {
+  const events: CalendarEvent[] = tasksOnDay(tasks, day).filter(task => task.schedule).map(task => {
     const schedule = task.schedule!;
     return { task, start: Date.parse(schedule.startsAt) < dayStart ? 0 : minutes(schedule.startsAt),
       end: Date.parse(schedule.endsAt) >= dayEnd ? 1440 : minutes(schedule.endsAt),
       lane: 0, lanes: 1, continuesBefore: Date.parse(schedule.startsAt) < dayStart, continuesAfter: Date.parse(schedule.endsAt) > dayEnd };
   }).sort((a, b) => a.start - b.start || b.end - a.end || a.task.id.localeCompare(b.task.id));
-  let group: TimelineEvent[] = [], laneEnds: number[] = [], groupEnd = -1;
+  let group: CalendarEvent[] = [], laneEnds: number[] = [], groupEnd = -1;
   function finishGroup() { for (const event of group) event.lanes = laneEnds.length; group = []; laneEnds = []; }
   for (const event of events) {
     if (event.start >= groupEnd) finishGroup();

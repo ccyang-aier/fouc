@@ -11,6 +11,7 @@ const board: TaskBoardDetail = {
   ownerId: 'owner', permission: 'owner', taskCount: 1, completedCount: 0,
   createdAt: '2026-10-18T00:00:00Z', updatedAt: '2026-10-18T00:00:00Z',
   columns: [{ id: 'todo', name: 'To do', color: 'slate', isDone: false, position: 0 }],
+  views: [],
   members: [{ userId: 'owner', name: 'Owner', email: 'owner@example.test', image: null, role: 'owner' }],
   tasks: [{ id: 'task', number: 1, columnId: 'todo', title: 'Original task', description: '', priority: 'medium',
     assigneeIds: [], labels: [], dueDate: null, schedule: null, checklist: [], position: 0, createdBy: 'owner',
@@ -57,10 +58,11 @@ beforeAll(async () => {
   mock.module('@/components/user-avatar', () => ({ UserAvatar: () => <span /> }));
   mock.module('@/components/app-alert', () => ({ AppAlert: ({ title }: { title: string }) => <div role="alert">{title}</div> }));
   mock.module('@/components/ui/dropdown-menu', () => ({
-    DropdownMenu: Container, DropdownMenuContent: Container, DropdownMenuLabel: Container,
+    DropdownMenu: Container, DropdownMenuContent: Container, DropdownMenuSearch: () => null,
+    DropdownMenuRadioGroup: Container, DropdownMenuRadioItem: Container,
     DropdownMenuCheckboxItem: Container, DropdownMenuTrigger: Control,
   }));
-  // Keep the drawer's save/lifecycle logic real; only replace comment networking.
+  // Keep the card's save/lifecycle logic real; only replace comment networking.
   mock.module('./task-comments', () => ({ TaskComments: CommentsFixture }));
   ({ PageVisibility } = await import('@/lib/page-visibility'));
   ({ TaskDetail } = await import('./task-detail'));
@@ -115,7 +117,7 @@ function deferredSave() {
   return finish;
 }
 
-test('page visibility closes and reopens the same drawer without losing task or comment drafts', async () => {
+test('page visibility closes and reopens the same card without losing task or comment drafts', async () => {
   await render();
   await type('Task title', 'Unfinished task edit');
   await type('Comment draft', 'Unpublished discussion');
@@ -136,7 +138,7 @@ test('page visibility closes and reopens the same drawer without losing task or 
   expect(onClose.mock.calls).toHaveLength(0);
 });
 
-test('saving after returning to the page still completes and closes the mounted drawer', async () => {
+test('saving after returning to the page still completes and closes the mounted card', async () => {
   await render();
   await type('Task title', 'Edited before switching pages');
   await render(false);
@@ -149,7 +151,7 @@ test('saving after returning to the page still completes and closes the mounted 
   expect(saveButton().disabled).toBe(false);
 });
 
-test('a new comment drafted while a save is pending keeps the drawer open when that save completes', async () => {
+test('a new comment drafted while a save is pending keeps the card open when that save completes', async () => {
   await render();
   const finish = deferredSave();
   await act(async () => saveButton().click());
@@ -162,4 +164,24 @@ test('a new comment drafted while a save is pending keeps the drawer open when t
   expect(host.querySelector('dialog')!.open).toBe(true);
   expect(textarea('Comment draft').value).toBe('Keep this comment after saving');
   expect(saveButton().disabled).toBe(false);
+});
+
+test('Escape protects an unsaved task draft until the user explicitly discards it', async () => {
+  await render();
+  await type('Task title', 'Keep this task draft');
+  await act(async () => host.querySelector('dialog')!.dispatchEvent(new Event('cancel', { cancelable: true })));
+
+  const confirmation = host.querySelector<HTMLDialogElement>('dialog[role="alertdialog"]');
+  expect(confirmation?.open).toBe(true);
+  expect(onClose.mock.calls).toHaveLength(0);
+  const keepEditing = [...confirmation!.querySelectorAll<HTMLButtonElement>('button')].find(button => button.textContent === 'Keep editing')!;
+  await act(async () => keepEditing.click());
+  expect(host.querySelector('dialog[role="alertdialog"]')).toBeNull();
+  expect(textarea('Task title').value).toBe('Keep this task draft');
+
+  await act(async () => host.querySelector('dialog')!.dispatchEvent(new Event('cancel', { cancelable: true })));
+  const discard = [...host.querySelectorAll<HTMLButtonElement>('button')].find(button => button.textContent === 'Discard changes')!;
+  await act(async () => discard.click());
+  expect(onClose.mock.calls).toHaveLength(1);
+  expect(onSave.mock.calls).toHaveLength(0);
 });

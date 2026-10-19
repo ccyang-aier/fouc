@@ -118,7 +118,7 @@ export function TaskBoardForm({ board, onSubmit, onClose }: {
           <legend>{t('visibility')}</legend>
           {visibilityOptions.map(option => <label key={option.value} className={`fouc-action ${styles.scopeChoice}`} data-selected={visibility === option.value}>
             <input type="radio" name={`${fieldId}-visibility`} value={option.value} checked={visibility === option.value} onChange={() => setVisibility(option.value)} />
-            <option.icon size={20} weight="duotone" aria-hidden />
+            <option.icon size={20} aria-hidden />
             <span className={styles.scopeCopy}><strong>{t(option.value)}</strong><small>{t(option.description)}</small></span>
             <span className={styles.radio} aria-hidden />
           </label>)}

@@ -2,10 +2,10 @@ import { randomUUID } from 'node:crypto';
 import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import type { Pool } from 'pg';
 import { z } from 'zod';
-import { createBoardTaskInputSchema, createTaskBoardInputSchema, createTaskColumnInputSchema, createTaskCommentInputSchema, moveBoardTaskInputSchema,
+import { createBoardTaskInputSchema, createTaskBoardInputSchema, createTaskBoardViewInputSchema, createTaskColumnInputSchema, createTaskCommentInputSchema, moveBoardTaskInputSchema,
   reorderTaskColumnsInputSchema, setTaskBoardMemberInputSchema, taskBoardScopeSchema, taskColumnScopeSchema, taskCommentScopeSchema,
-  taskProjectScopeSchema, taskScopeSchema, updateBoardTaskInputSchema, updateTaskBoardInputSchema, updateTaskColumnInputSchema } from '@fouc/shared/tasks';
-import type { TaskBoardPermission, TaskBoardSummary, TaskChecklistItem } from '@fouc/shared/tasks';
+  taskProjectScopeSchema, taskScopeSchema, taskBoardViewScopeSchema, TASK_BOARD_VIEW_LIMIT, updateBoardTaskInputSchema, updateTaskBoardInputSchema, updateTaskBoardViewInputSchema, updateTaskColumnInputSchema } from '@fouc/shared/tasks';
+import type { TaskBoardPermission, TaskBoardSummary, TaskBoardView, TaskChecklistItem } from '@fouc/shared/tasks';
 import { entityIdSchema } from '@fouc/shared/resources';
 import { boardTask, projectMember, taskBoard, taskBoardMember, taskColumn, taskComment } from '../../platform/database/resources/schema';
 import { withProject } from '../../platform/database/resources/transaction';
@@ -57,6 +57,13 @@ async function reorderTasks(context: TaskBoardContext, columnId: string, ids: st
   await context.db.execute(sql`UPDATE resources.board_task AS t SET column_id = ${columnId}::uuid, position = ordered.position
     FROM (VALUES ${values}) AS ordered(id, position)
     WHERE t.project_id = ${context.board.projectId}::uuid AND t.board_id = ${context.board.id}::uuid AND t.id = ordered.id`);
+}
+
+async function saveViews(context: TaskBoardContext, views: TaskBoardView[]) {
+  const result = await context.db.execute<{ updated: boolean }>(sql`SELECT resources.update_task_board_views(${context.board.projectId}::uuid, ${context.board.id}::uuid, ${JSON.stringify(views)}::jsonb) AS updated`);
+  if (!result.rows[0]?.updated) throw new ResourceRequestError('FORBIDDEN', '当前看板为只读，请联系创建人授予编辑权限。', 403);
+  const [board] = await context.db.select().from(taskBoard).where(boardWhere(context.board));
+  return taskBoardDetail({ ...context, board: board! });
 }
 
 export function createTaskBoardService(pool: Pool) {
@@ -143,6 +150,30 @@ export function createTaskBoardService(pool: Pool) {
         if (!removed) throw new ResourceRequestError('MEMBER_NOT_FOUND', '该成员没有单独授予的看板权限。', 404);
         if (context.board.visibility === 'invited') await context.db.execute(sql`UPDATE resources.board_task SET assignee_ids=array_remove(assignee_ids, ${scope.userId}::uuid) WHERE project_id=${scope.projectId}::uuid AND board_id=${scope.boardId}::uuid`);
         return taskBoardDetail(context);
+      });
+    },
+    async createView(identity: FoucIdentity, input: unknown) {
+      const { scope, data } = taskRequest(taskBoardScopeSchema, createTaskBoardViewInputSchema, input);
+      return withTaskBoard(pool, identity, scope, 'edit', async context => {
+        if (context.board.views.length >= TASK_BOARD_VIEW_LIMIT) throw new ResourceRequestError('INVALID_INPUT', `一个看板最多可创建 ${TASK_BOARD_VIEW_LIMIT} 个视图。`, 400);
+        const views = [...context.board.views, { ...data, id: randomUUID() }];
+        return saveViews(context, views);
+      });
+    },
+    async updateView(identity: FoucIdentity, input: unknown) {
+      const { scope, data } = taskRequest(taskBoardViewScopeSchema, updateTaskBoardViewInputSchema, input);
+      return withTaskBoard(pool, identity, scope, 'edit', async context => {
+        if (!context.board.views.some(view => view.id === scope.viewId)) throw new ResourceRequestError('TASK_VIEW_NOT_FOUND', '当前看板中不存在此视图。', 404);
+        const views = context.board.views.map(view => view.id === scope.viewId ? { ...view, name: data.name } : view);
+        return saveViews(context, views);
+      });
+    },
+    async removeView(identity: FoucIdentity, input: unknown) {
+      const scope = parseInput(taskBoardViewScopeSchema, input);
+      return withTaskBoard(pool, identity, scope, 'edit', async context => {
+        if (!context.board.views.some(view => view.id === scope.viewId)) throw new ResourceRequestError('TASK_VIEW_NOT_FOUND', '当前看板中不存在此视图。', 404);
+        const views = context.board.views.filter(view => view.id !== scope.viewId);
+        return saveViews(context, views);
       });
     },
     async createColumn(identity: FoucIdentity, input: unknown) {

@@ -36,6 +36,18 @@ export const allocateTaskNumberBody = `
 export const allocateTaskNumberSql = `CREATE FUNCTION resources.allocate_task_number(target_project uuid, target_board uuid)
 RETURNS integer LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path = pg_catalog, pg_temp SET row_security = off AS $number$${allocateTaskNumberBody}$number$;`;
 
+// Editors manage shared views without gaining permission to change board settings.
+export const updateTaskBoardViewsBody = `
+  WITH updated AS (
+    UPDATE resources.task_board AS b SET views = next_views, updated_at = clock_timestamp()
+    WHERE b.project_id = target_project AND b.id = target_board
+      AND resources.task_board_permission(target_project, target_board) IN ('owner', 'editor')
+    RETURNING 1
+  ) SELECT EXISTS (SELECT 1 FROM updated)
+`;
+export const updateTaskBoardViewsSql = `CREATE FUNCTION resources.update_task_board_views(target_project uuid, target_board uuid, next_views jsonb)
+RETURNS boolean LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path = pg_catalog, pg_temp SET row_security = off AS $views$${updateTaskBoardViewsBody}$views$;`;
+
 export function taskPoliciesForTable(name: string, verifiedIdentityUser: string): ResourceRlsPolicy[] {
   const board = name === 'task_board' ? '"id"' : '"board_id"';
   const permission = `resources.task_board_permission("project_id", ${board})`;

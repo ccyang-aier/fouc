@@ -7,7 +7,7 @@ import type { TaskBoardClient } from './task-board-client';
 
 const people: ProjectTaskMember[] = Array.from({ length: 6 }, (_, index) => ({ userId: `member-${index}`, name: `Member ${index}`, email: `member${index}@example.test`, image: null }));
 const initialBoard: TaskBoardDetail = {
-  id: 'board-a', projectId: 'project', name: 'Feature board', description: '', visibility: 'invited', ownerId: people[0].userId, permission: 'owner',
+  id: 'board-a', projectId: 'project', name: 'Feature board', description: '', visibility: 'invited', ownerId: people[0].userId, permission: 'owner', views: [],
   taskCount: 0, completedCount: 0, createdAt: '2026-10-18T01:00:00Z', updatedAt: '2026-10-18T02:03:00Z', columns: [], tasks: [],
   members: people.slice(0, 5).map((member, index) => ({ ...member, role: index ? 'viewer' : 'owner' })),
 };

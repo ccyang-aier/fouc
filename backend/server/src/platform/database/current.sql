@@ -483,6 +483,7 @@ CREATE TABLE "resources"."task_board" (
 	"name" varchar(120) NOT NULL,
 	"description" text DEFAULT '' NOT NULL,
 	"visibility" varchar(12) DEFAULT 'private' NOT NULL,
+	"views" jsonb DEFAULT '[]'::jsonb NOT NULL,
 	"owner_id" uuid NOT NULL,
 	"next_task_number" integer DEFAULT 1 NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
@@ -490,6 +491,7 @@ CREATE TABLE "resources"."task_board" (
 	CONSTRAINT "task_board_project_id_id_pk" PRIMARY KEY("project_id","id"),
 	CONSTRAINT "task_board_name_not_empty" CHECK (length(btrim("resources"."task_board"."name")) > 0),
 	CONSTRAINT "task_board_visibility_valid" CHECK ("resources"."task_board"."visibility" IN ('private', 'project', 'invited')),
+	CONSTRAINT "task_board_views_array" CHECK (jsonb_typeof("resources"."task_board"."views") = 'array' AND jsonb_array_length("resources"."task_board"."views") <= 24),
 	CONSTRAINT "task_board_next_number_positive" CHECK ("resources"."task_board"."next_task_number" > 0)
 );
 

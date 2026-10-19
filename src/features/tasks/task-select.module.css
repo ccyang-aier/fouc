@@ -1,0 +1,13 @@
+.trigger { display:flex; align-items:center; gap:8px; width:100%; min-width:0; height:32px; padding:0 10px; border:1px solid var(--control-border); border-radius:7px; background:var(--panel); color:var(--ink-soft); text-align:left; font:inherit; font-size:12px; cursor:pointer; }
+.trigger:focus-visible { border-color:var(--ink); outline:none; box-shadow:none; }
+.trigger:disabled { cursor:default; }
+.value { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.value[data-placeholder] { color:var(--muted); }
+.optionIcon { display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; width:16px; height:16px; }
+.caret { flex-shrink:0; margin-left:auto; color:var(--muted); }
+.menu { min-width:max(200px,var(--radix-dropdown-menu-trigger-width)); max-width:calc(100vw - 32px); }
+.options { max-height:240px; overflow-y:auto; }
+.option { gap:8px; }
+.optionLabel { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.option[data-state="checked"] .optionLabel { font-weight:500; }
+.empty { padding:12px 10px; margin:0; color:var(--muted); font-size:12px; text-align:center; }

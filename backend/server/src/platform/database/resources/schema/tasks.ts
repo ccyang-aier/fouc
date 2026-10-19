@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { boolean, check, date, doublePrecision, foreignKey, index, integer, jsonb, primaryKey, text, unique, uuid, varchar } from 'drizzle-orm/pg-core';
-import type { TaskBoardMemberRole, TaskBoardVisibility, TaskChecklistItem, TaskColumnColor, TaskPriority, TaskSchedule } from '@fouc/shared/tasks';
+import type { TaskBoardMemberRole, TaskBoardView, TaskBoardVisibility, TaskChecklistItem, TaskColumnColor, TaskPriority, TaskSchedule } from '@fouc/shared/tasks';
 import { authUser } from '../../identity/schema';
 import { resourcesNamespace } from './namespaces';
 import { project, projectMember } from './projects';
@@ -12,6 +12,7 @@ export const taskBoard = resourcesNamespace.table('task_board', {
   name: varchar('name', { length: 120 }).notNull(),
   description: text('description').notNull().default(''),
   visibility: varchar('visibility', { length: 12 }).$type<TaskBoardVisibility>().notNull().default('private'),
+  views: jsonb('views').$type<TaskBoardView[]>().notNull().default([]),
   ownerId: uuid('owner_id').notNull().references(() => authUser.id),
   nextTaskNumber: integer('next_task_number').notNull().default(1),
   createdAt: instant('created_at').notNull().defaultNow(),
@@ -20,6 +21,7 @@ export const taskBoard = resourcesNamespace.table('task_board', {
   primaryKey({ columns: [table.projectId, table.id] }),
   check('task_board_name_not_empty', sql`length(btrim(${table.name})) > 0`),
   check('task_board_visibility_valid', sql`${table.visibility} IN ('private', 'project', 'invited')`),
+  check('task_board_views_array', sql`jsonb_typeof(${table.views}) = 'array' AND jsonb_array_length(${table.views}) <= 24`),
   check('task_board_next_number_positive', sql`${table.nextTaskNumber} > 0`),
   index('task_board_project_updated_idx').on(table.projectId, table.updatedAt),
 ]);

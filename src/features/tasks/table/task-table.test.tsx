@@ -7,7 +7,7 @@ import type { TaskTableProps } from './task-table';
 
 const task = { id: 'task-1', number: 1, columnId: 'todo', title: 'First task', description: 'Real description', priority: 'high' as const, assigneeIds: [], labels: ['Design'], dueDate: '2026-10-25', schedule: null, checklist: [], position: 0, createdBy: 'owner', createdAt: '2026-10-20T00:00:00Z', updatedAt: '2026-10-20T00:00:00Z', commentCount: 0 };
 const board: TaskBoardDetail = {
-  id: 'board', projectId: 'project', name: 'Board', description: '', visibility: 'private', ownerId: 'owner', permission: 'owner', taskCount: 2, completedCount: 0,
+  id: 'board', projectId: 'project', name: 'Board', description: '', visibility: 'private', ownerId: 'owner', permission: 'owner', views: [], taskCount: 2, completedCount: 0,
   createdAt: task.createdAt, updatedAt: task.updatedAt, members: [],
   columns: [{ id: 'todo', name: 'To do', color: 'slate', isDone: false, position: 0 }, { id: 'done', name: 'Done', color: 'green', isDone: true, position: 1 }],
   tasks: [task, { ...task, id: 'task-2', number: 2, title: 'Second task', position: 1 }],

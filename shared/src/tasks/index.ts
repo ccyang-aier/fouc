@@ -6,12 +6,22 @@ export const taskBoardPermissionSchema = z.enum(['owner', 'editor', 'viewer']);
 export const taskBoardMemberRoleSchema = z.enum(['editor', 'viewer']);
 export const taskPrioritySchema = z.enum(['low', 'medium', 'high', 'urgent']);
 export const taskColumnColorSchema = z.enum(['slate', 'blue', 'amber', 'green', 'violet', 'rose']);
+export const taskViewKindSchema = z.enum(['kanban', 'calendar', 'spreadsheet']);
+export const TASK_BOARD_VIEW_LIMIT = 24;
 
 export type TaskBoardVisibility = z.infer<typeof taskBoardVisibilitySchema>;
 export type TaskBoardPermission = z.infer<typeof taskBoardPermissionSchema>;
 export type TaskBoardMemberRole = z.infer<typeof taskBoardMemberRoleSchema>;
 export type TaskPriority = z.infer<typeof taskPrioritySchema>;
 export type TaskColumnColor = z.infer<typeof taskColumnColorSchema>;
+export type TaskViewKind = z.infer<typeof taskViewKindSchema>;
+
+export const taskBoardViewSchema = z.strictObject({
+  id,
+  name: z.string().trim().min(1).max(120),
+  kind: taskViewKindSchema,
+});
+export type TaskBoardView = z.infer<typeof taskBoardViewSchema>;
 
 export interface TaskBoardSummary {
   id: string;
@@ -76,6 +86,7 @@ export interface ProjectTaskMember {
 
 export interface TaskBoardMember extends ProjectTaskMember { role: TaskBoardPermission }
 export interface TaskBoardDetail extends TaskBoardSummary {
+  views: TaskBoardView[];
   columns: TaskColumn[];
   tasks: BoardTask[];
   members: TaskBoardMember[];
@@ -98,6 +109,7 @@ export const taskProjectScopeSchema = z.strictObject({ projectId: id });
 export const taskBoardScopeSchema = taskProjectScopeSchema.extend({ boardId: id });
 export const taskScopeSchema = taskBoardScopeSchema.extend({ taskId: id });
 export const taskColumnScopeSchema = taskBoardScopeSchema.extend({ columnId: id });
+export const taskBoardViewScopeSchema = taskBoardScopeSchema.extend({ viewId: id });
 export const taskCommentScopeSchema = taskScopeSchema.extend({ commentId: id });
 
 export const createTaskBoardInputSchema = z.strictObject({
@@ -106,6 +118,8 @@ export const createTaskBoardInputSchema = z.strictObject({
   visibility: taskBoardVisibilitySchema.default('private'),
 });
 export const updateTaskBoardInputSchema = z.strictObject({ name: boardName.optional(), description: description.optional(), visibility: taskBoardVisibilitySchema.optional() }).refine(nonemptyPatch);
+export const createTaskBoardViewInputSchema = taskBoardViewSchema.omit({ id: true });
+export const updateTaskBoardViewInputSchema = taskBoardViewSchema.pick({ name: true });
 export const setTaskBoardMemberInputSchema = z.strictObject({ userId: id, role: taskBoardMemberRoleSchema.default('viewer') });
 export const createTaskColumnInputSchema = z.strictObject({
   name: z.string().trim().min(1).max(60),
@@ -140,6 +154,8 @@ export const createTaskCommentInputSchema = z.strictObject({ body: z.string().tr
 
 export type CreateTaskBoardInput = z.input<typeof createTaskBoardInputSchema>;
 export type UpdateTaskBoardInput = z.input<typeof updateTaskBoardInputSchema>;
+export type CreateTaskBoardViewInput = z.input<typeof createTaskBoardViewInputSchema>;
+export type UpdateTaskBoardViewInput = z.input<typeof updateTaskBoardViewInputSchema>;
 export type CreateTaskColumnInput = z.input<typeof createTaskColumnInputSchema>;
 export type UpdateTaskColumnInput = z.input<typeof updateTaskColumnInputSchema>;
 export type CreateBoardTaskInput = z.input<typeof createBoardTaskInputSchema>;

@@ -87,9 +87,9 @@
   --menu-warning-hover-bg: #faedcc;
   --menu-warning-hover-ink: #875510;
   /* 全局中性反馈，取自系统侧栏：
-     “浅灰白色” = hover（#f3f3f3）；“灰白色” = active（#efefef）。
+     “浅灰白色” = hover（#f7f7f7）；“灰白色” = active（#efefef）。
      菜单、侧栏与页面工具栏共用这两个角色，业务组件不另配灰度。 */
-  --interaction-hover-bg: #f3f3f3;
+  --interaction-hover-bg: #f7f7f7;
   --interaction-active-bg: #efefef;
   --action-hover-bg: var(--interaction-hover-bg);
   --action-active-bg: var(--interaction-active-bg);

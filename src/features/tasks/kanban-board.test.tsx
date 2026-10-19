@@ -10,7 +10,7 @@ const first: BoardTask = {
 };
 const second = { ...first, id: 'second', number: 2, title: 'Second task', position: 1, commentCount: 3 };
 const board: TaskBoardDetail = {
-  id: 'board', projectId: 'project', name: 'Team tasks', description: '', visibility: 'project', ownerId: 'owner', permission: 'owner',
+  id: 'board', projectId: 'project', name: 'Team tasks', description: '', visibility: 'project', ownerId: 'owner', permission: 'owner', views: [],
   taskCount: 2, completedCount: 0, createdAt: first.createdAt, updatedAt: first.updatedAt, members: [], tasks: [first, second],
   columns: [{ id: 'todo', name: 'To do', color: 'slate', isDone: false, position: 0 }, { id: 'done', name: 'Done', color: 'green', isDone: true, position: 1 }],
 };

@@ -10,6 +10,9 @@ import { AppAlert } from '@/components/app-alert';
 import { useTranslation } from '@/lib/i18n';
 import { usePageVisible } from '@/lib/page-visibility';
 import type { TaskDraft } from '../task-board-client';
+import { TaskPriorityIcon } from '../task-priority-icon';
+import { TaskSelect } from '../task-select';
+import { TaskStatusIcon } from '../task-status-icon';
 import { ScheduleFields } from './calendar-fields';
 import { messages } from './calendar.messages';
 import styles from './calendar.module.css';
@@ -105,8 +108,10 @@ export function CalendarScheduleForm({ editor, board, onSave, onClose, onDetails
             {!members.length && <p className={styles.menuEmpty}>{t('noResults')}</p>}
           </div></DropdownMenuContent></DropdownMenu>
         </div></div>
-        <label className={styles.formRow}><span><Circle size={16} />{t('status')}</span><select aria-label={t('status')} value={draft.columnId} onChange={event => update('columnId', event.target.value)}>{board.columns.map(column => <option key={column.id} value={column.id}>{column.name}</option>)}</select></label>
-        <label className={styles.formRow}><span><Flag size={16} />{t('priority')}</span><select aria-label={t('priority')} value={draft.priority} onChange={event => update('priority', event.target.value as TaskDraft['priority'])}>{(['low', 'medium', 'high', 'urgent'] as const).map(priority => <option key={priority} value={priority}>{t(priority)}</option>)}</select></label>
+        <div className={styles.formRow}><span><Circle size={16} />{t('status')}</span><TaskSelect ariaLabel={t('status')} value={draft.columnId} onValueChange={value => update('columnId', value)}
+          disabled={Boolean(busy) || Boolean(discard)} searchable options={board.columns.map(column => ({ value: column.id, label: column.name, icon: <TaskStatusIcon column={column} /> }))} /></div>
+        <div className={styles.formRow}><span><Flag size={16} />{t('priority')}</span><TaskSelect ariaLabel={t('priority')} value={draft.priority} onValueChange={value => update('priority', value)}
+          disabled={Boolean(busy) || Boolean(discard)} options={(['low', 'medium', 'high', 'urgent'] as const).map(priority => ({ value: priority, label: t(priority), icon: <TaskPriorityIcon priority={priority} size={14} /> }))} /></div>
       </fieldset>
       {error === 'saveFailed' ? <div className={styles.formError}><AppAlert tone="error" title={t(error)} /></div> : error && <p className={styles.formError} role="alert">{t(error)}</p>}
       {discard ? <div className={styles.discardPrompt}><p>{t('unsaved')}</p><Button type="button" ref={continueRef} variant="outline" size="sm" disabled={Boolean(busy)} onClick={() => setDiscard(null)}>{t('keepEditing')}</Button><Button type="button" variant="ghost" size="sm" className={styles.discardDanger} data-variant="destructive" loading={busy === 'remove'} onClick={confirmDiscard}>{t('discard')}</Button></div>

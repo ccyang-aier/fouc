@@ -5,13 +5,16 @@ import { CalendarBlank, CaretDown, CheckSquare, Circle, Flag, Kanban, ListChecks
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { AppAlert } from '@/components/app-alert';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuSearch, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { UserAvatar } from '@/components/user-avatar';
 import { useTranslation } from '@/lib/i18n';
 import { usePageVisible } from '@/lib/page-visibility';
 import type { TaskBoardClient, TaskDraft } from './task-board-client';
 import { TaskComments } from './task-comments';
 import { taskReference } from './task-board-model';
+import { TaskPriorityIcon } from './task-priority-icon';
+import { TaskSelect } from './task-select';
+import { TaskStatusIcon } from './task-status-icon';
 import { TaskScheduleSection } from './calendar/task-schedule-section';
 import { messages } from './task-detail.messages';
 import styles from './task-detail.module.css';
@@ -52,13 +55,14 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
   const dialog = useRef<HTMLDialogElement>(null);
   const active = useRef(true);
   const titleInput = useRef<HTMLTextAreaElement>(null);
-  const statusInput = useRef<HTMLSelectElement>(null);
+  const statusInput = useRef<HTMLButtonElement>(null);
   const checklistInput = useRef<HTMLInputElement>(null);
   const titleId = useId();
   const [draft, setDraft] = useState(() => initialDraft(task, columnId));
   const [baseline, setBaseline] = useState(() => JSON.stringify(initialDraft(task, columnId)));
   const [labelsText, setLabelsText] = useState(task?.labels.join(', ') ?? '');
   const [newItem, setNewItem] = useState('');
+  const [memberQuery, setMemberQuery] = useState('');
   const [commentDirty, setCommentDirty] = useState(false);
   const commentDirtyRef = useRef(false);
   const changeCommentDirty = useCallback((value: boolean) => { commentDirtyRef.current = value; setCommentDirty(value); }, []);
@@ -71,6 +75,7 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
   const dirty = JSON.stringify(currentDraft) !== baseline || Boolean(newItem.trim()) || commentDirty;
   const currentColumn = board.columns.find((column) => column.id === draft.columnId);
   const selectedMembers = board.members.filter((member) => draft.assigneeIds.includes(member.userId));
+  const matchingMembers = board.members.filter((member) => `${member.name} ${member.email}`.toLocaleLowerCase().includes(memberQuery.trim().toLocaleLowerCase()));
   const completed = draft.checklist.filter((item) => item.done).length;
 
   useEffect(() => {
@@ -89,6 +94,13 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
       if (previousFocus?.isConnected && document.activeElement === document.body) previousFocus.focus({ preventScroll: true });
     };
   }, [visible]);
+
+  useLayoutEffect(() => {
+    const input = titleInput.current;
+    if (!input || !visible) return;
+    input.style.height = '0px';
+    input.style.height = `${input.scrollHeight + 2}px`;
+  }, [draft.title, visible]);
 
   function update<K extends keyof TaskDraft>(key: K, value: TaskDraft[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
@@ -197,61 +209,54 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
       }}>
       <div className={styles.surface}>
         <header className={styles.header}>
-          <div className={styles.breadcrumb}><Kanban size={16} weight="duotone" aria-hidden /><span>{board.name}</span><span className={styles.slash}>/</span><h2 id={titleId}>{t(task ? 'taskDetails' : 'newTask')}{task && ` · ${taskReference(task)}`}</h2></div>
+          <div className={styles.headerContext}><span className={styles.reference} title={board.name}><Kanban size={14} aria-hidden />{task ? taskReference(task) : board.name}</span><h2 id={titleId}>{t(task ? 'taskDetails' : 'newTask')}</h2></div>
           <Button variant="ghost" size="icon-sm" className={styles.iconButton} aria-label={t('close')} onClick={requestClose} disabled={Boolean(busy)}><X size={17} /></Button>
         </header>
         <div className={styles.body}>
-          {!canEdit && <div className={styles.readonly}><LockSimple size={14} weight="duotone" />{t('readonly')}</div>}
+          {!canEdit && <div className={styles.readonly}><LockSimple size={14} />{t('readonly')}</div>}
           {canEdit ? <textarea ref={titleInput} className={styles.titleInput} aria-label={t('title')} placeholder={t('titlePlaceholder')}
-            rows={2} maxLength={240} value={draft.title} disabled={Boolean(busy)} aria-invalid={fieldError === 'titleRequired'}
+            rows={1} maxLength={240} value={draft.title} disabled={Boolean(busy)} aria-invalid={fieldError === 'titleRequired'}
             onChange={(event) => update('title', event.target.value.replace(/\n/g, ' '))} /> : <h3 className={styles.title}>{draft.title}</h3>}
 
           <fieldset className={styles.fields} disabled={!canEdit || Boolean(busy)}>
             <div className={styles.fieldRow}>
-              <label htmlFor={`${titleId}-status`}><Circle size={15} weight="duotone" />{t('status')}</label>
-              <div className={styles.selectWrap} data-color={currentColumn?.color}>
-                <span className={styles.statusDot} aria-hidden />
-                <select ref={statusInput} id={`${titleId}-status`} value={currentColumn ? draft.columnId : ''} onChange={(event) => update('columnId', event.target.value)}>
-                  {!currentColumn && <option value="" disabled>{t('chooseStatus')}</option>}
-                  {board.columns.map((column) => <option key={column.id} value={column.id}>{column.name}</option>)}
-                </select><CaretDown size={12} aria-hidden />
-              </div>
+              <label htmlFor={`${titleId}-status`}><Circle size={15} />{t('status')}</label>
+              <TaskSelect triggerRef={statusInput} id={`${titleId}-status`} ariaLabel={t('status')} value={currentColumn ? draft.columnId : ''}
+                className={styles.propertyControl} disabled={!canEdit || Boolean(busy)} searchable searchPlaceholder={t('searchStatuses')} placeholder={t('chooseStatus')}
+                onValueChange={value => update('columnId', value)} options={board.columns.map(column => ({ value: column.id, label: column.name, icon: <TaskStatusIcon column={column} /> }))} />
             </div>
             <div className={styles.fieldRow}>
-              <label htmlFor={`${titleId}-priority`}><Flag size={15} weight="duotone" />{t('priority')}</label>
-              <div className={styles.selectWrap} data-priority={draft.priority}>
-                <Flag className={styles.priorityIcon} size={14} weight="duotone" aria-hidden />
-                <select id={`${titleId}-priority`} value={draft.priority} onChange={(event) => update('priority', event.target.value as TaskDraft['priority'])}>
-                  {(['low', 'medium', 'high', 'urgent'] as const).map((priority) => <option key={priority} value={priority}>{t(priority)}</option>)}
-                </select><CaretDown size={12} aria-hidden />
-              </div>
+              <label htmlFor={`${titleId}-priority`}><Flag size={15} />{t('priority')}</label>
+              <TaskSelect id={`${titleId}-priority`} ariaLabel={t('priority')} value={draft.priority} className={styles.propertyControl} disabled={!canEdit || Boolean(busy)}
+                onValueChange={value => update('priority', value)} options={(['low', 'medium', 'high', 'urgent'] as const).map(priority => ({ value: priority, label: t(priority), icon: <TaskPriorityIcon priority={priority} size={14} /> }))} />
             </div>
             <div className={styles.fieldRow}>
-              <span className={styles.fieldLabel}><Users size={15} weight="duotone" />{t('assignees')}</span>
-              <DropdownMenu>
-                <DropdownMenuTrigger disabled={!canEdit || Boolean(busy)} className={styles.assigneeTrigger} aria-label={t('chooseAssignees')}>
+              <span className={styles.fieldLabel}><Users size={15} />{t('assignees')}</span>
+              <DropdownMenu onOpenChange={open => { if (open) setMemberQuery(''); }}>
+                <DropdownMenuTrigger type="button" disabled={!canEdit || Boolean(busy)} className={styles.assigneeTrigger} aria-label={t('chooseAssignees')}>
                   {selectedMembers.length ? <><span className={styles.avatars}>{selectedMembers.slice(0, 3).map((member) => <UserAvatar key={member.userId} name={member.name} image={member.image} />)}</span><span className={styles.memberNames}>{selectedMembers.map((member) => member.name).join(', ')}</span></> : <span className={styles.emptyValue}>{t('unassigned')}</span>}
                   {canEdit && <CaretDown size={12} />}
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className={styles.memberMenu} align="start">
-                  <DropdownMenuLabel>{t('chooseAssignees')}</DropdownMenuLabel>
-                  {board.members.map((member) => <DropdownMenuCheckboxItem indicator="none" key={member.userId} checked={draft.assigneeIds.includes(member.userId)}
+                <DropdownMenuContent className={styles.memberMenu} align="start" density="compact">
+                  <DropdownMenuSearch value={memberQuery} onValueChange={setMemberQuery} placeholder={t('searchMembers')} clearLabel={t('clearSearch')} />
+                  <div className={styles.memberOptions}>{matchingMembers.map((member) => <DropdownMenuCheckboxItem key={member.userId} indicator="none" checked={draft.assigneeIds.includes(member.userId)}
                     onSelect={(event) => event.preventDefault()}
                     onCheckedChange={(checked) => update('assigneeIds', checked ? [...draft.assigneeIds, member.userId] : draft.assigneeIds.filter((id) => id !== member.userId))}>
                     <UserAvatar name={member.name} image={member.image} className={styles.menuAvatar} /><span className={styles.memberIdentity}><span>{member.name}</span><small>{member.email}</small></span>
                   </DropdownMenuCheckboxItem>)}
+                  {!matchingMembers.length && <p className={styles.noResults}>{t('noResults')}</p>}</div>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
             <div className={styles.fieldRow}>
-              <label htmlFor={`${titleId}-due`}><CalendarBlank size={15} weight="duotone" />{t('dueDate')}</label>
+              <label htmlFor={`${titleId}-due`}><CalendarBlank size={15} />{t('dueDate')}</label>
               <div className={styles.dateWrap}>
                 {canEdit || draft.dueDate ? <input id={`${titleId}-due`} type="date" className={styles.dateInput} value={draft.dueDate ?? ''} onInput={(event) => update('dueDate', event.currentTarget.value || null)} /> : <span className={styles.emptyValue}>{t('noDueDate')}</span>}
                 {canEdit && draft.dueDate && <Button variant="ghost" size="icon-sm" className={styles.clearDate} aria-label={t('clearDate')} onClick={() => update('dueDate', null)}><X size={12} /></Button>}
               </div>
             </div>
             <div className={styles.fieldRow}>
-              <label htmlFor={`${titleId}-labels`}><Tag size={15} weight="duotone" />{t('labels')}</label>
+              <label htmlFor={`${titleId}-labels`}><Tag size={15} />{t('labels')}</label>
               <div className={styles.labelsField}>
                 {canEdit && <input id={`${titleId}-labels`} className={styles.labelsInput} placeholder={t('labelsPlaceholder')} value={labelsText} onChange={(event) => { setLabelsText(event.target.value); setFieldError(null); }} />}
                 {currentDraft.labels.length > 0 ? <div className={styles.labels}>{currentDraft.labels.map((label) => <span key={label}>{label}</span>)}</div> : !canEdit && <span className={styles.emptyValue}>{t('noLabels')}</span>}
@@ -265,18 +270,18 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
           <TaskScheduleSection value={draft.schedule} disabled={!canEdit || Boolean(busy)} onChange={value => update('schedule', value)} />
 
           <section className={styles.section}>
-            <div className={styles.sectionHeading}><TextAlignLeft size={17} weight="duotone" aria-hidden /><h3>{t('description')}</h3></div>
+            <div className={styles.sectionHeading}><TextAlignLeft size={16} aria-hidden /><h3>{t('description')}</h3></div>
             {canEdit ? <textarea className={styles.description} aria-label={t('description')} rows={4} maxLength={12000} placeholder={t('descriptionPlaceholder')} value={draft.description} disabled={Boolean(busy)} onChange={(event) => update('description', event.target.value)} /> : <p className={styles.descriptionText} data-empty={!draft.description || undefined}>{draft.description || t('noDescription')}</p>}
           </section>
 
           <section className={styles.section}>
-            <div className={styles.sectionHeading}><ListChecks size={17} weight="duotone" aria-hidden /><h3>{t('checklist')}</h3>{draft.checklist.length > 0 && <span className={styles.progressText}>{t('checklistProgress', { done: completed, total: draft.checklist.length })}</span>}</div>
+            <div className={styles.sectionHeading}><ListChecks size={16} aria-hidden /><h3>{t('checklist')}</h3>{draft.checklist.length > 0 && <span className={styles.progressText}>{t('checklistProgress', { done: completed, total: draft.checklist.length })}</span>}</div>
             {draft.checklist.length > 0 && <div className={styles.progress} role="progressbar" aria-label={t('checklist')} aria-valuenow={completed} aria-valuemin={0} aria-valuemax={draft.checklist.length}><span style={{ width: `${completed / draft.checklist.length * 100}%` }} /></div>}
             <ul className={styles.checklist}>
               {draft.checklist.map((item) => <li key={item.id} data-done={item.done || undefined}>
                 <input type="checkbox" checked={item.done} disabled={!canEdit || Boolean(busy)} aria-label={item.title || t('checklistItem')} onChange={(event) => update('checklist', draft.checklist.map((current) => current.id === item.id ? { ...current, done: event.target.checked } : current))} />
                 {canEdit ? <input type="text" className={styles.checklistTitle} aria-label={t('checklistItem')} maxLength={240} value={item.title} disabled={Boolean(busy)} onChange={(event) => update('checklist', draft.checklist.map((current) => current.id === item.id ? { ...current, title: event.target.value } : current))} /> : <span className={styles.checklistLabel}>{item.title}</span>}
-                {canEdit && <Button variant="ghost" size="icon-sm" className={styles.removeItem} data-variant="destructive" aria-label={t('removeItem')} disabled={Boolean(busy)} onClick={() => update('checklist', draft.checklist.filter((current) => current.id !== item.id))}><Trash size={13} weight="duotone" /></Button>}
+                {canEdit && <Button variant="ghost" size="icon-sm" className={styles.removeItem} data-variant="destructive" aria-label={t('removeItem')} disabled={Boolean(busy)} onClick={() => update('checklist', draft.checklist.filter((current) => current.id !== item.id))}><Trash size={13} /></Button>}
               </li>)}
             </ul>
             {!canEdit && !draft.checklist.length && <p className={styles.emptyText}>{t('noChecklist')}</p>}
@@ -289,9 +294,9 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
           {task && <div className={styles.comments} data-task-comments><TaskComments board={board} taskId={task.id} actorId={actorId} client={client} onChanged={onCommentsChanged} onDirtyChange={changeCommentDirty} /></div>}
         </div>
         <footer className={styles.footer}>
-          {canEdit && task && <Button variant="ghost" className={styles.deleteTask} data-variant="destructive" disabled={Boolean(busy)} onClick={() => setConfirmation('delete')}><Trash size={14} weight="duotone" />{t('delete')}</Button>}
+          {canEdit && task && <Button variant="ghost" className={styles.deleteTask} data-variant="destructive" disabled={Boolean(busy)} onClick={() => setConfirmation('delete')}><Trash size={14} />{t('delete')}</Button>}
           <Button variant="outline" disabled={Boolean(busy)} onClick={requestClose}>{t(canEdit ? 'cancel' : 'close')}</Button>
-          {canEdit && <Button loading={busy === 'save'} disabled={busy === 'delete'} onClick={() => void save()}>{task ? <CheckSquare size={14} weight="duotone" /> : <Plus size={14} />}{t(task ? 'save' : 'create')}</Button>}
+          {canEdit && <Button loading={busy === 'save'} disabled={busy === 'delete'} onClick={() => void save()}>{task ? <CheckSquare size={14} /> : <Plus size={14} />}{t(task ? 'save' : 'create')}</Button>}
         </footer>
       </div>
       {confirmation && <TaskConfirmation kind={confirmation} busy={busy === 'delete'} taskTitle={draft.title}

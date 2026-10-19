@@ -5,7 +5,7 @@ import type { TaskBoardDetail, TaskBoardSummary, TaskComment } from '@fouc/share
 import { boardTask, taskBoard, taskBoardMember, taskColumn, taskComment } from '../../platform/database/resources/schema';
 import { withProject } from '../../platform/database/resources/transaction';
 import { inspectFoucDatabase } from '../../platform/database/initialize-status';
-import { allocateTaskNumberSql, taskBoardPermissionSql } from '../../platform/database/resources/task-rls';
+import { allocateTaskNumberSql, taskBoardPermissionSql, updateTaskBoardViewsSql } from '../../platform/database/resources/task-rls';
 import { createAuthTestServer, responseCookie, testPassword } from '../../platform/identity/auth-test-server';
 import type { AuthTestServer } from '../../platform/identity/auth-test-server';
 import { createProjectRoutes } from '../projects/http';
@@ -67,6 +67,71 @@ beforeAll(async () => {
 
 afterAll(async () => { await server?.close(); }, 30_000);
 
+test('boards start without views; named view instances share tasks and can be renamed or removed independently', async () => {
+  let created = await board('project');
+  expect(created.views).toEqual([]);
+  created = await detail(await request(owner, `/${created.id}/members`, 'POST', { userId: editor.userId, role: 'editor' }));
+  created = await detail(await request(editor, `/${created.id}/tasks`, 'POST', { title: 'Shared task', columnId: created.columns[0]!.id }));
+  const tasks = created.tasks;
+  const columns = created.columns;
+  for (const [name, kind] of [[' Team work ', 'kanban'], ['Another board', 'kanban'], ['Schedule', 'calendar'], ['Overview', 'spreadsheet']]) {
+    const response = await request(editor, `/${created.id}/views`, 'POST', { name, kind });
+    expect(response.status).toBe(201);
+    created = await detail(response);
+  }
+  expect(created.views.map(view => [view.name, view.kind])).toEqual([['Team work', 'kanban'], ['Another board', 'kanban'], ['Schedule', 'calendar'], ['Overview', 'spreadsheet']]);
+  expect(new Set(created.views.map(view => view.id)).size).toBe(4);
+  const first = created.views[0]!;
+  created = await detail(await request(editor, `/${created.id}/views/${first.id}`, 'PATCH', { name: ' Delivery ' }));
+  expect(created.views[0]).toEqual({ ...first, name: 'Delivery' });
+  expect((await detail(await request(viewer, `/${created.id}`))).views).toEqual(created.views);
+  for (const view of created.views) created = await detail(await request(editor, `/${created.id}/views/${view.id}`, 'DELETE'));
+  expect(created.views).toEqual([]);
+  expect(created.tasks).toEqual(tasks);
+  expect(created.columns).toEqual(columns);
+  expect((await detail(await request(owner, `/${created.id}`))).views).toEqual([]);
+  expect((await request(editor, `/${created.id}`, 'PATCH', { name: 'Still cannot administer board' })).status).toBe(403);
+});
+
+test('view writes require live board editing permission and reject foreign view and project IDs', async () => {
+  const created = await board('project');
+  const withView = await detail(await request(owner, `/${created.id}/views`, 'POST', { name: 'Team', kind: 'kanban' }));
+  const view = withView.views[0]!;
+  for (const [actor, status] of [[viewer, 403], [admin, 403], [outsider, 404]] as const) {
+    expect((await request(actor, `/${created.id}/views`, 'POST', { name: 'Denied', kind: 'calendar' })).status).toBe(status);
+    expect((await request(actor, `/${created.id}/views/${view.id}`, 'PATCH', { name: 'Denied' })).status).toBe(status);
+    expect((await request(actor, `/${created.id}/views/${view.id}`, 'DELETE')).status).toBe(status);
+  }
+  const foreign = await board();
+  expect((await request(owner, `/${foreign.id}/views/${view.id}`, 'PATCH', { name: 'Foreign' })).status).toBe(404);
+  expect((await request(owner, `/${foreign.id}/views/${view.id}`, 'DELETE')).status).toBe(404);
+  const project = await fetch(`${server.origin}/api/projects`, { method: 'POST', headers: { origin: server.webOrigin, cookie: owner.cookie, 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Other project' }) });
+  const otherProjectId = (await project.json() as { id: string }).id;
+  expect((await request(owner, `/${created.id}/views`, 'POST', { name: 'Wrong project', kind: 'kanban' }, otherProjectId)).status).toBe(404);
+  expect((await request(owner, `/${created.id}/views/${view.id}`, 'PATCH', { name: 'Wrong project' }, otherProjectId)).status).toBe(404);
+  expect((await request(owner, `/${created.id}/views/${view.id}`, 'DELETE', undefined, otherProjectId)).status).toBe(404);
+  expect((await request(owner, `/${created.id}/views`, 'POST', { name: 'Injected scope', kind: 'kanban', boardId: foreign.id })).status).toBe(400);
+  expect((await request(owner, `/${created.id}/views/${view.id}`, 'PATCH', { name: 'Wrong kind', kind: 'calendar' })).status).toBe(400);
+  await detail(await request(owner, `/${created.id}/members`, 'POST', { userId: editor.userId, role: 'editor' }));
+  await request(owner, `/${created.id}/members/${editor.userId}`, 'DELETE');
+  expect((await request(editor, `/${created.id}/views/${view.id}`, 'DELETE')).status).toBe(403);
+  for (const [actor, scope] of [[viewer, projectId], [owner, otherProjectId]] as const) {
+    await withProject(server.database.pool, scope, actor.sessionId, async db => {
+      const result = await db.execute<{ updated: boolean }>(sql`SELECT resources.update_task_board_views(${projectId}::uuid, ${created.id}::uuid, '[]'::jsonb) AS updated`);
+      expect(result.rows[0]?.updated).toBe(false);
+    });
+  }
+  expect((await detail(await request(owner, `/${created.id}`))).views).toEqual(withView.views);
+});
+
+test('view limits serialize concurrent creation without losing views', async () => {
+  let created = await board();
+  for (let index = 0; index < 23; index++) created = await detail(await request(owner, `/${created.id}/views`, 'POST', { name: `View ${index}`, kind: 'kanban' }));
+  const responses = await Promise.all(['First last view', 'Second last view'].map(name => request(owner, `/${created.id}/views`, 'POST', { name, kind: 'kanban' })));
+  expect(responses.map(response => response.status).sort()).toEqual([201, 400]);
+  expect((await detail(await request(owner, `/${created.id}`))).views).toHaveLength(24);
+});
+
 test('task schedules persist independently of deadlines and enforce the existing project and board permissions', async () => {
   const created = await board('project');
   await detail(await request(owner, `/${created.id}/members`, 'POST', { userId: editor.userId, role: 'editor' }));
@@ -95,6 +160,7 @@ test('new boards are private; project administration never bypasses board privac
   expect(created.members.map(member => member.userId)).toEqual([owner.userId]);
   expect(created.columns.map(column => [column.name, column.isDone])).toEqual([['待处理', false], ['进行中', false], ['待审核', false], ['已完成', true]]);
   expect(created.tasks).toEqual([]);
+  expect(created.views).toEqual([]);
   expect(created.taskCount).toBe(0);
   for (const actor of [viewer, admin]) {
     expect((await request(actor, `/${created.id}`)).status).toBe(404);
@@ -328,5 +394,16 @@ test('deployment validation detects a replaced task-number allocator', async () 
     expect(status.issues).toContain('Task-number allocation function differs from current definition');
   } finally {
     await server.database.admin.query(allocateTaskNumberSql.replace('CREATE FUNCTION', 'CREATE OR REPLACE FUNCTION'));
+  }
+});
+
+test('deployment validation detects a replaced view-write permission function', async () => {
+  try {
+    await server.database.admin.query('CREATE OR REPLACE FUNCTION resources.update_task_board_views(target_project uuid, target_board uuid, next_views jsonb) RETURNS boolean LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path=pg_catalog,pg_temp SET row_security=off AS $$ SELECT true $$');
+    const status = await inspectFoucDatabase(server.database.admin, server.database.pool);
+    expect(status.state).toBe('incomplete');
+    expect(status.issues).toContain('Task-board view update function differs from current definition');
+  } finally {
+    await server.database.admin.query(updateTaskBoardViewsSql.replace('CREATE FUNCTION', 'CREATE OR REPLACE FUNCTION'));
   }
 });

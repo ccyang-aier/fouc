@@ -15,6 +15,9 @@ export function createTaskBoardRoutes(auth: FoucAuth, service: TaskBoardService)
   app.delete(board, async context => context.json(await service.remove(context.get('identity'), await bodyWithPath(context, context.req.param()))));
   app.post(`${board}/members`, async context => context.json(await service.setMember(context.get('identity'), await bodyWithPath(context, context.req.param()))));
   app.delete(`${board}/members/:userId`, async context => context.json(await service.removeMember(context.get('identity'), await bodyWithPath(context, context.req.param()))));
+  app.post(`${board}/views`, async context => context.json(await service.createView(context.get('identity'), await bodyWithPath(context, context.req.param())), 201));
+  app.patch(`${board}/views/:viewId`, async context => context.json(await service.updateView(context.get('identity'), await bodyWithPath(context, context.req.param()))));
+  app.delete(`${board}/views/:viewId`, async context => context.json(await service.removeView(context.get('identity'), await bodyWithPath(context, context.req.param()))));
   app.post(`${board}/columns`, async context => context.json(await service.createColumn(context.get('identity'), await bodyWithPath(context, context.req.param())), 201));
   app.post(`${board}/columns/reorder`, async context => context.json(await service.reorderColumns(context.get('identity'), await bodyWithPath(context, context.req.param()))));
   app.patch(`${board}/columns/:columnId`, async context => context.json(await service.updateColumn(context.get('identity'), await bodyWithPath(context, context.req.param()))));

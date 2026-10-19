@@ -3,7 +3,7 @@ import { allApplicationTables, resourceTables } from './schema';
 import { resourcePoliciesForTable } from './resources/rls';
 import { assertFoucApplicationRole } from './initialize-role';
 import type { FoucSqlConnection } from './initialize-role';
-import { allocateTaskNumberBody, taskBoardPermissionBody } from './resources/task-rls';
+import { allocateTaskNumberBody, taskBoardPermissionBody, updateTaskBoardViewsBody } from './resources/task-rls';
 
 export const foucDatabaseSchemas = ['resources', 'auth', 'catalog'] as const;
 const requiredExtensions = ['ltree', 'pg_search', 'vector'];
@@ -83,17 +83,18 @@ export async function inspectFoucDatabase(admin: FoucSqlConnection, application:
       pg_get_function_result(p.oid) AS result, pg_get_function_identity_arguments(p.oid) AS args,
       r.rolsuper OR r.rolbypassrls AS bypass
     FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace JOIN pg_roles r ON r.oid=p.proowner
-    WHERE n.nspname='resources' AND p.proname IN ('task_board_permission', 'allocate_task_number')
+    WHERE n.nspname='resources' AND p.proname IN ('task_board_permission', 'allocate_task_number', 'update_task_board_views')
   `);
   for (const expected of [
-    { name: 'task_board_permission', body: taskBoardPermissionBody, volatility: 's', result: 'text', label: 'Task-board permission' },
-    { name: 'allocate_task_number', body: allocateTaskNumberBody, volatility: 'v', result: 'integer', label: 'Task-number allocation' },
+    { name: 'task_board_permission', body: taskBoardPermissionBody, volatility: 's', result: 'text', args: 'target_project uuid, target_board uuid', label: 'Task-board permission' },
+    { name: 'allocate_task_number', body: allocateTaskNumberBody, volatility: 'v', result: 'integer', args: 'target_project uuid, target_board uuid', label: 'Task-number allocation' },
+    { name: 'update_task_board_views', body: updateTaskBoardViewsBody, volatility: 'v', result: 'boolean', args: 'target_project uuid, target_board uuid, next_views jsonb', label: 'Task-board view update' },
   ]) {
     const matches = taskFunctions.rows.filter(row => row.name === expected.name);
     const definition = matches[0];
     if (matches.length !== 1 || !definition || definition.source.trim() !== expected.body.trim()
       || !definition.definer || !definition.bypass || definition.volatility !== expected.volatility || definition.result !== expected.result
-      || definition.args !== 'target_project uuid, target_board uuid'
+      || definition.args !== expected.args
       || JSON.stringify([...(definition.config ?? [])].sort()) !== JSON.stringify(['row_security=off', 'search_path=pg_catalog, pg_temp'])) {
       issues.push(`${expected.label} function differs from current definition`);
     }

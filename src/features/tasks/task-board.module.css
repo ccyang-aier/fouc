@@ -14,7 +14,16 @@
 .toolbarRight { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:12px; min-width:0; max-width:100%; margin-left:auto; }
 .toolbarControls { display:flex; align-items:center; flex-shrink:0; flex-wrap:nowrap; gap:6px; max-width:100%; }
 .toolbarIcon { position:relative; display:flex; align-items:center; justify-content:center; flex-shrink:0; width:30px; height:30px; padding:0; border:1px solid var(--control-border); border-radius:6px; background:transparent; color:color-mix(in srgb,var(--ink-soft),var(--muted-strong)); cursor:pointer; }
-.viewSwitcher { display:flex; align-items:center; gap:8px; flex-shrink:0; height:30px; }
+.viewSwitcher { display:flex; align-items:center; flex-wrap:wrap; gap:6px; min-height:30px; min-width:0; }
+.viewTab { display:flex; align-items:center; gap:1px; min-width:0; }
+.viewTab .viewSegment > span { max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.viewActions { display:grid; place-items:center; width:22px; height:26px; flex-shrink:0; border-radius:4px; color:var(--muted-strong); opacity:0; cursor:pointer; }
+.viewTab:is(:hover,:focus-within,[data-active]) .viewActions, .viewActions[aria-expanded="true"] { opacity:1; }
+.newViewTrigger { display:flex; flex-shrink:0; }
+.emptyView { display:flex; flex:1; flex-direction:column; align-items:center; justify-content:center; gap:16px; min-height:240px; padding:30px; text-align:center; }
+.emptyView > svg { color:var(--muted); }
+.emptyView h2 { margin:0; font-size:16px; font-weight:550; }
+.emptyView p { margin:0; color:var(--muted-strong); font-size:12px; }
 .viewSegment { display:flex; align-items:center; justify-content:center; gap:7px; height:30px; padding:0 7px; border:0; border-radius:5px; background:transparent; color:color-mix(in srgb,var(--ink-soft),var(--muted-strong)); font-size:12px; line-height:18px; font-weight:400; white-space:nowrap; cursor:pointer; }
 .viewSegment > svg { flex-shrink:0; }
 .viewSegment[aria-pressed="true"] { color:var(--ink); font-weight:600; }

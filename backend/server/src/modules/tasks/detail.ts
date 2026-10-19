@@ -39,7 +39,7 @@ export async function taskBoardDetail({ db, board, permission }: TaskBoardContex
     priority: row.priority, assigneeIds: row.assigneeIds.filter(id => eligible.has(id)), labels: row.labels, dueDate: row.dueDate, schedule: row.schedule, checklist: row.checklist,
     position: row.position, createdBy: row.createdBy, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString(), commentCount: commentCounts.get(row.id) ?? 0 }));
   const updatedAt = new Date(Math.max(board.updatedAt.getTime(), ...rows.map(row => row.updatedAt.getTime())));
-  return { ...boardSummary(board, permission, tasks.length, tasks.filter(task => done.has(task.columnId)).length, updatedAt), columns, tasks, members };
+  return { ...boardSummary(board, permission, tasks.length, tasks.filter(task => done.has(task.columnId)).length, updatedAt), views: board.views, columns, tasks, members };
 }
 
 export async function commentsForTask(db: ResourceTransaction, scope: { projectId: string; boardId: string; taskId: string }): Promise<TaskComment[]> {

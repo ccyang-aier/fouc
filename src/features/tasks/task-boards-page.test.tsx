@@ -13,7 +13,7 @@ function makeBoard(id: string, name: string): TaskBoardDetail {
     createdAt: '2026-10-18T00:00:00Z', updatedAt: '2026-10-18T00:00:00Z', commentCount: 0,
   };
   return {
-    id, projectId: 'project', name, description: '', visibility: 'project', ownerId: 'owner', permission: 'owner',
+    id, projectId: 'project', name, description: '', visibility: 'project', ownerId: 'owner', permission: 'owner', views: [{ id: id + '-view', name: 'Board view', kind: 'kanban' }],
     taskCount: 1, completedCount: 0, createdAt: task.createdAt, updatedAt: task.updatedAt,
     columns: [{ id: task.columnId, name: 'To do', color: 'slate', isDone: false, position: 0 }], tasks: [task],
     members: [{ userId: 'owner', name: 'Owner', email: 'owner@example.test', image: null, role: 'owner' }],
@@ -71,7 +71,7 @@ beforeAll(async () => {
   globals.window = browser;
   globals.IS_REACT_ACT_ENVIRONMENT = true;
   const icon = () => <svg aria-hidden />;
-  mock.module('@phosphor-icons/react', () => Object.fromEntries(['Check', 'DotsThree', 'Kanban', 'ListChecks', 'LockSimple', 'PencilSimple', 'Plus', 'Trash', 'Users'].map(name => [name, icon])));
+  mock.module('@phosphor-icons/react', () => Object.fromEntries(['Check', 'DotsThree', 'Kanban', 'ListChecks', 'LockSimple', 'PencilSimple', 'Plus', 'SquaresFour', 'Trash', 'Users'].map(name => [name, icon])));
   mock.module('@/features/identity/identity-provider', () => ({ useIdentity: () => ({ session: { status: 'authenticated', user: { id: 'owner' } }, openSignIn: () => {} }) }));
   mock.module('@/features/project/project-resources', () => ({ useProjectResources: () => ({ selectedProject: { id: 'project', source: 'server' }, scopeKey: 'owner:server:project' }) }));
   mock.module('@/components/app-alert-provider', () => ({ useAppAlert: () => ({ notify: () => 1 }) }));
@@ -79,6 +79,7 @@ beforeAll(async () => {
   mock.module('@/components/user-avatar', () => ({ UserAvatar: () => <span /> }));
   mock.module('./calendar/task-calendar', () => ({ TaskCalendar: () => <div data-calendar /> }));
   mock.module('./table/task-table', () => ({ TaskTable: () => <div data-task-table /> }));
+  mock.module('./task-view-form', () => ({ TaskViewForm: () => <div data-view-form /> }));
   mock.module('@/components/ui/button', () => ({ Button: Control }));
   // Menu mechanics and native dialog focus are covered by real-browser checks.
   // These fixtures keep the page's resource selection and query lifecycle real.

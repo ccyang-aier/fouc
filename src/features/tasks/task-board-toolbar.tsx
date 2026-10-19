@@ -2,12 +2,12 @@
 
 import { useRef, useState } from 'react';
 import { ArrowsDownUp, CalendarBlank, CalendarDots, CalendarX, ClockCounterClockwise, DotsSixVertical, DotsThree, Flag, Funnel, Kanban, Lightning, ListBullets, LockSimple, MagnifyingGlass, PencilSimple, PlusCircle, ArrowClockwise, TextAa, Trash, Users, X } from '@phosphor-icons/react';
-import type { TaskBoardDetail } from '@fouc/shared/tasks';
+import type { TaskBoardDetail, TaskBoardView } from '@fouc/shared/tasks';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTranslation } from '@/lib/i18n';
 import { emptyTaskFilters, hasTaskFilters, type TaskFilters, type TaskSort } from './task-board-model';
-import { TaskBoardViewSwitcher, type TaskBoardView } from './task-board-view-switcher';
+import { TaskBoardViewSwitcher } from './task-board-view-switcher';
 import { TaskPriorityIcon } from './task-priority-icon';
 import { TaskBoardAssigneeFilter, TaskBoardLabelFilter } from './task-board-filter-menu';
 import { messages } from './task-board.messages';
@@ -16,8 +16,8 @@ import styles from './task-board.module.css';
 const sortLabels = { manual: 'manual', priority: 'byPriority', due: 'byDue', updated: 'byUpdated', title: 'byTitle' } as const;
 const sortIcons = { manual: DotsSixVertical, priority: Flag, due: CalendarDots, updated: ClockCounterClockwise, title: TextAa };
 const dueIcons = { all: CalendarBlank, overdue: CalendarX, week: CalendarDots };
-export function TaskBoardToolbar({ board, actorId, filters, onFilters, sort, onSort, onRefresh, refreshing, busy, onCreate, onCreateColumn, onSettings, onRemoveBoard, view, onView }: {
-  view: TaskBoardView; onView: (view: TaskBoardView) => void;
+export function TaskBoardToolbar({ board, actorId, filters, onFilters, sort, onSort, onRefresh, refreshing, busy, onCreate, onCreateColumn, onSettings, onRemoveBoard, view, onView, onCreateView, onRenameView, onRemoveView }: {
+  view: TaskBoardView | null; onView: (id: string) => void; onCreateView: () => void; onRenameView: (view: TaskBoardView) => void; onRemoveView: (view: TaskBoardView) => void;
   board: TaskBoardDetail; actorId: string; filters: TaskFilters; onFilters: (next: TaskFilters) => void; sort: TaskSort;
   onSort: (value: TaskSort) => void; onRefresh: () => void; refreshing: boolean;
   busy: boolean; onCreate: () => void; onCreateColumn: () => void; onSettings: () => void; onRemoveBoard: () => void;
@@ -34,13 +34,12 @@ export function TaskBoardToolbar({ board, actorId, filters, onFilters, sort, onS
   return <>
     <div className={styles.toolbar}>
       <div className={styles.toolbarLeft}>
-        <TaskBoardViewSwitcher value={view} onChange={onView} />
-        {board.permission !== 'viewer' && <Tooltip><TooltipTrigger asChild><button type="button" className={`fouc-action ${styles.createButton}`} data-surface="plain" onClick={onCreate} disabled={busy} aria-label={t('newTask')}><PlusCircle size={20} /></button></TooltipTrigger><TooltipContent>{t('newTask')}</TooltipContent></Tooltip>}
+        <TaskBoardViewSwitcher views={board.views} value={view?.id ?? null} onChange={onView} editable={board.permission !== 'viewer'} busy={busy} onCreate={onCreateView} onRename={onRenameView} onRemove={onRemoveView} />
         {board.permission === 'viewer' && <span className={styles.readOnly}><LockSimple size={11} />{t('readOnly')}</span>}
       </div>
       <div className={styles.toolbarRight}>
         <div className={styles.toolbarControls}>
-        <TaskBoardAssigneeFilter members={board.members} actorId={actorId} value={filters.assignee} onChange={assignee => onFilters({ ...filters, assignee })} />
+        {view && <><TaskBoardAssigneeFilter members={board.members} actorId={actorId} value={filters.assignee} onChange={assignee => onFilters({ ...filters, assignee })} />
         <DropdownMenu><Tooltip><TooltipTrigger asChild><DropdownMenuTrigger className={styles.toolbarIcon} data-surface="muted" aria-label={t('filter')} data-filter-active={filterCount > 0 || undefined}><Funnel size={16} />{filterCount > 0 && <span className={styles.filterCount}>{filterCount}</span>}</DropdownMenuTrigger></TooltipTrigger><TooltipContent>{t('filter')}</TooltipContent></Tooltip>
           <DropdownMenuContent align="end" density="compact"><DropdownMenuSub><DropdownMenuSubTrigger><Flag />{t('priority')}</DropdownMenuSubTrigger><DropdownMenuSubContent density="compact">
             <DropdownMenuRadioGroup value={filters.priority} onValueChange={priority => onFilters({ ...filters, priority: priority as TaskFilters['priority'] })}>{(['all', 'urgent', 'high', 'medium', 'low'] as const).map(value => <DropdownMenuRadioItem indicator="none" key={value} value={value}>{value === 'all' ? <ListBullets /> : <TaskPriorityIcon priority={value} />}{t(value === 'all' ? 'allPriorities' : value)}</DropdownMenuRadioItem>)}</DropdownMenuRadioGroup>
@@ -60,9 +59,10 @@ export function TaskBoardToolbar({ board, actorId, filters, onFilters, sort, onS
           <Tooltip><TooltipTrigger asChild><button ref={searchTrigger} type="button" className={`fouc-action ${styles.toolbarIcon}`} data-surface="muted" aria-label={t('searchTasks')} aria-expanded={searchOpen} onClick={() => { setSearchExpanded(true); searchInput.current?.focus(); }}><MagnifyingGlass size={16} /></button></TooltipTrigger><TooltipContent>{t('searchTasks')}</TooltipContent></Tooltip>
           {searchOpen && <label className={styles.search}><input ref={searchInput} autoFocus value={filters.query} onChange={event => onFilters({ ...filters, query: event.target.value })} onKeyDown={event => { if (event.key === 'Escape') closeSearch(); }} placeholder={t('searchTasks')} aria-label={t('searchTasks')} /><button type="button" className={`fouc-action ${styles.searchClear}`} aria-label={t('closeSearch')} onClick={closeSearch}><X size={12} /></button></label>}
         </div>
+        </>}
         <DropdownMenu><Tooltip><TooltipTrigger asChild><DropdownMenuTrigger className={styles.toolbarIcon} data-surface="muted" aria-label={t('boardActions')}><DotsThree size={16} weight="bold" /></DropdownMenuTrigger></TooltipTrigger><TooltipContent>{t('boardActions')}</TooltipContent></Tooltip><DropdownMenuContent align="end" density="compact">
           <DropdownMenuItem disabled={refreshing} onSelect={onRefresh}><ArrowClockwise className={refreshing ? styles.refreshing : undefined} />{t('refresh')}</DropdownMenuItem>
-          {board.permission !== 'viewer' && <DropdownMenuItem onSelect={onCreateColumn} disabled={board.columns.length >= 24}><Kanban />{t('addColumn')}</DropdownMenuItem>}
+          {board.permission !== 'viewer' && <>{view && <DropdownMenuItem onSelect={onCreate} disabled={busy}><PlusCircle />{t('newTask')}</DropdownMenuItem>}<DropdownMenuItem onSelect={onCreateColumn} disabled={board.columns.length >= 24}><Kanban />{t('addColumn')}</DropdownMenuItem></>}
           {board.permission === 'owner' && <><DropdownMenuSeparator /><DropdownMenuItem onSelect={onSettings}><PencilSimple />{t('settings')}</DropdownMenuItem><DropdownMenuItem variant="destructive" onSelect={onRemoveBoard}><Trash />{t('removeBoard')}</DropdownMenuItem></>}
         </DropdownMenuContent></DropdownMenu>
         </div>

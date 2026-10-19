@@ -1,6 +1,6 @@
 import { authenticatedFetch } from '@/lib/authenticated-fetch';
 import { getFoucApiOrigin } from '@/lib/fouc-api-endpoint';
-import type { BoardTask, ProjectTaskMember, TaskBoardDetail, TaskBoardSummary, TaskBoardMember, TaskColumn, TaskComment } from '@fouc/shared/tasks';
+import type { BoardTask, CreateTaskBoardViewInput, ProjectTaskMember, TaskBoardDetail, TaskBoardSummary, TaskBoardMember, TaskColumn, TaskComment } from '@fouc/shared/tasks';
 
 export type TaskDraft = Pick<BoardTask, 'columnId' | 'title' | 'description' | 'priority' | 'assigneeIds' | 'labels' | 'dueDate' | 'schedule' | 'checklist'>;
 export type BoardDraft = Pick<TaskBoardSummary, 'name' | 'description' | 'visibility'>;
@@ -31,6 +31,9 @@ export function createTaskBoardClient(projectId: string) {
     create: (input: BoardDraft) => request<TaskBoardDetail>(base, 'POST', input),
     update: (id: string, input: Partial<BoardDraft>) => request<TaskBoardDetail>(board(id), 'PATCH', input),
     remove: (id: string) => request<{ removed: true }>(board(id), 'DELETE'),
+    addView: (id: string, input: CreateTaskBoardViewInput) => request<TaskBoardDetail>(`${board(id)}/views`, 'POST', input),
+    renameView: (id: string, viewId: string, name: string) => request<TaskBoardDetail>(`${board(id)}/views/${viewId}`, 'PATCH', { name }),
+    removeView: (id: string, viewId: string) => request<TaskBoardDetail>(`${board(id)}/views/${viewId}`, 'DELETE'),
     setMember: (id: string, userId: string, role: Exclude<TaskBoardMember['role'], 'owner'>) => request<TaskBoardDetail>(`${board(id)}/members`, 'POST', { userId, role }),
     removeMember: (id: string, userId: string) => request<TaskBoardDetail>(`${board(id)}/members/${userId}`, 'DELETE'),
     addColumn: (id: string, input: ColumnDraft) => request<TaskBoardDetail>(`${board(id)}/columns`, 'POST', input),

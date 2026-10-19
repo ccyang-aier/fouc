@@ -191,6 +191,7 @@ CREATE TABLE "resources"."board_task" (
 	"assignee_ids" uuid[] DEFAULT '{}'::uuid[] NOT NULL,
 	"labels" text[] DEFAULT '{}'::text[] NOT NULL,
 	"due_date" date,
+	"schedule" jsonb,
 	"checklist" jsonb DEFAULT '[]'::jsonb NOT NULL,
 	"position" double precision NOT NULL,
 	"created_by" uuid NOT NULL,
@@ -201,7 +202,8 @@ CREATE TABLE "resources"."board_task" (
 	CONSTRAINT "board_task_number_positive" CHECK ("resources"."board_task"."number" > 0),
 	CONSTRAINT "board_task_title_not_empty" CHECK (length(btrim("resources"."board_task"."title")) > 0),
 	CONSTRAINT "board_task_priority_valid" CHECK ("resources"."board_task"."priority" IN ('low', 'medium', 'high', 'urgent')),
-	CONSTRAINT "board_task_checklist_array" CHECK (jsonb_typeof("resources"."board_task"."checklist") = 'array')
+	CONSTRAINT "board_task_checklist_array" CHECK (jsonb_typeof("resources"."board_task"."checklist") = 'array'),
+	CONSTRAINT "board_task_schedule_object" CHECK ("resources"."board_task"."schedule" IS NULL OR (jsonb_typeof("resources"."board_task"."schedule") = 'object' AND "resources"."board_task"."schedule" ?& ARRAY['startsAt', 'endsAt', 'url']))
 );
 
 CREATE TABLE "resources"."comment" (

@@ -37,6 +37,17 @@ export interface TaskColumn {
 
 export interface TaskChecklistItem { id: string; title: string; done: boolean }
 
+/** A task's reserved time is independent of its delivery deadline. */
+export const taskScheduleSchema = z.strictObject({
+  startsAt: z.iso.datetime({ offset: true }),
+  endsAt: z.iso.datetime({ offset: true }),
+  url: z.string().max(2048).refine(value => {
+    if (!value) return true;
+    try { return ['http:', 'https:'].includes(new URL(value).protocol); } catch { return false; }
+  }).default(''),
+}).refine(value => Date.parse(value.endsAt) > Date.parse(value.startsAt), { message: 'End must be after start.', path: ['endsAt'] });
+export type TaskSchedule = z.output<typeof taskScheduleSchema>;
+
 export interface BoardTask {
   id: string;
   number: number;
@@ -47,6 +58,7 @@ export interface BoardTask {
   assigneeIds: string[];
   labels: string[];
   dueDate: string | null;
+  schedule: TaskSchedule | null;
   checklist: TaskChecklistItem[];
   position: number;
   createdBy: string;
@@ -115,10 +127,11 @@ const taskFields = {
   assigneeIds: z.array(id).max(50),
   labels: z.array(z.string().trim().min(1).max(40)).max(20),
   dueDate: z.iso.date().nullable(),
+  schedule: taskScheduleSchema.nullable(),
   checklist: z.array(taskChecklistItemInputSchema).max(100),
 };
 export const createBoardTaskInputSchema = z.strictObject({ ...taskFields, description: taskFields.description.default(''), priority: taskFields.priority.default('medium'),
-  assigneeIds: taskFields.assigneeIds.default([]), labels: taskFields.labels.default([]), dueDate: taskFields.dueDate.default(null), checklist: taskFields.checklist.default([]) })
+  assigneeIds: taskFields.assigneeIds.default([]), labels: taskFields.labels.default([]), dueDate: taskFields.dueDate.default(null), schedule: taskFields.schedule.default(null), checklist: taskFields.checklist.default([]) })
   .refine(({ checklist }) => new Set(checklist.flatMap(item => item.id ? [item.id] : [])).size === checklist.filter(item => item.id).length);
 export const updateBoardTaskInputSchema = z.strictObject(taskFields).partial().refine(nonemptyPatch)
   .refine(({ checklist }) => !checklist || new Set(checklist.flatMap(item => item.id ? [item.id] : [])).size === checklist.filter(item => item.id).length);

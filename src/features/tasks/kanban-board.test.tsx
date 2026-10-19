@@ -6,7 +6,7 @@ import type { BoardTask, TaskBoardDetail } from '@fouc/shared/tasks';
 
 const first: BoardTask = {
   id: 'first', number: 1, columnId: 'todo', title: 'First task', description: '', priority: 'medium', assigneeIds: [], labels: [],
-  dueDate: null, checklist: [], position: 0, createdBy: 'owner', createdAt: '2026-10-18T00:00:00Z', updatedAt: '2026-10-18T00:00:00Z', commentCount: 0,
+  dueDate: null, schedule: null, checklist: [], position: 0, createdBy: 'owner', createdAt: '2026-10-18T00:00:00Z', updatedAt: '2026-10-18T00:00:00Z', commentCount: 0,
 };
 const second = { ...first, id: 'second', number: 2, title: 'Second task', position: 1, commentCount: 3 };
 const board: TaskBoardDetail = {

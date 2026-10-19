@@ -7,7 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuRadioG
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTranslation } from '@/lib/i18n';
 import { emptyTaskFilters, hasTaskFilters, type TaskFilters, type TaskSort } from './task-board-model';
-import { TaskBoardViewSwitcher } from './task-board-view-switcher';
+import { TaskBoardViewSwitcher, type TaskBoardView } from './task-board-view-switcher';
 import { TaskPriorityIcon } from './task-priority-icon';
 import { TaskBoardAssigneeFilter, TaskBoardLabelFilter } from './task-board-filter-menu';
 import { messages } from './task-board.messages';
@@ -16,7 +16,8 @@ import styles from './task-board.module.css';
 const sortLabels = { manual: 'manual', priority: 'byPriority', due: 'byDue', updated: 'byUpdated', title: 'byTitle' } as const;
 const sortIcons = { manual: DotsSixVertical, priority: Flag, due: CalendarDots, updated: ClockCounterClockwise, title: TextAa };
 const dueIcons = { all: CalendarBlank, overdue: CalendarX, week: CalendarDots };
-export function TaskBoardToolbar({ board, actorId, filters, onFilters, sort, onSort, onRefresh, refreshing, busy, onCreate, onCreateColumn, onSettings, onRemoveBoard }: {
+export function TaskBoardToolbar({ board, actorId, filters, onFilters, sort, onSort, onRefresh, refreshing, busy, onCreate, onCreateColumn, onSettings, onRemoveBoard, view, onView }: {
+  view: TaskBoardView; onView: (view: TaskBoardView) => void;
   board: TaskBoardDetail; actorId: string; filters: TaskFilters; onFilters: (next: TaskFilters) => void; sort: TaskSort;
   onSort: (value: TaskSort) => void; onRefresh: () => void; refreshing: boolean;
   busy: boolean; onCreate: () => void; onCreateColumn: () => void; onSettings: () => void; onRemoveBoard: () => void;
@@ -33,7 +34,7 @@ export function TaskBoardToolbar({ board, actorId, filters, onFilters, sort, onS
   return <>
     <div className={styles.toolbar}>
       <div className={styles.toolbarLeft}>
-        <TaskBoardViewSwitcher />
+        <TaskBoardViewSwitcher value={view} onChange={onView} />
         {board.permission !== 'viewer' && <Tooltip><TooltipTrigger asChild><button type="button" className={`fouc-action ${styles.createButton}`} data-surface="plain" onClick={onCreate} disabled={busy} aria-label={t('newTask')}><PlusCircle size={20} /></button></TooltipTrigger><TooltipContent>{t('newTask')}</TooltipContent></Tooltip>}
         {board.permission === 'viewer' && <span className={styles.readOnly}><LockSimple size={11} />{t('readOnly')}</span>}
       </div>

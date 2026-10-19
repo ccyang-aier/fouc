@@ -49,5 +49,6 @@ export const messages = defineMessages({
   continueEditing: ['继续编辑', 'Keep editing'],
   discard: ['放弃更改', 'Discard changes'],
   saveFailed: ['任务保存失败，请重试。', 'Could not save the task. Please try again.'],
+  scheduleInvalid: ['请检查排期：结束时间须晚于开始时间，链接须为有效的 http 或 https 地址。', 'Check the schedule: end must be after start and the link must be a valid http or https URL.'],
   deleteFailed: ['任务删除失败，请重试。', 'Could not delete the task. Please try again.'],
 });

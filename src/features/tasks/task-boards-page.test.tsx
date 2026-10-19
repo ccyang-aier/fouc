@@ -9,7 +9,7 @@ import type { TaskDetailProps } from './task-detail';
 function makeBoard(id: string, name: string): TaskBoardDetail {
   const task: BoardTask = {
     id: `${id}-task`, number: 1, columnId: `${id}-todo`, title: `${name} task`, description: '', priority: 'medium',
-    assigneeIds: [], labels: [], dueDate: null, checklist: [], position: 0, createdBy: 'owner',
+    assigneeIds: [], labels: [], dueDate: null, schedule: null, checklist: [], position: 0, createdBy: 'owner',
     createdAt: '2026-10-18T00:00:00Z', updatedAt: '2026-10-18T00:00:00Z', commentCount: 0,
   };
   return {
@@ -77,6 +77,7 @@ beforeAll(async () => {
   mock.module('@/components/app-alert-provider', () => ({ useAppAlert: () => ({ notify: () => 1 }) }));
   mock.module('@/components/app-alert', () => ({ AppAlert: ({ title, action }: { title: string; action?: ReactNode }) => <div data-app-alert>{title}{action}</div> }));
   mock.module('@/components/user-avatar', () => ({ UserAvatar: () => <span /> }));
+  mock.module('./timeline/task-timeline', () => ({ TaskTimeline: () => <div data-timeline /> }));
   mock.module('@/components/ui/button', () => ({ Button: Control }));
   // Menu mechanics and native dialog focus are covered by real-browser checks.
   // These fixtures keep the page's resource selection and query lifecycle real.

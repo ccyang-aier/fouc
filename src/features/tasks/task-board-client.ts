@@ -2,7 +2,7 @@ import { authenticatedFetch } from '@/lib/authenticated-fetch';
 import { getFoucApiOrigin } from '@/lib/fouc-api-endpoint';
 import type { BoardTask, ProjectTaskMember, TaskBoardDetail, TaskBoardSummary, TaskBoardMember, TaskColumn, TaskComment } from '@fouc/shared/tasks';
 
-export type TaskDraft = Pick<BoardTask, 'columnId' | 'title' | 'description' | 'priority' | 'assigneeIds' | 'labels' | 'dueDate' | 'checklist'>;
+export type TaskDraft = Pick<BoardTask, 'columnId' | 'title' | 'description' | 'priority' | 'assigneeIds' | 'labels' | 'dueDate' | 'schedule' | 'checklist'>;
 export type BoardDraft = Pick<TaskBoardSummary, 'name' | 'description' | 'visibility'>;
 export type ColumnDraft = Pick<TaskColumn, 'name' | 'color' | 'isDone'>;
 

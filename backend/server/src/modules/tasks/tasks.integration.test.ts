@@ -67,6 +67,27 @@ beforeAll(async () => {
 
 afterAll(async () => { await server?.close(); }, 30_000);
 
+test('task schedules persist independently of deadlines and enforce the existing project and board permissions', async () => {
+  const created = await board('project');
+  await detail(await request(owner, `/${created.id}/members`, 'POST', { userId: editor.userId, role: 'editor' }));
+  const schedule = { startsAt: '2026-10-19T09:00:00+08:00', endsAt: '2026-10-19T10:30:00+08:00', url: 'https://example.com/review' };
+  const added = await detail(await request(editor, `/${created.id}/tasks`, 'POST', { title: 'Scheduled review', columnId: created.columns[0]!.id, dueDate: '2026-10-23', schedule, assigneeIds: [owner.userId] }));
+  const task = added.tasks[0]!;
+  expect(task.schedule).toEqual(schedule);
+  expect(task.dueDate).toBe('2026-10-23');
+  expect((await detail(await request(viewer, `/${created.id}`))).tasks[0]!.schedule).toEqual(schedule);
+  expect((await request(viewer, `/${created.id}/tasks/${task.id}`, 'PATCH', { schedule: null })).status).toBe(403);
+  expect((await request(outsider, `/${created.id}/tasks/${task.id}`, 'PATCH', { schedule: null })).status).toBe(404);
+  expect((await request(editor, `/${created.id}/tasks/${task.id}`, 'PATCH', { schedule: { ...schedule, endsAt: schedule.startsAt } })).status).toBe(400);
+  expect((await request(editor, `/${created.id}/tasks/${task.id}`, 'PATCH', { schedule: { ...schedule, url: 'javascript:alert(1)' } })).status).toBe(400);
+  const moved = { ...schedule, startsAt: '2026-10-20T14:00:00Z', endsAt: '2026-10-21T01:00:00Z' };
+  expect((await detail(await request(editor, `/${created.id}/tasks/${task.id}`, 'PATCH', { schedule: moved }))).tasks[0]!.schedule).toEqual(moved);
+  const cleared = (await detail(await request(editor, `/${created.id}/tasks/${task.id}`, 'PATCH', { schedule: null }))).tasks[0]!;
+  expect(cleared.schedule).toBeNull();
+  expect(cleared.dueDate).toBe(task.dueDate);
+  expect(cleared.number).toBe(task.number);
+});
+
 test('new boards are private; project administration never bypasses board privacy', async () => {
   const created = await board();
   expect(created.visibility).toBe('private');

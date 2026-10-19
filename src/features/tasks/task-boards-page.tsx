@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Kanban, LockSimple, Plus, Users } from '@phosphor-icons/react';
-import type { TaskBoardDetail, TaskBoardSummary, TaskColumn } from '@fouc/shared/tasks';
+import type { BoardTask, TaskBoardDetail, TaskBoardSummary, TaskColumn, TaskSchedule } from '@fouc/shared/tasks';
 import { AppAlert } from '@/components/app-alert';
 import { useAppAlert } from '@/components/app-alert-provider';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,9 @@ import { KanbanBoard } from './kanban-board';
 import { TaskBoardForm, TaskColumnForm, TaskConfirm } from './task-board-dialogs';
 import { TaskBoardMembers } from './task-board-members';
 import { TaskDetail } from './task-detail';
+import { TaskTimeline } from './timeline/task-timeline';
+import { scheduleTaskPatch } from './timeline/timeline-model';
+import type { TaskBoardView } from './task-board-view-switcher';
 import { messages } from './task-board.messages';
 import styles from './task-board.module.css';
 
@@ -99,6 +102,11 @@ function TaskBoardsContent({ projectId, actorId }: { projectId: string; actorId:
   }
   function refresh() { void query.invalidateQueries({ queryKey: ['task-boards'] }); void query.invalidateQueries({ queryKey: ['task-board'] }); }
   function saveTask(draft: TaskDraft, taskId?: string) { return mutate(() => taskId ? client.updateTask(board!.id, taskId, draft) : client.addTask(board!.id, draft)); }
+  function saveTimelineTask(draft: TaskDraft, original?: BoardTask) {
+    if (!original) return saveTask(draft);
+    const patch = scheduleTaskPatch(original, draft);
+    return Object.keys(patch).length ? mutate(() => client.updateTask(board!.id, original.id, patch)) : Promise.resolve(true);
+  }
   return <section className={styles.page} aria-label={t('tasks')}>
     <header className={styles.header}>
       <div className={styles.titleRow}><div className={styles.titleIdentity}><TaskBoardPicker boards={boards} selected={selected} onSelect={id => { setSelectedId(id); setDetail(null); setColumn(null); setConfirmation(null); setDialog(null); }} onCreate={() => setDialog({ kind: 'create' })} />
@@ -112,7 +120,7 @@ function TaskBoardsContent({ projectId, actorId }: { projectId: string; actorId:
     {backgroundFailed && <div className={styles.syncError}><AppAlert tone="warning" title={t('syncFailed')} action={<button type="button" onClick={refresh}>{t('retry')}</button>} /></div>}
     {boardsQuery.isPending || (selected && boardQuery.isPending) ? <BoardSkeleton />
       : loadFailed ? <div className={styles.loadError}><AppAlert tone="error" title={t('failed')} action={<button type="button" onClick={refresh}>{t('retry')}</button>} /></div>
-      : board ? <TaskBoardWorkspace key={board.id} board={board} actorId={actorId} busy={busy} refreshing={boardQuery.isFetching} onRefresh={refresh} onSettings={() => setDialog({ kind: 'settings', boardId: board.id })} onRemoveBoard={() => setConfirmation({ kind: 'board', boardId: board.id, id: board.id, name: board.name })} onOpen={task => setDetail({ boardId: board.id, taskId: task.id, columnId: task.columnId })} onCreate={columnId => setDetail({ boardId: board.id, taskId: null, columnId })} onRemove={task => setConfirmation({ kind: 'task', boardId: board.id, id: task.id, name: task.title })} onMove={(taskId, columnId, beforeTaskId) => { void mutate(() => client.moveTask(board.id, taskId, columnId, beforeTaskId), 'moved'); }} onColumn={value => setColumn({ boardId: board.id, value: value ?? null })} onRemoveColumn={value => setConfirmation({ kind: 'column', boardId: board.id, id: value.id, name: value.name })} onReorderColumns={ids => mutate(() => client.reorderColumns(board.id, ids))} />
+      : board ? <TaskBoardWorkspace key={board.id} board={board} actorId={actorId} busy={busy} onSaveTask={saveTimelineTask} onSchedule={(task, schedule) => mutate(() => client.updateTask(board.id, task.id, { schedule }))} refreshing={boardQuery.isFetching} onRefresh={refresh} onSettings={() => setDialog({ kind: 'settings', boardId: board.id })} onRemoveBoard={() => setConfirmation({ kind: 'board', boardId: board.id, id: board.id, name: board.name })} onOpen={task => setDetail({ boardId: board.id, taskId: task.id, columnId: task.columnId })} onCreate={columnId => setDetail({ boardId: board.id, taskId: null, columnId })} onRemove={task => setConfirmation({ kind: 'task', boardId: board.id, id: task.id, name: task.title })} onMove={(taskId, columnId, beforeTaskId) => { void mutate(() => client.moveTask(board.id, taskId, columnId, beforeTaskId), 'moved'); }} onColumn={value => setColumn({ boardId: board.id, value: value ?? null })} onRemoveColumn={value => setConfirmation({ kind: 'column', boardId: board.id, id: value.id, name: value.name })} onReorderColumns={ids => mutate(() => client.reorderColumns(board.id, ids))} />
       : <div className={styles.empty}><EmptyBoardIllustration /><h2>{t('noBoards')}</h2><p>{t('emptyDescription')}</p><Button size="sm" onClick={() => setDialog({ kind: 'create' })}><Plus size={15} />{t('createBoard')}</Button><span className={styles.emptyPrivacy}><LockSimple size={12} />{t('privateDefault')}</span></div>}
     {dialog?.kind === 'create' && <TaskBoardForm onClose={() => setDialog(null)} onSubmit={async draft => { const ok = await mutate(async () => { const next = await client.create(draft); setSelectedId(next.id); return next; }); return ok; }} />}
     {dialog?.kind === 'settings' && board && dialog.boardId === board.id && <TaskBoardForm key={`settings:${board.id}`} board={board} onClose={() => setDialog(null)} onSubmit={draft => mutate(() => client.update(dialog.boardId, draft))} />}
@@ -122,19 +130,20 @@ function TaskBoardsContent({ projectId, actorId }: { projectId: string; actorId:
   </section>;
 }
 
-function TaskBoardWorkspace({ board, actorId, onSettings, onRemoveBoard, ...actions }: { board: TaskBoardDetail; actorId: string; refreshing: boolean; onRefresh: () => void; onSettings: () => void; onRemoveBoard: () => void } & Omit<React.ComponentProps<typeof KanbanBoard>, 'board' | 'tasks' | 'canDrag'>) {
+function TaskBoardWorkspace({ board, actorId, onSettings, onRemoveBoard, onSaveTask, onSchedule, ...actions }: { board: TaskBoardDetail; actorId: string; refreshing: boolean; onRefresh: () => void; onSettings: () => void; onRemoveBoard: () => void; onSaveTask: (draft: TaskDraft, original?: BoardTask) => Promise<boolean>; onSchedule: (task: BoardTask, schedule: TaskSchedule | null) => Promise<boolean> } & Omit<React.ComponentProps<typeof KanbanBoard>, 'board' | 'tasks' | 'canDrag'>) {
   const { t } = useTranslation(messages);
   const [filters, setFilters] = usePageSessionState<TaskFilters>(`tasks:${board.id}:filters`, emptyTaskFilters);
   const [sort, setSort] = usePageSessionState<TaskSort>(`tasks:${board.id}:sort`, 'manual');
+  const [view, setView] = usePageSessionState<TaskBoardView>(`tasks:${board.id}:view`, 'kanban');
   const tasks = selectTasks(board, filters, sort, actorId);
   const filtered = hasTaskFilters(filters);
   const canDrag = board.permission !== 'viewer' && !filtered && sort === 'manual';
   return <>
-    <TaskBoardToolbar board={board} actorId={actorId} filters={filters} onFilters={setFilters} sort={sort} onSort={setSort} onRefresh={actions.onRefresh} refreshing={actions.refreshing} busy={actions.busy} onCreate={() => actions.onCreate(board.columns[0].id)} onCreateColumn={() => actions.onColumn()} onSettings={onSettings} onRemoveBoard={onRemoveBoard} />
+    <TaskBoardToolbar board={board} actorId={actorId} filters={filters} onFilters={setFilters} sort={sort} onSort={setSort} onRefresh={actions.onRefresh} refreshing={actions.refreshing} busy={actions.busy} onCreate={() => actions.onCreate(board.columns[0].id)} onCreateColumn={() => actions.onColumn()} onSettings={onSettings} onRemoveBoard={onRemoveBoard} view={view} onView={setView} />
     {board.permission === 'viewer' && <p className={styles.permissionNote}><LockSimple size={12} />{t('readOnlyDescription')}</p>}
     {filtered && <div className={styles.resultCount}>{t('visibleCount', { count: tasks.length, total: board.tasks.length })}{tasks.length === 0 && <strong>{t('noMatches')}</strong>}</div>}
-    <KanbanBoard board={board} tasks={tasks} canDrag={canDrag} {...actions} />
-    {board.permission !== 'viewer' && !canDrag && <p className={styles.dragNote}>{t('filteredDrag')}</p>}
+    {view === 'timeline' ? <TaskTimeline board={board} tasks={tasks} busy={actions.busy} onSave={onSaveTask} onSchedule={onSchedule} onDetails={actions.onOpen} /> : <KanbanBoard board={board} tasks={tasks} canDrag={canDrag} {...actions} />}
+    {view === 'kanban' && board.permission !== 'viewer' && !canDrag && <p className={styles.dragNote}>{t('filteredDrag')}</p>}
   </>;
 }
 

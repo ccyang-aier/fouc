@@ -13,7 +13,7 @@ const board: TaskBoardDetail = {
   columns: [{ id: 'todo', name: 'To do', color: 'slate', isDone: false, position: 0 }],
   members: [{ userId: 'owner', name: 'Owner', email: 'owner@example.test', image: null, role: 'owner' }],
   tasks: [{ id: 'task', number: 1, columnId: 'todo', title: 'Original task', description: '', priority: 'medium',
-    assigneeIds: [], labels: [], dueDate: null, checklist: [], position: 0, createdBy: 'owner',
+    assigneeIds: [], labels: [], dueDate: null, schedule: null, checklist: [], position: 0, createdBy: 'owner',
     createdAt: '2026-10-18T00:00:00Z', updatedAt: '2026-10-18T00:00:00Z', commentCount: 0 }],
 };
 const onClose = mock(() => {});
@@ -51,7 +51,7 @@ beforeAll(async () => {
   const icon = () => <svg aria-hidden />;
   mock.module('@phosphor-icons/react', () => Object.fromEntries([
     'CalendarBlank', 'CaretDown', 'CheckSquare', 'Circle', 'Flag', 'Kanban', 'ListChecks',
-    'LockSimple', 'Plus', 'Tag', 'TextAlignLeft', 'Trash', 'Users', 'Warning', 'X',
+    'LockSimple', 'Plus', 'Tag', 'TextAlignLeft', 'Trash', 'Users', 'Warning', 'X', 'Clock', 'LinkSimple',
   ].map(name => [name, icon])));
   mock.module('@/components/ui/button', () => ({ Button: Control }));
   mock.module('@/components/user-avatar', () => ({ UserAvatar: () => <span /> }));

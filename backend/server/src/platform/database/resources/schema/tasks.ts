@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { boolean, check, date, doublePrecision, foreignKey, index, integer, jsonb, primaryKey, text, unique, uuid, varchar } from 'drizzle-orm/pg-core';
-import type { TaskBoardMemberRole, TaskBoardVisibility, TaskChecklistItem, TaskColumnColor, TaskPriority } from '@fouc/shared/tasks';
+import type { TaskBoardMemberRole, TaskBoardVisibility, TaskChecklistItem, TaskColumnColor, TaskPriority, TaskSchedule } from '@fouc/shared/tasks';
 import { authUser } from '../../identity/schema';
 import { resourcesNamespace } from './namespaces';
 import { project, projectMember } from './projects';
@@ -65,6 +65,7 @@ export const boardTask = resourcesNamespace.table('board_task', {
   assigneeIds: uuid('assignee_ids').array().notNull().default(sql`'{}'::uuid[]`),
   labels: text('labels').array().notNull().default(sql`'{}'::text[]`),
   dueDate: date('due_date', { mode: 'string' }),
+  schedule: jsonb('schedule').$type<TaskSchedule>(),
   checklist: jsonb('checklist').$type<TaskChecklistItem[]>().notNull().default([]),
   position: doublePrecision('position').notNull(),
   createdBy: uuid('created_by').notNull().references(() => authUser.id),
@@ -79,6 +80,7 @@ export const boardTask = resourcesNamespace.table('board_task', {
   check('board_task_title_not_empty', sql`length(btrim(${table.title})) > 0`),
   check('board_task_priority_valid', sql`${table.priority} IN ('low', 'medium', 'high', 'urgent')`),
   check('board_task_checklist_array', sql`jsonb_typeof(${table.checklist}) = 'array'`),
+  check('board_task_schedule_object', sql`${table.schedule} IS NULL OR (jsonb_typeof(${table.schedule}) = 'object' AND ${table.schedule} ?& ARRAY['startsAt', 'endsAt', 'url'])`),
   index('board_task_column_order_idx').on(table.projectId, table.boardId, table.columnId, table.position),
 ]);
 

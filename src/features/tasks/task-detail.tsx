@@ -1,6 +1,6 @@
 'use client';
 
-import type { BoardTask, TaskBoardDetail } from '@fouc/shared/tasks';
+import { taskScheduleSchema, type BoardTask, type TaskBoardDetail } from '@fouc/shared/tasks';
 import { CalendarBlank, CaretDown, CheckSquare, Circle, Flag, Kanban, ListChecks, LockSimple, Plus, Tag, TextAlignLeft, Trash, Users, Warning, X } from '@phosphor-icons/react';
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { AppAlert } from '@/components/app-alert';
@@ -12,6 +12,7 @@ import { usePageVisible } from '@/lib/page-visibility';
 import type { TaskBoardClient, TaskDraft } from './task-board-client';
 import { TaskComments } from './task-comments';
 import { taskReference } from './task-board-model';
+import { TaskScheduleSection } from './timeline/task-schedule-section';
 import { messages } from './task-detail.messages';
 import styles from './task-detail.module.css';
 
@@ -36,6 +37,7 @@ function initialDraft(task: BoardTask | null, columnId: string): TaskDraft {
     assigneeIds: task ? [...task.assigneeIds] : [],
     labels: task ? [...task.labels] : [],
     dueDate: task?.dueDate ?? null,
+    schedule: task?.schedule ?? null,
     checklist: task ? task.checklist.map((item) => ({ ...item })) : [],
   };
 }
@@ -63,7 +65,7 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
   const [confirmation, setConfirmation] = useState<'discard' | 'delete' | null>(null);
   const [busy, setBusy] = useState<'save' | 'delete' | null>(null);
   const [error, setError] = useState<'saveFailed' | 'deleteFailed' | null>(null);
-  const [fieldError, setFieldError] = useState<'titleRequired' | 'statusRequired' | 'labelsLimit' | 'checklistTitleRequired' | null>(null);
+  const [fieldError, setFieldError] = useState<'titleRequired' | 'statusRequired' | 'labelsLimit' | 'checklistTitleRequired' | 'scheduleInvalid' | null>(null);
   const canEdit = board.permission === 'owner' || board.permission === 'editor';
   const currentDraft = { ...draft, labels: parseLabels(labelsText) };
   const dirty = JSON.stringify(currentDraft) !== baseline || Boolean(newItem.trim()) || commentDirty;
@@ -133,6 +135,10 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
     }
     if (next.checklist.some((item) => !item.title)) {
       setFieldError('checklistTitleRequired');
+      return;
+    }
+    if (next.schedule && !taskScheduleSchema.safeParse(next.schedule).success) {
+      setFieldError('scheduleInvalid');
       return;
     }
     setError(null);
@@ -255,6 +261,8 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
 
           {fieldError && <p role="alert" className={styles.fieldError}>{t(fieldError)}</p>}
           {error && <AppAlert tone="error" title={t(error)} onClose={() => setError(null)} />}
+
+          <TaskScheduleSection value={draft.schedule} disabled={!canEdit || Boolean(busy)} onChange={value => update('schedule', value)} />
 
           <section className={styles.section}>
             <div className={styles.sectionHeading}><TextAlignLeft size={17} weight="duotone" aria-hidden /><h3>{t('description')}</h3></div>

@@ -526,9 +526,11 @@ CREATE TABLE "resources"."task_comment" (
 	"id" uuid NOT NULL,
 	"author_id" uuid NOT NULL,
 	"body" text NOT NULL,
+	"images" jsonb DEFAULT '[]'::jsonb NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "task_comment_project_id_board_id_id_pk" PRIMARY KEY("project_id","board_id","id"),
-	CONSTRAINT "task_comment_body_not_empty" CHECK (length(btrim("resources"."task_comment"."body")) > 0)
+	CONSTRAINT "task_comment_content_not_empty" CHECK (length(btrim("resources"."task_comment"."body")) > 0 OR jsonb_array_length("resources"."task_comment"."images") > 0),
+	CONSTRAINT "task_comment_images_array" CHECK (jsonb_typeof("resources"."task_comment"."images") = 'array' AND jsonb_array_length("resources"."task_comment"."images") <= 4)
 );
 
 CREATE TABLE "resources"."teamspace" (

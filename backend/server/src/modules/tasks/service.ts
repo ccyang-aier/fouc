@@ -4,17 +4,20 @@ import type { Pool } from 'pg';
 import { z } from 'zod';
 import { createBoardTaskInputSchema, createTaskBoardInputSchema, createTaskBoardViewInputSchema, createTaskColumnInputSchema, createTaskCommentInputSchema, moveBoardTaskInputSchema,
   reorderTaskColumnsInputSchema, setTaskBoardMemberInputSchema, taskBoardScopeSchema, taskColumnScopeSchema, taskCommentScopeSchema,
-  taskProjectScopeSchema, taskScopeSchema, taskBoardViewScopeSchema, TASK_BOARD_VIEW_LIMIT, updateBoardTaskInputSchema, updateTaskBoardInputSchema, updateTaskBoardViewInputSchema, updateTaskColumnInputSchema } from '@fouc/shared/tasks';
+  taskProjectScopeSchema, taskScopeSchema, taskBoardViewScopeSchema, taskCommentImageScopeSchema, TASK_BOARD_VIEW_LIMIT, updateBoardTaskInputSchema, updateTaskBoardInputSchema, updateTaskBoardViewInputSchema, updateTaskColumnInputSchema } from '@fouc/shared/tasks';
 import type { TaskBoardPermission, TaskBoardSummary, TaskBoardView, TaskChecklistItem } from '@fouc/shared/tasks';
 import { entityIdSchema } from '@fouc/shared/resources';
 import { boardTask, projectMember, taskBoard, taskBoardMember, taskColumn, taskComment } from '../../platform/database/resources/schema';
 import { withProject } from '../../platform/database/resources/transaction';
 import type { FoucIdentity } from '../../platform/identity/identity';
 import { parseInput, ResourceRequestError } from '../../platform/resources/errors';
+import { S3StorageError } from '../../platform/storage/s3';
 import { boardWhere, requireTaskProject, withTaskBoard } from './access';
 import type { TaskBoardContext } from './access';
 import { boardSummary, commentsForTask, projectTaskMembers, taskBoardDetail, taskBoardMembers } from './detail';
 import { taskRequest } from './input';
+import { commentImageKey, prepareCommentImages, removeCommentImageObjects } from './comment-images';
+import type { TaskCommentImageStorage } from './comment-images';
 
 const memberScope = taskBoardScopeSchema.extend({ userId: entityIdSchema });
 const taskCondition = (context: TaskBoardContext, taskId?: string) => and(eq(boardTask.projectId, context.board.projectId), eq(boardTask.boardId, context.board.id), taskId ? eq(boardTask.id, taskId) : undefined);
@@ -66,7 +69,7 @@ async function saveViews(context: TaskBoardContext, views: TaskBoardView[]) {
   return taskBoardDetail({ ...context, board: board! });
 }
 
-export function createTaskBoardService(pool: Pool) {
+export function createTaskBoardService(pool: Pool, storage?: TaskCommentImageStorage) {
   return {
     async list(identity: FoucIdentity, input: unknown) {
       const { projectId } = parseInput(taskProjectScopeSchema, input);
@@ -126,10 +129,13 @@ export function createTaskBoardService(pool: Pool) {
     },
     async remove(identity: FoucIdentity, input: unknown) {
       const scope = parseInput(taskBoardScopeSchema, input);
-      return withTaskBoard(pool, identity, scope, 'owner', async context => {
+      const keys = await withTaskBoard(pool, identity, scope, 'owner', async context => {
+        const comments = await context.db.select().from(taskComment).where(and(eq(taskComment.projectId, scope.projectId), eq(taskComment.boardId, scope.boardId)));
         await context.db.delete(taskBoard).where(boardWhere(context.board));
-        return { removed: true as const };
+        return comments.flatMap(comment => comment.images.map(image => commentImageKey({ ...scope, taskId: comment.taskId, commentId: comment.id }, image.id)));
       });
+      await removeCommentImageObjects(storage, keys);
+      return { removed: true as const };
     },
     async setMember(identity: FoucIdentity, input: unknown) {
       const { scope, data } = taskRequest(taskBoardScopeSchema, setTaskBoardMemberInputSchema, input);
@@ -259,11 +265,14 @@ export function createTaskBoardService(pool: Pool) {
     },
     async removeTask(identity: FoucIdentity, input: unknown) {
       const scope = parseInput(taskScopeSchema, input);
-      return withTaskBoard(pool, identity, scope, 'edit', async context => {
+      const result = await withTaskBoard(pool, identity, scope, 'edit', async context => {
         await requireTask(context, scope.taskId);
+        const comments = await context.db.select().from(taskComment).where(and(eq(taskComment.projectId, scope.projectId), eq(taskComment.boardId, scope.boardId), eq(taskComment.taskId, scope.taskId)));
         await context.db.delete(boardTask).where(taskCondition(context, scope.taskId));
-        return taskBoardDetail(context);
+        return { board: await taskBoardDetail(context), keys: comments.flatMap(comment => comment.images.map(image => commentImageKey({ ...scope, commentId: comment.id }, image.id))) };
       });
+      await removeCommentImageObjects(storage, result.keys);
+      return result.board;
     },
     async comments(identity: FoucIdentity, input: unknown) {
       const scope = parseInput(taskScopeSchema, input);
@@ -272,19 +281,51 @@ export function createTaskBoardService(pool: Pool) {
         return { items: await commentsForTask(context.db, scope) };
       });
     },
-    async createComment(identity: FoucIdentity, input: unknown) {
+    async createComment(identity: FoucIdentity, input: unknown, files: readonly File[] = []) {
       const { scope, data } = taskRequest(taskScopeSchema, createTaskCommentInputSchema, input);
-      return withTaskBoard(pool, identity, scope, 'edit', async context => {
+      if (!data.body && !files.length) throw new ResourceRequestError('INVALID_INPUT', '请输入评论或添加图片。', 400);
+      const images = await prepareCommentImages(files);
+      const uploaded: string[] = [];
+      try {
+        return await withTaskBoard(pool, identity, scope, 'edit', async context => {
+          await requireTask(context, scope.taskId);
+          const id = randomUUID();
+          for (const image of images) {
+            if (!storage) throw new Error('Comment image storage is unavailable.');
+            const key = commentImageKey({ ...scope, commentId: id }, image.metadata.id);
+            uploaded.push(key);
+            await storage.putObject(key, image.bytes, image.metadata.mime);
+          }
+          await context.db.insert(taskComment).values({ ...scope, ...data, images: images.map(image => image.metadata), id, authorId: context.userId });
+          await context.db.update(boardTask).set({ updatedAt: new Date() }).where(taskCondition(context, scope.taskId));
+          return (await commentsForTask(context.db, scope)).find(comment => comment.id === id)!;
+        });
+      } catch (error) {
+        await removeCommentImageObjects(storage, uploaded);
+        throw error;
+      }
+    },
+    async commentImage(identity: FoucIdentity, input: unknown) {
+      const scope = parseInput(taskCommentImageScopeSchema, input);
+      return withTaskBoard(pool, identity, scope, 'read', async context => {
         await requireTask(context, scope.taskId);
-        const id = randomUUID();
-        await context.db.insert(taskComment).values({ ...scope, ...data, id, authorId: context.userId });
-        await context.db.update(boardTask).set({ updatedAt: new Date() }).where(taskCondition(context, scope.taskId));
-        return (await commentsForTask(context.db, scope)).find(comment => comment.id === id)!;
+        const [comment] = await context.db.select().from(taskComment).where(and(eq(taskComment.projectId, scope.projectId), eq(taskComment.boardId, scope.boardId), eq(taskComment.taskId, scope.taskId), eq(taskComment.id, scope.commentId)));
+        const image = comment?.images.find(image => image.id === scope.imageId);
+        if (!image) throw new ResourceRequestError('TASK_NOT_FOUND', '评论图片不存在。', 404);
+        if (!storage) throw new Error('Comment image storage is unavailable.');
+        const object = await storage.openObject(commentImageKey(scope, image.id)).catch(error => {
+          if (error instanceof S3StorageError && error.code === 'OBJECT_MISSING') throw new ResourceRequestError('TASK_NOT_FOUND', '评论图片不存在。', 404);
+          throw error;
+        });
+        if (object.status === 404) throw new ResourceRequestError('TASK_NOT_FOUND', '评论图片不存在。', 404);
+        if (!object.ok) throw new Error('Comment image storage is unavailable.');
+        return new Response(object.body, { headers: { 'Content-Type': image.mime, 'Content-Length': String(image.size),
+          'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'private, no-store' } });
       });
     },
     async removeComment(identity: FoucIdentity, input: unknown) {
       const scope = parseInput(taskCommentScopeSchema, input);
-      return withTaskBoard(pool, identity, scope, 'edit', async context => {
+      const keys = await withTaskBoard(pool, identity, scope, 'edit', async context => {
         await requireTask(context, scope.taskId);
         const condition = and(eq(taskComment.projectId, scope.projectId), eq(taskComment.boardId, scope.boardId), eq(taskComment.taskId, scope.taskId), eq(taskComment.id, scope.commentId));
         const [comment] = await context.db.select().from(taskComment).where(condition);
@@ -292,8 +333,10 @@ export function createTaskBoardService(pool: Pool) {
         if (context.permission !== 'owner' && comment.authorId !== context.userId) throw new ResourceRequestError('FORBIDDEN', '只能删除自己的评论。', 403);
         await context.db.delete(taskComment).where(condition);
         await context.db.update(boardTask).set({ updatedAt: new Date() }).where(taskCondition(context, scope.taskId));
-        return { removed: true as const };
+        return comment.images.map(image => commentImageKey(scope, image.id));
       });
+      await removeCommentImageObjects(storage, keys);
+      return { removed: true as const };
     },
   };
 }

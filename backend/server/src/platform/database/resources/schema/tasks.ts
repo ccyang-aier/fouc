@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { boolean, check, date, doublePrecision, foreignKey, index, integer, jsonb, primaryKey, text, unique, uuid, varchar } from 'drizzle-orm/pg-core';
-import type { TaskBoardMemberRole, TaskBoardView, TaskBoardVisibility, TaskChecklistItem, TaskColumnColor, TaskLabel, TaskPriority, TaskSchedule } from '@fouc/shared/tasks';
+import type { TaskBoardMemberRole, TaskBoardView, TaskBoardVisibility, TaskChecklistItem, TaskColumnColor, TaskCommentImage, TaskLabel, TaskPriority, TaskSchedule } from '@fouc/shared/tasks';
 import { authUser } from '../../identity/schema';
 import { resourcesNamespace } from './namespaces';
 import { project, projectMember } from './projects';
@@ -94,10 +94,12 @@ export const taskComment = resourcesNamespace.table('task_comment', {
   id: uuid('id').notNull(),
   authorId: uuid('author_id').notNull().references(() => authUser.id),
   body: text('body').notNull(),
+  images: jsonb('images').$type<TaskCommentImage[]>().notNull().default([]),
   createdAt: instant('created_at').notNull().defaultNow(),
 }, (table) => [
   primaryKey({ columns: [table.projectId, table.boardId, table.id] }),
   foreignKey({ name: 'task_comment_task_fk', columns: [table.projectId, table.boardId, table.taskId], foreignColumns: [boardTask.projectId, boardTask.boardId, boardTask.id] }).onDelete('cascade'),
-  check('task_comment_body_not_empty', sql`length(btrim(${table.body})) > 0`),
+  check('task_comment_content_not_empty', sql`length(btrim(${table.body})) > 0 OR jsonb_array_length(${table.images}) > 0`),
+  check('task_comment_images_array', sql`jsonb_typeof(${table.images}) = 'array' AND jsonb_array_length(${table.images}) <= 4`),
   index('task_comment_task_created_idx').on(table.projectId, table.boardId, table.taskId, table.createdAt),
 ]);

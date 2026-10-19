@@ -12,6 +12,7 @@ import { createVerificationEmailTransport } from '../platform/identity/email';
 import { createKnowledgeOrganizationRoutes, createKnowledgeOrganizationService } from '../modules/knowledge/organization';
 import { createProjectRoutes, createProjectService } from '../modules/projects';
 import { createTaskBoardRoutes, createTaskBoardService } from '../modules/tasks';
+import { createS3ObjectStorage } from '../platform/storage/s3';
 import { createKnowledgeCatalogRoutes, createKnowledgeCatalogService } from '../modules/knowledge/organization';
 import { teamspacePermissionInvalidator } from '../modules/knowledge/permissions/fence';
 import { createKnowledgeApiRoutes, createKnowledgePatRoutes } from '../modules/knowledge/api';
@@ -73,7 +74,7 @@ export async function startFoucService(config: FoucServiceConfig, environment: N
   app.route('/', createFoucAuthRoutes(auth, (context) => context.env.clientAddress as string, socketTickets));
   app.route('/', createKnowledgeOrganizationRoutes(auth, createKnowledgeOrganizationService(pool)));
   app.route('/', createProjectRoutes(auth, createProjectService(pool)));
-  app.route('/', createTaskBoardRoutes(auth, createTaskBoardService(pool)));
+  app.route('/', createTaskBoardRoutes(auth, createTaskBoardService(pool, config.storage ? createS3ObjectStorage(config.storage) : undefined)));
   app.route('/', createKnowledgeCatalogRoutes(auth, createKnowledgeCatalogService(pool, { permissions: teamspacePermissionInvalidator })));
   app.route('/', createKnowledgeApiRoutes({ auth, pool }));
   app.route('/', createKnowledgePatRoutes({ auth, pool }));

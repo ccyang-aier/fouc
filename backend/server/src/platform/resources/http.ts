@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import type { Context } from 'hono';
+import type { Context, MiddlewareHandler } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import { cors } from 'hono/cors';
 import { hasTrustedFoucOrigin } from '../identity/config';
@@ -25,22 +25,29 @@ export function pagination(context: Context) {
 }
 
 /** One authenticated HTTP boundary for independently owned resource routes. */
-export function createResourceApi(auth: FoucAuth, base: string) {
+export function createResourceApi(auth: FoucAuth, base: string, options: { path?: RegExp; multipart?: { path: RegExp; maxBytes: number } } = {}) {
   const app = new Hono<ResourceEnvironment>();
   const origins = auth.options.trustedOrigins as string[];
-  app.use(`${base}/*`, async (context, next) => {
+  const use = (middleware: MiddlewareHandler<ResourceEnvironment>) => app.use(`${base}/*`, (context, next) =>
+    options.path && !options.path.test(context.req.path) ? next() : middleware(context, next));
+  const isMultipart = (context: Context) => context.req.method === 'POST'
+    && context.req.header('content-type')?.split(';')[0]?.trim() === 'multipart/form-data'
+    && Boolean(options.multipart?.path.test(context.req.path));
+  use(async (context, next) => {
     context.header('Cache-Control', 'no-store');
     context.header('Referrer-Policy', 'no-referrer');
     if (!hasTrustedFoucOrigin(context.req.raw, origins)) return context.json({ code: 'INVALID_ORIGIN', message: 'A trusted Origin is required.' }, 403);
-    if (!['GET', 'HEAD', 'OPTIONS'].includes(context.req.method) && context.req.header('content-type')?.split(';')[0]?.trim() !== 'application/json') {
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(context.req.method) && context.req.header('content-type')?.split(';')[0]?.trim() !== 'application/json' && !isMultipart(context)) {
       return context.json({ code: 'INVALID_CONTENT_TYPE', message: 'JSON requests are required.' }, 415);
     }
     await next();
   });
-  app.use(`${base}/*`, cors({ origin: (origin) => origins.includes(origin) ? origin : undefined, credentials: true,
+  use(cors({ origin: (origin) => origins.includes(origin) ? origin : undefined, credentials: true,
     allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'], allowHeaders: ['Content-Type'], maxAge: 600 }));
-  app.use(`${base}/*`, bodyLimit({ maxSize: 128 * 1_024, onError: (context) => context.json({ code: 'PAYLOAD_TOO_LARGE', message: 'Request is too large.' }, 413) }));
-  app.use(`${base}/*`, requireFoucIdentity(auth));
+  const jsonLimit = bodyLimit({ maxSize: 128 * 1_024, onError: (context) => context.json({ code: 'PAYLOAD_TOO_LARGE', message: 'Request is too large.' }, 413) });
+  const multipartLimit = options.multipart ? bodyLimit({ maxSize: options.multipart.maxBytes, onError: (context) => context.json({ code: 'PAYLOAD_TOO_LARGE', message: 'Request is too large.' }, 413) }) : jsonLimit;
+  use((context, next) => (isMultipart(context) ? multipartLimit : jsonLimit)(context, next));
+  use(requireFoucIdentity(auth));
   app.onError((error, context) => {
     const known = resourceFailure(error);
     return known ? context.json({ code: known.code, message: known.message }, known.status)

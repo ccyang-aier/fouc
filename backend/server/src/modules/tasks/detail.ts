@@ -48,5 +48,5 @@ export async function commentsForTask(db: ResourceTransaction, scope: { projectI
     .where(and(eq(taskComment.projectId, scope.projectId), eq(taskComment.boardId, scope.boardId), eq(taskComment.taskId, scope.taskId)))
     .orderBy(asc(taskComment.createdAt), asc(taskComment.id));
   return rows.map(({ comment, authorName, authorImage }) => ({ id: comment.id, taskId: comment.taskId, authorId: comment.authorId, authorName, authorImage,
-    body: comment.body, createdAt: comment.createdAt.toISOString() }));
+    body: comment.body, images: comment.images, createdAt: comment.createdAt.toISOString() }));
 }

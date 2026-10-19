@@ -12,15 +12,17 @@ export class TaskBoardError extends Error {
 
 /** Only public contracts cross the browser/server boundary; URL owns project scope. */
 export function createTaskBoardClient(projectId: string) {
-  async function request<T>(path: string, method = 'GET', body?: unknown, signal?: AbortSignal): Promise<T> {
+  async function response(path: string, method = 'GET', body?: unknown, signal?: AbortSignal) {
     const { origin } = await getFoucApiOrigin();
-    const response = await authenticatedFetch(`${origin}/api/projects/${projectId}${path}`, {
+    const result = await authenticatedFetch(`${origin}/api/projects/${projectId}${path}`, {
       method, signal,
-      ...(method === 'GET' ? {} : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body ?? {}) }),
+      ...(method === 'GET' ? {} : body instanceof FormData ? { body } : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body ?? {}) }),
     });
-    const result = await response.json();
-    if (!response.ok) throw new TaskBoardError(result.code, result.message, response.status);
-    return result as T;
+    if (!result.ok) { const error = await result.json(); throw new TaskBoardError(error.code, error.message, result.status); }
+    return result;
+  }
+  async function request<T>(path: string, method = 'GET', body?: unknown, signal?: AbortSignal): Promise<T> {
+    return (await response(path, method, body, signal)).json() as Promise<T>;
   }
   const base = '/task-boards';
   const board = (id: string) => `${base}/${id}`;
@@ -45,7 +47,14 @@ export function createTaskBoardClient(projectId: string) {
     moveTask: (id: string, taskId: string, columnId: string, beforeTaskId: string | null) => request<TaskBoardDetail>(`${board(id)}/tasks/${taskId}/move`, 'POST', { columnId, beforeTaskId }),
     removeTask: (id: string, taskId: string) => request<TaskBoardDetail>(`${board(id)}/tasks/${taskId}`, 'DELETE'),
     async comments(id: string, taskId: string, signal?: AbortSignal) { return (await request<{ items: TaskComment[] }>(`${board(id)}/tasks/${taskId}/comments`, 'GET', undefined, signal)).items; },
-    addComment: (id: string, taskId: string, body: string) => request<TaskComment>(`${board(id)}/tasks/${taskId}/comments`, 'POST', { body }),
+    addComment: (id: string, taskId: string, body: string, images: File[] = []) => {
+      if (!images.length) return request<TaskComment>(`${board(id)}/tasks/${taskId}/comments`, 'POST', { body });
+      const form = new FormData(); form.set('body', body); images.forEach(image => form.append('images', image, image.name));
+      return request<TaskComment>(`${board(id)}/tasks/${taskId}/comments`, 'POST', form);
+    },
+    async commentImage(id: string, taskId: string, commentId: string, imageId: string, signal?: AbortSignal) {
+      return (await response(`${board(id)}/tasks/${taskId}/comments/${commentId}/images/${imageId}`, 'GET', undefined, signal)).blob();
+    },
     removeComment: (id: string, taskId: string, commentId: string) => request<{ removed: true }>(`${board(id)}/tasks/${taskId}/comments/${commentId}`, 'DELETE'),
   };
 }

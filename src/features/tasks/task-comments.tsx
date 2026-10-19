@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { UserAvatar } from '@/components/user-avatar';
 import { useTranslation } from '@/lib/i18n';
 import type { TaskBoardClient } from './task-board-client';
+import { TaskCommentComposer } from './task-comment-composer';
+import { TaskCommentImages } from './task-comment-images';
 import { messages } from './task-comments.messages';
 import styles from './task-comments.module.css';
 
@@ -31,13 +33,10 @@ export function TaskComments({
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [revision, setRevision] = useState(0);
-  const [body, setBody] = useState('');
-  const [posting, setPosting] = useState(false);
   const [removing, setRemoving] = useState<string | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
-  const [error, setError] = useState<'postFailed' | 'removeFailed' | null>(null);
+  const [error, setError] = useState<'removeFailed' | null>(null);
   const active = useRef(true);
-  const input = useRef<HTMLTextAreaElement>(null);
   const canComment = board.permission === 'owner' || board.permission === 'editor';
   const actor = board.members.find((member) => member.userId === actorId);
   const commentCount = board.tasks.find(task => task.id === taskId)?.commentCount;
@@ -64,26 +63,11 @@ export function TaskComments({
     };
   }, [board.id, client, commentCount, revision, taskId]);
 
-  useEffect(() => {
-    onDirtyChange(Boolean(body.trim()));
-  }, [body, onDirtyChange]);
-
-  async function post() {
-    if (!body.trim() || posting || !canComment) return;
-    setPosting(true);
-    setError(null);
-    try {
-      const comment = await client.addComment(board.id, taskId, body.trim());
-      if (!active.current) return;
-      setComments((current) => [...current, comment]);
-      setBody('');
-      onChanged();
-      input.current?.focus({ preventScroll: true });
-    } catch {
-      if (active.current) setError('postFailed');
-    } finally {
-      if (active.current) setPosting(false);
-    }
+  async function post(body: string, images: File[]) {
+    const comment = await client.addComment(board.id, taskId, body, images);
+    if (!active.current) return;
+    setComments(current => [...current, comment]);
+    onChanged();
   }
 
   async function remove(id: string) {
@@ -145,7 +129,8 @@ export function TaskComments({
                     </Button>
                   )}
                 </div>
-                <p>{comment.body}</p>
+                {comment.body && <p>{comment.body}</p>}
+                <TaskCommentImages images={comment.images} boardId={board.id} taskId={taskId} commentId={comment.id} client={client} />
                 {confirming === comment.id && (
                   <div className={styles.confirm} role="group" aria-label={t('deleteConfirm')}>
                     <span>{t('deleteConfirm')}</span>
@@ -159,26 +144,7 @@ export function TaskComments({
           ))}
         </ol>
       )}
-      {canComment && !loading && !failed && (
-        <div className={styles.composer}>
-          <UserAvatar name={actor?.name} image={actor?.image} className={styles.avatar} />
-          <div className={styles.editor}>
-            <textarea ref={input} aria-label={t('placeholder')} placeholder={t('placeholder')} value={body}
-              maxLength={4000} disabled={posting} rows={3} onChange={(event) => setBody(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
-                  event.preventDefault();
-                  void post();
-                }
-              }} />
-            <div className={styles.composerActions}>
-              <span>{t('shortcut')}</span>
-              {body.trim() && <Button variant="ghost" size="sm" className={styles.danger} data-variant="destructive" disabled={posting} onClick={() => setBody('')}>{t('clear')}</Button>}
-              <Button variant="outline" size="sm" loading={posting} disabled={!body.trim()} onClick={() => void post()}>{t('publish')}</Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <TaskCommentComposer author={actor} hidden={!canComment || loading || failed} onSubmit={post} onDirtyChange={onDirtyChange} />
       {error && <AppAlert tone="error" title={t(error)} onClose={() => setError(null)} />}
     </section>
   );

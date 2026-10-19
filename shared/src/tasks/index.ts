@@ -8,6 +8,16 @@ export const taskPrioritySchema = z.enum(['low', 'medium', 'high', 'urgent']);
 export const taskColumnColorSchema = z.enum(['slate', 'blue', 'amber', 'green', 'violet', 'rose']);
 export const taskViewKindSchema = z.enum(['kanban', 'calendar', 'spreadsheet']);
 export const TASK_BOARD_VIEW_LIMIT = 24;
+export const TASK_COMMENT_IMAGE_LIMIT = 4;
+export const TASK_COMMENT_IMAGE_MAX_BYTES = 5 * 1_024 * 1_024;
+export const TASK_COMMENT_IMAGE_MIME_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'] as const;
+export const taskCommentImageSchema = z.strictObject({
+  id,
+  name: z.string().trim().min(1).max(255),
+  mime: z.enum(TASK_COMMENT_IMAGE_MIME_TYPES),
+  size: z.number().int().positive().max(TASK_COMMENT_IMAGE_MAX_BYTES),
+});
+export type TaskCommentImage = z.infer<typeof taskCommentImageSchema>;
 export const TASK_LABEL_COLORS = ['blue', 'violet', 'rose', 'orange', 'amber', 'green', 'teal', 'cyan'] as const;
 export const taskLabelColorSchema = z.enum(TASK_LABEL_COLORS);
 export const taskLabelSchema = z.strictObject({ name: z.string().trim().min(1).max(40), color: taskLabelColorSchema });
@@ -104,6 +114,7 @@ export interface TaskComment {
   authorName: string;
   authorImage: string | null;
   body: string;
+  images: TaskCommentImage[];
   createdAt: string;
 }
 
@@ -116,6 +127,7 @@ export const taskScopeSchema = taskBoardScopeSchema.extend({ taskId: id });
 export const taskColumnScopeSchema = taskBoardScopeSchema.extend({ columnId: id });
 export const taskBoardViewScopeSchema = taskBoardScopeSchema.extend({ viewId: id });
 export const taskCommentScopeSchema = taskScopeSchema.extend({ commentId: id });
+export const taskCommentImageScopeSchema = taskCommentScopeSchema.extend({ imageId: id });
 
 export const createTaskBoardInputSchema = z.strictObject({
   name: boardName,
@@ -162,7 +174,7 @@ export const createBoardTaskInputSchema = z.strictObject({ ...taskFields, descri
 export const updateBoardTaskInputSchema = z.strictObject(taskFields).partial().refine(nonemptyPatch)
   .refine(({ checklist }) => !checklist || new Set(checklist.flatMap(item => item.id ? [item.id] : [])).size === checklist.filter(item => item.id).length);
 export const moveBoardTaskInputSchema = z.strictObject({ columnId: id, beforeTaskId: id.nullable() });
-export const createTaskCommentInputSchema = z.strictObject({ body: z.string().trim().min(1).max(4_000) });
+export const createTaskCommentInputSchema = z.strictObject({ body: z.string().trim().max(4_000).default('') });
 
 export type CreateTaskBoardInput = z.input<typeof createTaskBoardInputSchema>;
 export type UpdateTaskBoardInput = z.input<typeof updateTaskBoardInputSchema>;

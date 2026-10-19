@@ -118,8 +118,8 @@ function deferredSave() {
   onSave.mockImplementation(() => result);
   return finish;
 }
-async function tab(value: 'checklist' | 'comments') {
-  await act(async () => host.querySelector<HTMLButtonElement>(`[role="tab"][aria-controls$="-${value}"]`)!.click());
+async function switchPane(value: 'details' | 'comments') {
+  await act(async () => host.querySelector<HTMLButtonElement>(`[data-detail-pane="${value}"]`)!.click());
 }
 function geometry() {
   const style = host.querySelector('dialog')!.style;
@@ -132,7 +132,7 @@ async function pointer(target: EventTarget, type: string, x: number, y: number) 
 test('page visibility closes and reopens the same card without losing task or comment drafts', async () => {
   await render();
   await type('Task title', 'Unfinished task edit');
-  await tab('comments');
+  await switchPane('comments');
   await type('Comment draft', 'Unpublished discussion');
   const dialog = host.querySelector('dialog')!;
   const title = textarea('Task title');
@@ -169,7 +169,7 @@ test('a new comment drafted while a save is pending keeps the card open when tha
   const finish = deferredSave();
   await act(async () => saveButton().click());
   expect(saveButton().disabled).toBe(true);
-  await tab('comments');
+  await switchPane('comments');
   await type('Comment draft', 'Keep this comment after saving');
   await act(async () => finish(true));
 
@@ -200,19 +200,32 @@ test('Escape protects an unsaved task draft until the user explicitly discards i
   expect(onSave.mock.calls).toHaveLength(0);
 });
 
-test('collaboration tabs keep comments mounted and preserve their draft when returning to subtasks', async () => {
+test('task information owns subtasks and switching to comments preserves both drafts without nested tabs', async () => {
   await render();
-  expect(host.querySelector('[data-task-detail-main]')).not.toBeNull();
-  expect(host.querySelectorAll('[role="tabpanel"]')).toHaveLength(2);
-  await tab('comments');
+  const main = host.querySelector('[data-task-detail-main]')!;
+  const comments = host.querySelector<HTMLElement>('[data-task-comments]')!;
+  expect(Boolean(main.querySelector('[data-task-detail-checklist]'))).toBe(true);
+  expect(Boolean(comments.querySelector('[data-task-detail-checklist]'))).toBe(false);
+  expect(host.querySelectorAll('[role="tablist"]')).toHaveLength(0);
+  expect(host.querySelector('[data-detail-pane="comments"]')?.textContent).toBe('Comments');
+  const input = main.querySelector<HTMLInputElement>('input[aria-label="Add a checklist item"]')!;
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(browser.HTMLInputElement.prototype, 'value')!.set!.call(input, 'Review the prototype');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await act(async () => main.querySelector<HTMLButtonElement>('[aria-label="Add checklist item"]')!.click());
+  await switchPane('comments');
   await type('Comment draft', 'Keep the discussion while checking subtasks');
   const comment = textarea('Comment draft');
-  await tab('checklist');
-  expect(host.querySelector<HTMLElement>('[data-task-comments]')!.hidden).toBe(true);
-  expect(textarea('Comment draft')).toBe(comment);
-  await tab('comments');
-  expect(host.querySelector<HTMLElement>('[data-task-comments]')!.hidden).toBe(false);
+  await switchPane('details');
+  expect(host.querySelector('[data-mobile-pane]')?.getAttribute('data-mobile-pane')).toBe('details');
+  expect(main.querySelector<HTMLInputElement>('[aria-label="Checklist item"]')?.value).toBe('Review the prototype');
+  expect(textarea('Comment draft') === comment).toBe(true);
+  await switchPane('comments');
   expect(comment.value).toBe('Keep the discussion while checking subtasks');
+  await act(async () => saveButton().click());
+  expect(onSave.mock.calls[0][0].checklist[0]?.title).toBe('Review the prototype');
+  expect(onClose.mock.calls).toHaveLength(0);
 });
 
 test('moving the card stays in the viewport and Escape restores geometry without discarding text', async () => {

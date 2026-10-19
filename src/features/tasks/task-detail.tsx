@@ -1,7 +1,7 @@
 'use client';
 
 import { taskScheduleSchema, type BoardTask, type TaskBoardDetail } from '@fouc/shared/tasks';
-import { CalendarBlank, CaretDown, CheckSquare, Circle, Flag, LockSimple, Plus, Tag, TextAlignLeft, Trash, Users, Warning, X } from '@phosphor-icons/react';
+import { CalendarBlank, CaretDown, ChatCircle, CheckSquare, Circle, Flag, LockSimple, Plus, Tag, TextAlignLeft, Trash, Users, Warning, X } from '@phosphor-icons/react';
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { AppAlert } from '@/components/app-alert';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,8 @@ import { useTranslation } from '@/lib/i18n';
 import { usePageVisible } from '@/lib/page-visibility';
 import type { TaskBoardClient, TaskDraft } from './task-board-client';
 import { taskReference } from './task-board-model';
-import { TaskDetailActivity } from './task-detail-activity';
+import { TaskDetailChecklist } from './task-detail-checklist';
+import { TaskComments } from './task-comments';
 import { TaskLabelsEditor, collectTaskLabels } from './task-labels';
 import { TaskPriorityIcon } from './task-priority-icon';
 import { TaskSelect } from './task-select';
@@ -63,7 +64,7 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
   const [baseline, setBaseline] = useState(() => JSON.stringify(initialDraft(task, columnId)));
   const [newItem, setNewItem] = useState('');
   const [memberQuery, setMemberQuery] = useState('');
-  const [mobilePane, setMobilePane] = useState<'details' | 'activity'>('details');
+  const [mobilePane, setMobilePane] = useState<'details' | 'comments'>('details');
   const [commentDirty, setCommentDirty] = useState(false);
   const commentDirtyRef = useRef(false);
   const changeCommentDirty = useCallback((value: boolean) => { commentDirtyRef.current = value; setCommentDirty(value); }, []);
@@ -218,8 +219,8 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
             onChange={(event) => update('title', event.target.value.replace(/\n/g, ' '))} /> : <h3 className={styles.title}>{draft.title}</h3>}
         </div>
         <div className={styles.mobileSwitch} role="group" aria-label={t('detailsPane')}>
-          <button type="button" className="fouc-action" data-surface="plain" aria-pressed={mobilePane === 'details'} onClick={() => setMobilePane('details')}>{t('detailsPane')}</button>
-          <button type="button" className="fouc-action" data-surface="plain" aria-pressed={mobilePane === 'activity'} onClick={() => setMobilePane('activity')}>{t('activity')}</button>
+          <button type="button" className="fouc-action" data-surface="plain" data-detail-pane="details" aria-pressed={mobilePane === 'details'} onClick={() => setMobilePane('details')}>{t('detailsPane')}</button>
+          <button type="button" className="fouc-action" data-surface="plain" data-detail-pane="comments" aria-pressed={mobilePane === 'comments'} onClick={() => setMobilePane('comments')}>{t('comments')}</button>
         </div>
         <div className={styles.body} data-mobile-pane={mobilePane}>
           <section className={styles.mainPanel} aria-label={t('detailsPane')} data-task-detail-main>
@@ -273,10 +274,12 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
               <div className={styles.sectionHeading}><TextAlignLeft size={15} aria-hidden /><h3>{t('description')}</h3></div>
               {canEdit ? <textarea className={styles.description} aria-label={t('description')} rows={4} maxLength={12000} placeholder={t('descriptionPlaceholder')} value={draft.description} disabled={Boolean(busy)} onChange={event => update('description', event.target.value)} /> : <p className={styles.descriptionText} data-empty={!draft.description || undefined}>{draft.description || t('noDescription')}</p>}
             </section>
+            <TaskDetailChecklist checklist={draft.checklist} onChecklist={value => update('checklist', value)} newItem={newItem} onNewItem={setNewItem} onAddItem={addItem} inputRef={checklistInput} editable={canEdit} busy={Boolean(busy)} />
           </section>
-          <TaskDetailActivity board={board} task={task} actorId={actorId} client={client} checklist={draft.checklist} onChecklist={value => update('checklist', value)}
-            newItem={newItem} onNewItem={setNewItem} onAddItem={addItem} inputRef={checklistInput} editable={canEdit} busy={Boolean(busy)}
-            onCommentsChanged={onCommentsChanged} onCommentDirtyChange={changeCommentDirty} />
+          <aside className={styles.commentsPanel} aria-label={t('comments')} data-task-comments>
+            <div className={styles.commentsHeader}><ChatCircle size={14} aria-hidden /><h3>{t('comments')}</h3><span className={styles.sectionCount}>{task?.commentCount ?? 0}</span></div>
+            <div className={styles.commentsBody}>{task ? <TaskComments board={board} taskId={task.id} actorId={actorId} client={client} onChanged={onCommentsChanged} onDirtyChange={changeCommentDirty} /> : <p className={styles.emptyText}>{t('commentsAfterCreate')}</p>}</div>
+          </aside>
         </div>
         <footer className={styles.footer}>
           {canEdit && task && <Button type="button" variant="ghost" className={styles.deleteTask} data-variant="destructive" disabled={Boolean(busy)} onClick={() => setConfirmation('delete')}><Trash size={14} />{t('delete')}</Button>}

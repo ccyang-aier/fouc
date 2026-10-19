@@ -4,7 +4,6 @@ export const messages = defineMessages({
   newTask: ['新建任务', 'New task'],
   taskDetails: ['任务详情', 'Task details'],
   detailsPane: ['任务信息', 'Task information'],
-  activity: ['协作', 'Collaboration'],
   subtasks: ['子任务', 'Subtasks'],
   comments: ['评论', 'Comments'],
   commentsAfterCreate: ['创建任务后即可添加评论。', 'Create the task to add comments.'],

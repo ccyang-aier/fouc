@@ -3,8 +3,6 @@
   padding: 2px 0 3px;
 }
 
-.quality-titlebar,
-.quality-titlebar > div,
 .quality-lane-header,
 .quality-composer-tools,
 .quality-prompt-ideas,
@@ -14,44 +12,11 @@
   align-items: center;
 }
 
-.quality-titlebar {
-  justify-content: space-between;
-  gap: 16px;
-  margin: 0 0 20px;
-}
-
-.quality-titlebar > div {
-  gap: 13px;
-}
-
-.quality-titlebar h3 {
-  font-size: 15px;
-  font-weight: 600;
-  color: #28364a;
-}
-
-.quality-titlebar > div > span,
-.quality-mode {
-  font-size: 12px;
-  color: #8190a3;
-}
-
-.quality-mode {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-}
-
-.quality-mode .icon {
-  width: 14px;
-  height: 14px;
-}
-
 .quality-workbench {
-  border: 1px solid #e3e8ef;
-  border-radius: 10px;
   overflow: hidden;
   background: #fff;
+  border: 0;
+  border-radius: 0;
 }
 
 .quality-comparison {
@@ -66,35 +31,20 @@
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  padding: 22px;
+  padding: 0 20px 20px 0;
 }
 
 .quality-lane + .quality-lane {
   border-left: 1px solid #e8edf3;
+  padding: 0 0 20px 20px;
 }
 
 .quality-lane-header {
   gap: 10px;
-  min-height: 38px;
-  padding-bottom: 19px;
-  border-bottom: 1px solid #f0f2f6;
   flex-shrink: 0;
-}
-
-.quality-version-mark {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  flex-shrink: 0;
-  border-radius: 8px;
-  background: #edf2ff;
-  color: #4668ca;
-}
-
-.quality-lane.new .quality-version-mark {
-  background: #eaf7f3;
-  color: #228b78;
+  min-height: 32px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #edf0f5;
 }
 
 .quality-lane-header > div {
@@ -105,24 +55,9 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
   color: #344256;
-  font-weight: 600;
-}
-
-.quality-lane-header strong span {
-  font:
-    10px/1.5 Consolas,
-    monospace;
-  color: #8794a5;
-  font-weight: 400;
-}
-
-.quality-lane-header p {
-  margin-top: 3px;
-  font-size: 11px;
-  color: #8b97a8;
-  overflow-wrap: anywhere;
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .quality-result-state {
@@ -139,28 +74,10 @@
   gap: 21px;
   flex: 1;
   min-height: 0;
-  padding: 25px 13%;
   color: #9aa6b5;
   font-size: 12px;
-}
-
-.quality-empty-lines {
-  display: grid;
-  gap: 10px;
-}
-
-.quality-empty-lines span {
-  height: 5px;
-  background: #f0f3f7;
-  border-radius: 3px;
-}
-
-.quality-empty-lines span:nth-child(2) {
-  width: 84%;
-}
-
-.quality-empty-lines span:nth-child(3) {
-  width: 57%;
+  padding: 20px;
+  align-items: center;
 }
 
 .quality-response {
@@ -168,11 +85,11 @@
   min-height: 0;
   overflow: auto;
   scrollbar-gutter: stable;
-  padding-top: 20px;
   font-size: 13px;
   line-height: 1.85;
   color: #526075;
   overflow-wrap: anywhere;
+  padding-top: 16px;
 }
 
 .quality-response p + p,
@@ -196,23 +113,23 @@
 }
 
 .quality-composer {
-  padding: 16px 18px 14px;
   border-top: 1px solid #e8edf3;
-  background: #fbfcfe;
+  padding: 16px 0 0;
+  background: transparent;
 }
 
 .quality-composer textarea {
   display: block;
   width: 100%;
-  min-height: 74px;
   padding: 11px 12px;
-  border: 1px solid transparent;
   border-radius: 6px;
-  background: transparent;
   color: #46556b;
   font-size: 13px;
   line-height: 1.8;
   resize: vertical;
+  border: 1px solid #dde4ed;
+  background: #fff;
+  min-height: 90px;
 }
 
 .quality-composer textarea:focus {
@@ -229,7 +146,7 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
-  padding: 5px 4px 0;
+  padding: 12px 0 0;
 }
 
 .quality-prompt-ideas {
@@ -316,33 +233,52 @@ button.quality-send {
   border: 0;
 }
 
+.quality-version {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.quality-version > span {
+  font:
+    10px/1.5 Consolas,
+    monospace;
+  color: #9aa5b3;
+}
+
+.quality-version-dot {
+  width: 5px;
+  height: 5px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #2d5cf6;
+}
+
+.quality-lane.new .quality-version-dot {
+  background: #0e9b8c;
+}
+
 @media (max-width: 760px) {
-  .quality-titlebar > div {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .quality-mode {
-    font-size: 10px;
-  }
   .quality-comparison {
     grid-template-columns: 1fr;
     height: auto;
   }
   .quality-lane {
-    padding: 17px;
     height: 250px;
+    padding: 0 0 16px;
   }
   .quality-lane + .quality-lane {
     border-left: 0;
     border-top: 1px solid #e8edf3;
+    padding: 16px 0;
   }
   .quality-empty {
     min-height: 130px;
     padding: 20px 12%;
   }
   .quality-composer {
-    padding: 12px;
+    padding: 14px 0 0;
   }
   .quality-prompt-ideas {
     gap: 5px;

@@ -11,24 +11,42 @@ const createExperienceState = () => ({
 let experienceTimer = null;
 
 const experiencePrompts = [
-  { label: "并发请求去重", text: defaultPrompt },
+  { label: "随机超长文本", create: randomLongPrompt },
   {
     label: "工具调用校验",
     text: "请用 TypeScript 设计工具调用参数校验逻辑：校验必填字段与未知参数，并给出可读的错误信息。",
   },
 ];
 
+// A realistic long-input fixture; regenerate the content on every click.
+function randomLongPrompt() {
+  const topics = [
+    "跨团队灰度发布",
+    "企业知识检索",
+    "长上下文推理",
+    "在线服务升级",
+    "多版本体验评估",
+  ];
+  const observations = [
+    "正式版本持续承担日常业务请求，新版本只面向经过授权的试点调用方。需要在相同观察窗口内，对齐请求失败率、超时率、首 Token 时延与输出效果，分别记录稳定性变化和业务可用性。",
+    "业务团队反馈同一个问题在不同上下文中可能得到不同回答，因此评估必须保留任务背景、输入材料和验收条件。请区分已有事实、合理推断与尚未验证的结论，不将单次成功作为完整质量证明。",
+    "实际请求包含简短查询、多轮问答、结构化提取和复杂代码生成，输入规模与并发负载存在差异。比较结果时应注明资源条件，避免把负载差异直接解释为模型能力提升。",
+    "观察期内需要保留原有服务入口和授权边界。调整试用范围前应展示具体影响对象，完成发布或退出灰度后继续检查网关生效状态，在途流式请求由原版本处理，不直接释放仍有请求的部署资源。",
+    "请整理材料中的重复表述、相互矛盾的信息和缺失的约束，给出清晰、可执行的下一步建议。结论应说明依据、影响范围和仍需人工确认的问题，避免输出没有信息价值的套话。",
+    "团队希望界面支持长文本阅读、并排对照和连续修改输入。段落与列表需要保持合理间距，长名称和代码块不应破坏布局，输入过程中应保留焦点，错误提示应直接指向可以修正的问题。",
+  ];
+  const choose = (items) => items[Math.floor(Math.random() * items.length)];
+  const sections = Array.from({ length: 48 }, (_, index) => {
+    const reference = Math.floor(10000 + Math.random() * 90000);
+    return `材料 ${index + 1} · 记录 ${reference}\n${choose(observations)}${choose(observations)}`;
+  });
+  return `请分析以下关于「${choose(topics)}」的长篇材料，提炼主要结论、关键分歧和执行建议。\n\n${sections.join("\n\n")}\n\n请用简明的分组结构回答，并列出仍需补充的信息。`;
+}
+
 function qualityPanel() {
   const experience = state.experience;
   return /* HTML */ `
     <section class="quality-studio">
-      <header class="quality-titlebar">
-        <div>
-          <h3>同题对照</h3>
-          <span>一个问题，两份独立回答</span>
-        </div>
-        <span class="quality-mode">${icon("compare")}双版本同步</span>
-      </header>
       <div class="quality-workbench">
         <div class="quality-comparison" aria-busy="${experience.running}">
           ${["old", "new"]
@@ -36,17 +54,13 @@ function qualityPanel() {
               (version) => /* HTML */ `
                 <article class="quality-lane ${version}">
                   <header class="quality-lane-header">
-                    <span class="quality-version-mark">${icon("model")}</span>
-                    <div>
-                      <strong
-                        >${ver[version].name}<span
-                          >${ver[version].id}</span
-                        ></strong
-                      >
-                      <p>${ver[version].model}</p>
+                    <div class="quality-version">
+                      <i class="quality-version-dot" aria-hidden="true"></i
+                      ><strong>${ver[version].name}</strong
+                      ><span>${ver[version].id}</span>
                     </div>
                     <span class="quality-result-state"
-                      >${experience.running ? "生成中" : experience.outputs ? "已完成" : "待生成"}</span
+                      >${experience.running ? "生成中…" : ""}</span
                     >
                   </header>
                   ${
@@ -58,10 +72,7 @@ function qualityPanel() {
                         `
                       : /* HTML */ `
                           <div class="quality-empty">
-                            <div class="quality-empty-lines" aria-hidden="true">
-                              <span></span><span></span><span></span>
-                            </div>
-                            <p>等待${ver[version].name}回答</p>
+                            <p>等待回答</p>
                           </div>
                         `
                   }
@@ -75,7 +86,7 @@ function qualityPanel() {
           <textarea
             id="experience-prompt"
             rows="2"
-            maxlength="3000"
+            maxlength="20000"
             placeholder="输入一个问题，同时向两个版本提问…"
           >
 ${esc(experience.prompt)}</textarea>
@@ -127,7 +138,7 @@ function formatResponse(text) {
 }
 
 function demoResponses(prompt) {
-  if (/去重|Promise|并发/.test(prompt)) {
+  if (/去重|Promise/.test(prompt)) {
     return {
       old: [
         "可以用 Map 保存进行中的请求：",
@@ -198,8 +209,9 @@ function runExperience() {
   const total = Math.max(
     ...Object.values(experience.outputs).map((output) => output.length),
   );
+  const step = Math.max(32, Math.ceil(total / 40));
   experienceTimer = setInterval(() => {
-    experience.progress = Math.min(total, experience.progress + 32);
+    experience.progress = Math.min(total, experience.progress + step);
     for (const version of ["old", "new"]) {
       const output = $("output-" + version);
       if (output)

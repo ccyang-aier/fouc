@@ -1226,8 +1226,11 @@ Authorization: Bearer &lt;API_KEY&gt;</pre>
   "run-experience": runExperience,
   "experience-preset": (el) => {
     const prompt = experiencePrompts[Number(el.dataset.prompt)];
-    state.experience.prompt = prompt.text;
-    $("experience-prompt").value = prompt.text;
+    const text = prompt.create ? prompt.create() : prompt.text;
+    state.experience.prompt = text;
+    $("experience-prompt").value = text;
+    $("experience-prompt").setSelectionRange(0, 0);
+    $("experience-prompt").scrollTop = 0;
     $("experience-error").textContent = "";
     $("experience-prompt").focus();
   },

@@ -10,13 +10,13 @@ function chartSeries(key, version) {
   const phase =
     (version === "old" ? 0.5 : 1.4) +
     { failure: 0, timeout: 2.1, ttft: 0.7, tpot: 1.6 }[key];
-  const wave = Array.from(
-    { length: count },
-    (_, index) =>
-      Math.sin(index * 0.83 + phase) * 0.13 +
-      Math.sin(index * 1.94 + phase) * 0.055 +
-      Math.cos(index * 0.37) * 0.075,
-  );
+  const wave = Array.from({ length: count }, (_, index) => {
+    const position = index / (count - 1);
+    return (
+      Math.sin(position * Math.PI * 4.2 + phase) * 0.12 +
+      Math.cos(position * Math.PI * 2 + phase * 0.5) * 0.04
+    );
+  });
   const mean = wave.reduce((sum, value) => sum + value, 0) / count;
   return wave.map((value) => metricValues(key)[version] * (1 + value - mean));
 }
@@ -34,13 +34,33 @@ function chartValue(value, key) {
 }
 
 function smoothChartPath(points) {
+  const slopes = points
+    .slice(1)
+    .map(
+      (point, index) =>
+        (point.y - points[index].y) / (point.x - points[index].x),
+    );
+  const tangents = points.map((_, index) => {
+    if (index === 0) return slopes[0];
+    if (index === points.length - 1) return slopes.at(-1);
+    const before = slopes[index - 1];
+    const after = slopes[index];
+    return before * after <= 0 ? 0 : (2 * before * after) / (before + after);
+  });
   const path = new Path2D();
   path.moveTo(points[0].x, points[0].y);
   for (let index = 1; index < points.length; index++) {
     const previous = points[index - 1];
     const point = points[index];
-    const middle = (previous.x + point.x) / 2;
-    path.bezierCurveTo(middle, previous.y, middle, point.y, point.x, point.y);
+    const handle = (point.x - previous.x) / 3;
+    path.bezierCurveTo(
+      previous.x + handle,
+      previous.y + tangents[index - 1] * handle,
+      point.x - handle,
+      point.y - tangents[index] * handle,
+      point.x,
+      point.y,
+    );
   }
   return path;
 }

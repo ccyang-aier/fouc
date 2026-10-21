@@ -1,7 +1,7 @@
 'use client';
 
 import { taskScheduleSchema, type BoardTask, type TaskBoardDetail } from '@fouc/shared/tasks';
-import { CalendarBlank, CaretDown, ChatCircle, CheckSquare, Circle, Flag, LockSimple, Plus, Tag, TextAlignLeft, Trash, Users, Warning, X } from '@phosphor-icons/react';
+import { CalendarBlank, CaretDown, CheckSquare, Circle, Flag, LockSimple, Plus, Tag, TextAlignLeft, Trash, Users, Warning, X } from '@phosphor-icons/react';
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { AppAlert } from '@/components/app-alert';
 import { Button } from '@/components/ui/button';
@@ -64,7 +64,7 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
   const [baseline, setBaseline] = useState(() => JSON.stringify(initialDraft(task, columnId)));
   const [newItem, setNewItem] = useState('');
   const [memberQuery, setMemberQuery] = useState('');
-  const [mobilePane, setMobilePane] = useState<'details' | 'comments'>('details');
+  const [activePane, setActivePane] = useState<'details' | 'comments'>('details');
   const [commentDirty, setCommentDirty] = useState(false);
   const commentDirtyRef = useRef(false);
   const changeCommentDirty = useCallback((value: boolean) => { commentDirtyRef.current = value; setCommentDirty(value); }, []);
@@ -218,12 +218,12 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
             rows={1} maxLength={240} value={draft.title} disabled={Boolean(busy)} aria-invalid={fieldError === 'titleRequired'}
             onChange={(event) => update('title', event.target.value.replace(/\n/g, ' '))} /> : <h3 className={styles.title}>{draft.title}</h3>}
         </div>
-        <div className={styles.mobileSwitch} role="group" aria-label={t('detailsPane')}>
-          <button type="button" className="fouc-action" data-surface="plain" data-detail-pane="details" aria-pressed={mobilePane === 'details'} onClick={() => setMobilePane('details')}>{t('detailsPane')}</button>
-          <button type="button" className="fouc-action" data-surface="plain" data-detail-pane="comments" aria-pressed={mobilePane === 'comments'} onClick={() => setMobilePane('comments')}>{t('comments')}</button>
+        <div className={styles.paneSwitch} role="group" aria-label={t('detailsPane')}>
+          <button type="button" className="fouc-action" data-surface="plain" data-detail-pane="details" aria-pressed={activePane === 'details'} onClick={() => setActivePane('details')}>{t('detailsPane')}</button>
+          <button type="button" className="fouc-action" data-surface="plain" data-detail-pane="comments" aria-pressed={activePane === 'comments'} onClick={() => setActivePane('comments')}>{t('comments')}</button>
         </div>
-        <div className={styles.body} data-mobile-pane={mobilePane}>
-          <section className={styles.mainPanel} aria-label={t('detailsPane')} data-task-detail-main>
+        <div className={styles.body}>
+          <section className={styles.mainPanel} aria-label={t('detailsPane')} hidden={activePane !== 'details'} data-task-detail-main>
             {!canEdit && <div className={styles.readonly}><LockSimple size={13} />{t('readonly')}</div>}
             <fieldset className={styles.fields} disabled={!canEdit || Boolean(busy)}>
               <div className={styles.fieldRow}>
@@ -276,8 +276,7 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
             </section>
             <TaskDetailChecklist checklist={draft.checklist} onChecklist={value => update('checklist', value)} newItem={newItem} onNewItem={setNewItem} onAddItem={addItem} inputRef={checklistInput} editable={canEdit} busy={Boolean(busy)} />
           </section>
-          <aside className={styles.commentsPanel} aria-label={t('comments')} data-task-comments>
-            <div className={styles.commentsHeader}><ChatCircle size={14} aria-hidden /><h3>{t('comments')}</h3><span className={styles.sectionCount}>{task?.commentCount ?? 0}</span></div>
+          <aside className={styles.commentsPanel} aria-label={t('comments')} hidden={activePane !== 'comments'} data-task-comments>
             <div className={styles.commentsBody}>{task ? <TaskComments board={board} taskId={task.id} actorId={actorId} client={client} onChanged={onCommentsChanged} onDirtyChange={changeCommentDirty} /> : <p className={styles.emptyText}>{t('commentsAfterCreate')}</p>}</div>
           </aside>
         </div>

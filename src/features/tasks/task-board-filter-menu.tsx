@@ -21,7 +21,7 @@ export function TaskBoardAssigneeFilter({ members, actorId, value, onChange }: {
   const term = query.trim().toLocaleLowerCase();
   const matching = ordered.filter(member => `${member.name} ${member.email}`.toLocaleLowerCase().includes(term));
   return <DropdownMenu onOpenChange={open => { if (open) setQuery(''); }}>
-    <Tooltip><TooltipTrigger asChild><DropdownMenuTrigger className={styles.toolbarIcon} data-surface="muted" aria-label={t('allMembers')} data-filter-active={value !== 'all' || undefined}><Users size={16} />{value !== 'all' && <span className={styles.filterCount}>1</span>}</DropdownMenuTrigger></TooltipTrigger><TooltipContent>{members.find(member => member.userId === selectedId)?.name ?? t('allMembers')}</TooltipContent></Tooltip>
+    <Tooltip><TooltipTrigger asChild><DropdownMenuTrigger className={styles.toolbarIcon} data-surface="muted" aria-label={t('allMembers')} data-filter-active={value !== 'all' || undefined}><Users size={16} weight="bold" />{value !== 'all' && <span className={styles.filterCount}>1</span>}</DropdownMenuTrigger></TooltipTrigger><TooltipContent>{members.find(member => member.userId === selectedId)?.name ?? t('allMembers')}</TooltipContent></Tooltip>
     <DropdownMenuContent align="end" density="compact" className={styles.selectionMenu}>
       <DropdownMenuSearch value={query} onValueChange={setQuery} placeholder={t('searchAssignees')} clearLabel={t('reset')} />
       <div className={styles.filterOptions}><DropdownMenuRadioGroup value={selectedId}>

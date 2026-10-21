@@ -13,7 +13,7 @@
 .toolbarLeft { display:flex; align-items:center; flex-wrap:wrap; gap:12px; min-width:0; }
 .toolbarRight { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:12px; min-width:0; max-width:100%; margin-left:auto; }
 .toolbarControls { display:flex; align-items:center; flex-shrink:0; flex-wrap:nowrap; gap:6px; max-width:100%; }
-.toolbarIcon { position:relative; display:flex; align-items:center; justify-content:center; flex-shrink:0; width:30px; height:30px; padding:0; border:1px solid var(--control-border); border-radius:6px; background:transparent; color:color-mix(in srgb,var(--ink-soft),var(--muted-strong)); cursor:pointer; }
+.toolbarIcon { position:relative; display:flex; align-items:center; justify-content:center; flex-shrink:0; width:30px; height:30px; padding:0; border:1px solid var(--control-border); border-radius:6px; background:transparent; color:var(--ink-soft); cursor:pointer; }
 .viewSwitcher { display:flex; align-items:center; flex-wrap:wrap; gap:6px; min-height:30px; min-width:0; }
 .viewTab { display:flex; align-items:center; gap:1px; min-width:0; }
 .viewTab .viewSegment > span { max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }

@@ -204,6 +204,7 @@ test('task information owns subtasks and switching to comments preserves both dr
   await render();
   const main = host.querySelector('[data-task-detail-main]')!;
   const comments = host.querySelector<HTMLElement>('[data-task-comments]')!;
+  expect(comments.hidden).toBe(true);
   expect(Boolean(main.querySelector('[data-task-detail-checklist]'))).toBe(true);
   expect(Boolean(comments.querySelector('[data-task-detail-checklist]'))).toBe(false);
   expect(host.querySelectorAll('[role="tablist"]')).toHaveLength(0);
@@ -215,10 +216,13 @@ test('task information owns subtasks and switching to comments preserves both dr
   });
   await act(async () => main.querySelector<HTMLButtonElement>('[aria-label="Add checklist item"]')!.click());
   await switchPane('comments');
+  expect(comments.hidden).toBe(false);
+  expect((main as HTMLElement).hidden).toBe(true);
   await type('Comment draft', 'Keep the discussion while checking subtasks');
   const comment = textarea('Comment draft');
   await switchPane('details');
-  expect(host.querySelector('[data-mobile-pane]')?.getAttribute('data-mobile-pane')).toBe('details');
+  expect((main as HTMLElement).hidden).toBe(false);
+  expect(comments.hidden).toBe(true);
   expect(main.querySelector<HTMLInputElement>('[aria-label="Checklist item"]')?.value).toBe('Review the prototype');
   expect(textarea('Comment draft') === comment).toBe(true);
   await switchPane('comments');

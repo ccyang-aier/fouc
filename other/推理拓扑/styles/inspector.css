@@ -1,0 +1,468 @@
+/* Object details. All content shares the selected object and observation period. */
+.inspector {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--surface);
+  border-left: 1px solid var(--line);
+  z-index: 4;
+}
+.inspector-head {
+  padding: 18px 16px 0;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.inspector-identity {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  min-width: 0;
+}
+.object-avatar {
+  height: 34px;
+  width: 34px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.object-avatar .icon {
+  width: 20px;
+  height: 20px;
+}
+.object-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+  flex: 1;
+}
+.object-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+.object-title h2 {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 22px;
+  overflow-wrap: anywhere;
+}
+.object-subtitle {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+.inspector-tools {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  margin-right: -5px;
+  margin-top: -4px;
+}
+.inspector-tools button {
+  width: 24px;
+  height: 27px;
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  padding: 4px;
+}
+.inspector-tools button:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+.inspector-tools .icon {
+  width: 16px;
+  height: 16px;
+}
+.object-tabs {
+  display: flex;
+  gap: 4px;
+  margin-top: 15px;
+}
+.object-tabs button {
+  flex: 1;
+  border: 0;
+  border-radius: 0;
+  position: relative;
+  padding: 11px 4px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+}
+.object-tabs button:hover {
+  background: var(--hover);
+}
+.object-tabs button.active {
+  color: var(--ink);
+}
+.object-tabs button.active::after {
+  content: "";
+  height: 2px;
+  position: absolute;
+  bottom: -1px;
+  left: 9px;
+  right: 9px;
+  background: var(--signal);
+}
+.inspector-content {
+  padding: 16px;
+  overflow: auto;
+  scrollbar-width: thin;
+  flex: 1;
+  min-height: 0;
+}
+.diagnostic-card {
+  border: 1px solid var(--line);
+  background: var(--red-soft);
+  border-radius: 6px;
+  padding: 13px 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.diagnostic-icon {
+  display: grid;
+  place-items: center;
+  color: var(--red);
+  padding-top: 2px;
+}
+.diagnostic-card strong {
+  font-size: 12px;
+  color: var(--red);
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 600;
+}
+.diagnostic-card p {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.8;
+}
+.diagnostic-card.healthy {
+  background: var(--good-soft);
+}
+.diagnostic-card.healthy strong,
+.diagnostic-card.healthy .diagnostic-icon {
+  color: var(--good);
+}
+.diagnostic-card.pressure {
+  background: var(--amber-soft);
+}
+.diagnostic-card.pressure strong,
+.diagnostic-card.pressure .diagnostic-icon {
+  color: var(--amber);
+}
+.condition-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.condition {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  padding: 11px;
+}
+.condition span {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.8;
+}
+.condition strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+}
+.detail-section {
+  margin-bottom: 20px;
+}
+.detail-section > h3 {
+  color: var(--ink);
+  font-size: 12px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.detail-section > h3 small {
+  font-weight: 400;
+  font-size: 10px;
+  color: var(--muted);
+}
+.panel-box {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 13px;
+}
+.timeline {
+  padding-left: 5px;
+}
+.event {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  padding: 0 0 19px 14px;
+  border-left: 1px solid var(--line);
+  font-size: 11px;
+  line-height: 1.6;
+}
+.event::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--red);
+  position: absolute;
+  left: -3px;
+  top: 6px;
+}
+.event.warning::before {
+  background: var(--amber);
+}
+.event.success::before {
+  background: var(--good);
+}
+.event:last-child {
+  padding-bottom: 0;
+  border-color: transparent;
+}
+.event time {
+  font-size: 10px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.event strong {
+  font-weight: 500;
+  color: var(--ink);
+  font-size: 11px;
+}
+.event p {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 5px;
+  line-height: 1.8;
+}
+.suggestion {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface-raised);
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.8;
+  margin: 15px 0 20px;
+}
+.suggestion .icon {
+  width: 18px;
+  height: 18px;
+  color: var(--signal);
+  margin-top: 2px;
+}
+.suggestion b {
+  display: block;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 500;
+  margin-bottom: 3px;
+}
+.config-list {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 8px 10px;
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.8;
+}
+.config-list dt {
+  color: var(--muted);
+}
+.config-list dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+}
+.quiet,
+.scope-hint {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.8;
+}
+.data-pairs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.data-pairs p {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 12px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.data-pairs strong {
+  display: block;
+  font-size: 23px;
+  font-weight: 500;
+  line-height: 1.3;
+  margin-top: 7px;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.data-pairs strong small {
+  font-size: 10px;
+  font-weight: 400;
+  margin-left: 4px;
+}
+.data-pairs strong.warn {
+  color: var(--amber);
+}
+.detail-chart {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 18px;
+}
+.detail-chart h3 {
+  font-size: 11px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+}
+.detail-chart h3 span {
+  font-size: 9px;
+  font-weight: 400;
+  color: var(--muted);
+}
+.detail-chart svg {
+  width: 100%;
+  height: 102px;
+}
+.chart-axis {
+  font-size: 8px;
+  fill: var(--muted);
+}
+.log {
+  padding: 12px;
+  background: var(--scene);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.9;
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin: 10px 0;
+}
+.resource-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 10px;
+  margin: 15px 0;
+}
+.resource-bar b {
+  color: var(--ink);
+  font-weight: 500;
+}
+.resource-bar .meter {
+  flex-basis: 100%;
+  height: 4px;
+  margin-top: 2px;
+}
+.slot-view {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.big-slot {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 8px 0;
+  text-align: center;
+  font-size: 10px;
+  color: var(--muted);
+  background: var(--field);
+}
+.big-slot.mine {
+  color: var(--signal);
+  background: var(--signal-soft);
+}
+.big-slot.chosen {
+  border-color: var(--signal);
+}
+.accel-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 15px 0;
+}
+.accel-cards button {
+  white-space: normal;
+  text-align: left;
+  padding: 12px;
+  display: block;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+.accel-cards .icon {
+  display: block;
+  margin-bottom: 9px;
+  color: var(--signal);
+}
+.accel-cards span {
+  font-size: 10px;
+  color: var(--muted);
+  display: block;
+  line-height: 1.8;
+}
+.accel-cards b {
+  font-size: 21px;
+  font-weight: 500;
+  display: block;
+  margin: 5px 0;
+}
+.accel-cards small {
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 400;
+}
+.read-link {
+  background: var(--surface-raised);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  padding: 7px 10px;
+  border-radius: 5px;
+  font-size: 11px;
+}
+.read-link:hover {
+  background: var(--hover);
+}
+.live-traffic {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: var(--good);
+  padding: 10px;
+  background: var(--good-soft);
+  border-radius: 5px;
+  margin: 12px 0;
+}

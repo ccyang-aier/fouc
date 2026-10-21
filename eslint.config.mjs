@@ -6,7 +6,7 @@ export default defineConfig([
   ...nextVitals,
   ...nextTypescript,
   {
-    files: ["other/推理拓扑/*.js"],
+    files: ["other/推理拓扑/*.js", "other/灰度发布/*.js"],
     languageOptions: {
       sourceType: "script",
       parserOptions: { sourceType: "script" },

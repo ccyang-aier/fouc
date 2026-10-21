@@ -1,4 +1,4 @@
-/* exported comparison, drawChart */
+/* exported comparison */
 // Release views share one observation window and the same demonstration dataset.
 const metricInfo = {
   failure: {
@@ -469,18 +469,23 @@ function comparison() {
       ${["old", "new"]
         .map(
           (version, index) => /* HTML */ `
-            ${index ? `<div class="context-direction">${icon("arrowRight")}</div>` : ""}
+            ${index ? releaseFlowArrow() : ""}
             <div class="release-version-context ${version}">
               <div class="version-context-top">
-                <span class="context-label"
-                  >${index ? "灰度目标" : "对照基线"}</span
-                ><span class="tag ${index ? "purple" : ""}"
-                  >${ver[version].name} · ${ver[version].id}</span
-                ><span class="context-running"
+                <span class="context-running"
                   ><i
                     class="dot ${state[version + "Running"] ? "" : "gray"}"
                   ></i
                   >${state[version + "Running"] ? "运行中" : "已停止"}</span
+                >
+                <strong class="context-version-name"
+                  >${ver[version].name}</strong
+                >
+                <span class="context-version-id ${index ? "purple" : ""}"
+                  >${ver[version].id}</span
+                >
+                <span class="context-label"
+                  >${index ? "灰度目标" : "对照基线"}</span
                 >
               </div>
               <div class="context-model">
@@ -516,113 +521,44 @@ function comparison() {
   `;
 }
 
-// Deterministic, aligned series: visible fluctuations with exact aggregate means.
-function chartSeries(key, version) {
-  const count = periods[state.period].points;
-  const phase =
-    (version === "old" ? 0.5 : 1.4) +
-    { failure: 0, timeout: 2.1, ttft: 0.7, tpot: 1.6 }[key];
-  const wave = Array.from(
-    { length: count },
-    (_, index) =>
-      Math.sin(index * 0.83 + phase) * 0.13 +
-      Math.sin(index * 1.94 + phase) * 0.055 +
-      Math.cos(index * 0.37) * 0.075,
-  );
-  const mean = wave.reduce((sum, value) => sum + value, 0) / count;
-  return wave.map((value) => metricValues(key)[version] * (1 + value - mean));
-}
-function drawChart() {
-  document.querySelectorAll("canvas[data-chart]").forEach((canvas) => {
-    const key = canvas.dataset.chart;
-    const metric = metricInfo[key];
-    const { width, height } = canvas.getBoundingClientRect();
-    if (!width || !height) return;
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    const context = canvas.getContext("2d");
-    context.scale(dpr, dpr);
-    const pad = { left: 40, right: 14, top: 16, bottom: 29 };
-    const plotWidth = width - pad.left - pad.right;
-    const plotHeight = height - pad.top - pad.bottom;
-    const bottom = pad.top + plotHeight;
-    context.font = '10px "Microsoft YaHei", sans-serif';
-    for (let index = 0; index <= 4; index++) {
-      const y = pad.top + (plotHeight * index) / 4;
-      context.strokeStyle = "#e9edf4";
-      context.lineWidth = 1;
-      context.setLineDash([3, 4]);
-      context.beginPath();
-      context.moveTo(pad.left, y);
-      context.lineTo(width - pad.right, y);
-      context.stroke();
-      context.fillStyle = "#7a879b";
-      context.textAlign = "right";
-      const value = metric.max - ((metric.max - metric.min) * index) / 4;
-      context.fillText(
-        metric.max < 1 ? value.toFixed(2) : Math.round(value),
-        pad.left - 9,
-        y + 3,
-      );
-    }
-    context.setLineDash([]);
-    const start =
-      state.period === "custom"
-        ? state.customStart
-        : Number(periods[state.period].start.slice(0, 2)) * 60 +
-          Number(periods[state.period].start.slice(3));
-    const end = state.period === "custom" ? state.customEnd : 840;
-    for (let index = 0; index <= 4; index++) {
-      const time = Math.round(start + ((end - start) * index) / 4);
-      context.fillStyle = "#7a879b";
-      context.textAlign =
-        index === 0 ? "left" : index === 4 ? "right" : "center";
-      context.fillText(
-        `${String(Math.floor(time / 60)).padStart(2, "0")}:${String(time % 60).padStart(2, "0")}`,
-        pad.left + (plotWidth * index) / 4,
-        height - 8,
-      );
-    }
-    for (const version of ["old", "new"]) {
-      const points = chartSeries(key, version).map((value, index, values) => ({
-        x: pad.left + (plotWidth * index) / (values.length - 1),
-        y:
-          pad.top +
-          plotHeight * (1 - (value - metric.min) / (metric.max - metric.min)),
-      }));
-      const path = new Path2D();
-      path.moveTo(points[0].x, points[0].y);
-      for (let index = 1; index < points.length; index++) {
-        const previous = points[index - 1];
-        const point = points[index];
-        const midpoint = (previous.x + point.x) / 2;
-        path.bezierCurveTo(
-          midpoint,
-          previous.y,
-          midpoint,
-          point.y,
-          point.x,
-          point.y,
-        );
-      }
-      const area = new Path2D(path);
-      area.lineTo(points.at(-1).x, bottom);
-      area.lineTo(points[0].x, bottom);
-      area.closePath();
-      const gradient = context.createLinearGradient(0, pad.top, 0, bottom);
-      gradient.addColorStop(
-        0,
-        version === "old" ? "rgba(45,76,245,0.16)" : "rgba(132,93,225,0.16)",
-      );
-      gradient.addColorStop(1, "rgba(255,255,255,0)");
-      context.fillStyle = gradient;
-      context.fill(area);
-      context.strokeStyle = ver[version].color;
-      context.lineWidth = 2.2;
-      context.lineJoin = "round";
-      context.lineCap = "round";
-      context.stroke(path);
-    }
-  });
+function releaseFlowArrow() {
+  return /* HTML */ `
+    <div
+      class="context-direction"
+      aria-label="从正式版本逐步发布至灰度版本"
+      role="img"
+    >
+      <svg class="flow-arrow" viewBox="0 0 88 48" aria-hidden="true">
+        <defs>
+          <linearGradient
+            id="release-flow-gradient"
+            x1="-100%"
+            x2="0%"
+            y1="0"
+            y2="0"
+          >
+            <stop offset="0" stop-color="#bac8ec" />
+            <stop offset="0.5" stop-color="#edf3ff" />
+            <stop offset="1" stop-color="#bac8ec" />
+            <animate
+              attributeName="x1"
+              values="-100%;100%"
+              dur="2.2s"
+              repeatCount="indefinite"
+            />
+            <animate
+              attributeName="x2"
+              values="0%;200%"
+              dur="2.2s"
+              repeatCount="indefinite"
+            />
+          </linearGradient>
+        </defs>
+        <path
+          d="M5 18h44V7l30 17-30 17V30H5z"
+          fill="url(#release-flow-gradient)"
+        />
+      </svg>
+    </div>
+  `;
 }

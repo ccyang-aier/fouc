@@ -1,0 +1,221 @@
+/* A non-modal composer leaves the live request route visible. */
+.invoke-dialog {
+  position: fixed;
+  inset: auto 26px 60px auto;
+  margin: 0;
+  width: 390px;
+  max-width: calc(100vw - 32px);
+  z-index: 45;
+  border: 1px solid var(--muted);
+  background: var(--surface);
+}
+.invoke-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+.invoke-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.invoke-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.invoke-header h2 span {
+  color: var(--muted);
+  font-size: 11px;
+}
+.invoke-header .icon-btn {
+  width: 25px;
+  height: 25px;
+  padding: 4px;
+  border: 0;
+  background: none;
+}
+.invoke-demo {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 9px;
+  white-space: nowrap;
+}
+.invoke-response {
+  padding: 10px 14px 0;
+}
+.invoke-route {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--signal);
+  margin-bottom: 8px;
+}
+#invoke-output {
+  max-height: 110px;
+  min-height: 36px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.8;
+  scrollbar-width: thin;
+}
+#invoke-output:empty::before {
+  content: "等待首个 Token…";
+  color: var(--muted);
+}
+.invoke-status {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  margin-top: 5px;
+}
+.invoke-metrics {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px 12px;
+  margin-top: 10px;
+  border-top: 1px solid var(--line);
+  padding-top: 9px;
+  font-size: 9px;
+  color: var(--muted);
+}
+.invoke-metrics b {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.invoke-metrics > span:first-child {
+  color: var(--good);
+}
+.invoke-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+}
+.invoke-form input {
+  height: 34px;
+  min-width: 0;
+  flex: 1;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--field);
+  font-size: 12px;
+}
+.invoke-form input:focus {
+  border-color: var(--signal);
+}
+.invoke-form button {
+  height: 34px;
+  width: 34px;
+  padding: 7px;
+  color: var(--signal-ink);
+  background: var(--signal);
+  border-color: var(--signal);
+}
+.invoke-form button:hover {
+  opacity: 0.85;
+}
+.invoke-form button.is-streaming {
+  color: var(--ink);
+  background: var(--field);
+  border-color: var(--muted);
+}
+.invoke-form button.is-streaming .icon {
+  width: 13px;
+  height: 13px;
+  fill: currentColor;
+}
+.request-indicator {
+  position: absolute;
+  z-index: 3;
+  right: 16px;
+  top: 17px;
+  padding: 7px 10px;
+  color: var(--signal);
+  background: var(--signal-soft);
+  border-color: color-mix(in srgb, var(--signal) 50%, var(--line));
+  font-size: 10px;
+}
+.request-indicator .icon {
+  width: 13px;
+  height: 13px;
+}
+.request-traced .route-muted {
+  opacity: 0.16 !important;
+}
+.node.trace-active {
+  opacity: 1;
+  border-color: var(--signal);
+  background: var(--signal-soft);
+}
+.node.trace-source {
+  border-color: var(--signal);
+}
+.request-links .trace-edge {
+  stroke: var(--signal);
+  stroke-width: 2.8px;
+  opacity: 1;
+  filter: drop-shadow(
+    0 0 3px color-mix(in srgb, var(--signal) 65%, transparent)
+  );
+  stroke-dasharray: none;
+}
+.request-running .request-links .trace-edge {
+  stroke-dasharray: 8 10;
+  animation: request-travel 650ms linear infinite;
+}
+.request-running .trace-source::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border: 1px solid var(--signal);
+  border-radius: 10px;
+  animation: request-origin 1.5s ease-out infinite;
+  pointer-events: none;
+}
+.request-running .accelerator-node.trace-active {
+  color: var(--signal);
+}
+@keyframes request-travel {
+  to {
+    stroke-dashoffset: -36;
+  }
+}
+@keyframes request-origin {
+  from {
+    opacity: 0.7;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.08);
+  }
+}
+@media (max-width: 760px) {
+  .invoke-dialog {
+    right: 16px;
+    bottom: 24px;
+  }
+  .request-indicator {
+    top: 48px;
+    right: 10px;
+    font-size: 9px;
+  }
+  #invoke-output {
+    max-height: 100px;
+  }
+}

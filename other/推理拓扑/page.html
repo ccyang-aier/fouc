@@ -7,14 +7,21 @@
     <link rel="icon" href="data:," />
     <link rel="stylesheet" href="./page.css" />
     <script defer src="./icons.js"></script>
+    <script defer src="./hardware.js"></script>
     <script defer src="./topology.js"></script>
     <script defer src="./inspector.js"></script>
+    <script defer src="./invocation.js"></script>
     <script defer src="./page.js"></script>
   </head>
   <body>
     <header class="global">
       <div class="brand" aria-label="FusionOne Center">
-        <svg class="brand-mark" viewBox="0 0 24 28" fill="none" aria-hidden="true">
+        <svg
+          class="brand-mark"
+          viewBox="0 0 24 28"
+          fill="none"
+          aria-hidden="true"
+        >
           <path
             d="M5 25V10a7 7 0 0 1 12-5M5 12h13M5 18h9"
             stroke="currentColor"
@@ -33,8 +40,10 @@
         >
           <i class="icon" data-lucide="sun"></i></button
         ><span class="demo">交互效果稿 · 演示数据</span
-        ><span class="header-counter bad"><i class="icon" data-lucide="circle-alert"></i>1</span
-        ><span class="header-counter warn"><i class="icon" data-lucide="circle-alert"></i>1</span
+        ><span class="header-counter bad"
+          ><i class="icon" data-lucide="circle-alert"></i>1</span
+        ><span class="header-counter warn"
+          ><i class="icon" data-lucide="circle-alert"></i>1</span
         ><span class="header-language"
           ><i class="icon" data-lucide="globe"></i>中文(简体)<i
             class="icon"
@@ -50,22 +59,37 @@
     </header>
     <div class="shell">
       <aside class="primary-rail" aria-label="一级导航">
-        <div class="rail-item"><i class="icon" data-lucide="house"></i><span>首页</span></div>
-        <div class="rail-item"><i class="icon" data-lucide="layers"></i><span>资源</span></div>
+        <div class="rail-item">
+          <i class="icon" data-lucide="house"></i><span>首页</span>
+        </div>
+        <div class="rail-item">
+          <i class="icon" data-lucide="layers"></i><span>资源</span>
+        </div>
         <div class="rail-item selected" aria-current="true">
           <i class="icon" data-lucide="box"></i><span>模型</span>
         </div>
-        <div class="rail-item"><i class="icon" data-lucide="layout-grid"></i><span>应用</span></div>
         <div class="rail-item">
-          <i class="icon" data-lucide="chart-no-axes-combined"></i><span>监控</span>
+          <i class="icon" data-lucide="layout-grid"></i><span>应用</span>
         </div>
-        <div class="rail-item"><i class="icon" data-lucide="wrench"></i><span>运维</span></div>
-        <div class="rail-item"><i class="icon" data-lucide="hexagon"></i><span>系统</span></div>
+        <div class="rail-item">
+          <i class="icon" data-lucide="chart-no-axes-combined"></i
+          ><span>监控</span>
+        </div>
+        <div class="rail-item">
+          <i class="icon" data-lucide="wrench"></i><span>运维</span>
+        </div>
+        <div class="rail-item">
+          <i class="icon" data-lucide="hexagon"></i><span>系统</span>
+        </div>
         <span class="rail-bottom">≡</span>
       </aside>
       <aside class="sidebar" aria-label="模型功能导航">
-        <div class="nav-item"><i class="icon" data-lucide="layout-grid"></i><span>概览</span></div>
-        <div class="nav-item"><i class="icon" data-lucide="box"></i><span>模型广场</span></div>
+        <div class="nav-item">
+          <i class="icon" data-lucide="layout-grid"></i><span>概览</span>
+        </div>
+        <div class="nav-item">
+          <i class="icon" data-lucide="box"></i><span>模型广场</span>
+        </div>
         <div class="nav-item">
           <i class="icon" data-lucide="monitor-check"></i><span>体验中心</span
           ><i class="icon chev" data-lucide="chevron-down"></i>
@@ -81,7 +105,8 @@
         <div class="subnav active" aria-current="page">在线服务</div>
         <div class="subnav">Prompt模板</div>
         <div class="nav-item">
-          <i class="icon" data-lucide="chart-no-axes-combined"></i><span>模型评估</span
+          <i class="icon" data-lucide="chart-no-axes-combined"></i
+          ><span>模型评估</span
           ><i class="icon chev" data-lucide="chevron-down"></i>
         </div>
         <div class="nav-item">
@@ -105,7 +130,8 @@
           ><i class="icon chev" data-lucide="chevron-down"></i>
         </div>
         <div class="nav-item">
-          <i class="icon" data-lucide="chart-no-axes-combined"></i><span>资源监控</span
+          <i class="icon" data-lucide="chart-no-axes-combined"></i
+          ><span>资源监控</span
           ><i class="icon chev" data-lucide="chevron-down"></i>
         </div>
         <div class="nav-item">
@@ -121,9 +147,13 @@
             <h1>部署详情</h1>
           </div>
           <div class="heading-actions">
-            <button class="icon-btn" data-action="refresh" aria-label="刷新服务数据">
+            <button
+              class="icon-btn"
+              data-action="refresh"
+              aria-label="刷新服务数据"
+            >
               <i class="icon" data-lucide="refresh-cw"></i></button
-            ><button data-action="experience">体验</button
+            ><button data-action="invoke" data-value="model">发起调用</button
             ><button class="primary" data-action="create">
               新建实例<i class="icon" data-lucide="chevron-down"></i>
             </button>
@@ -131,29 +161,42 @@
         </div>
         <details class="basic-info">
           <summary aria-label="展开或收起服务基本信息">
-            <span class="basic-summary-field"><span>服务名称</span><b>AI-Coding</b></span
-            ><span class="basic-summary-field"><span>状态</span><b id="service-status"></b></span
-            ><span class="basic-summary-field"><span>访问协议</span><b>HTTPS</b></span
-            ><span class="basic-summary-field"><span>模型</span><b>Qwen3-32B</b></span
-            ><span class="expand-label"><i class="icon" data-lucide="chevron-down"></i></span>
+            <span class="basic-summary-field"
+              ><span>服务名称</span><b>AI-Coding</b></span
+            ><span class="basic-summary-field"
+              ><span>状态</span><b id="service-status"></b></span
+            ><span class="basic-summary-field"
+              ><span>访问协议</span><b>HTTPS</b></span
+            ><span class="basic-summary-field"
+              ><span>模型</span><b>Qwen3-32B</b></span
+            ><span class="expand-label"
+              ><i class="icon" data-lucide="chevron-down"></i
+            ></span>
           </summary>
           <div class="basic-grid">
-            <div class="basic-field"><span>API</span><b>/v1/chat/completions</b></div>
+            <div class="basic-field">
+              <span>API</span><b>/v1/chat/completions</b>
+            </div>
             <div class="basic-field"><span>服务端口</span><b>18000</b></div>
             <div class="basic-field"><span>API 鉴权</span><b>启用</b></div>
             <div class="basic-field"><span>多模态</span><b>关闭</b></div>
-            <div class="basic-field"><span>创建者</span><b>Administrator</b></div>
+            <div class="basic-field">
+              <span>创建者</span><b>Administrator</b>
+            </div>
             <div class="basic-field basic-description">
               <span>描述</span><b>AI Coding 模型推理服务</b>
             </div>
           </div>
         </details>
         <nav class="page-tabs" aria-label="服务详情标签">
-          <span class="page-tab">概览</span><span class="page-tab">调用指南</span
-          ><span class="page-tab">预测</span><span class="page-tab">服务监控</span
+          <span class="page-tab">概览</span
+          ><span class="page-tab">调用指南</span
+          ><span class="page-tab">预测</span
+          ><span class="page-tab">服务监控</span
           ><span class="page-tab">资源监控</span
           ><span class="page-tab active" aria-current="page">拓扑</span
-          ><span class="page-tab">日志</span><span class="page-tab">部署记录</span>
+          ><span class="page-tab">日志</span
+          ><span class="page-tab">部署记录</span>
         </nav>
 
         <section
@@ -168,9 +211,18 @@
                 <option value="pd">部署 P/D 分离视图</option>
               </select>
               <div class="segmented" aria-label="拓扑状态筛选">
-                <button data-action="filter" data-value="all" class="active" aria-pressed="true">
+                <button
+                  data-action="filter"
+                  data-value="all"
+                  class="active"
+                  aria-pressed="true"
+                >
                   全部</button
-                ><button data-action="filter" data-value="error" aria-pressed="false">
+                ><button
+                  data-action="filter"
+                  data-value="error"
+                  aria-pressed="false"
+                >
                   仅看异常
                 </button>
               </div>
@@ -207,14 +259,27 @@
             </div>
             <div class="canvas-shell">
               <div class="canvas" id="canvas">
-                <div class="board-space" id="board-space"><div class="board" id="board"></div></div>
+                <div class="board-space" id="board-space">
+                  <div class="board" id="board"></div>
+                </div>
               </div>
               <div class="notice" id="notice" role="status"></div>
+              <button
+                class="request-indicator"
+                id="request-indicator"
+                data-action="invoke-reopen"
+                aria-label="查看本次调用"
+                hidden
+              ></button>
               <div class="canvas-controls">
                 <button data-action="zoom-out" aria-label="缩小">−</button
                 ><span id="zoom-label">100%</span
                 ><button data-action="zoom-in" aria-label="放大">+</button
-                ><button data-action="fit" aria-label="适配画布" title="适配画布">
+                ><button
+                  data-action="fit"
+                  aria-label="适配画布"
+                  title="适配画布"
+                >
                   <i class="icon" data-lucide="maximize"></i>
                 </button>
               </div>
@@ -222,7 +287,8 @@
             <div class="topology-footer">
               <div class="legend">
                 <span><i class="line-key"></i>请求流向</span
-                ><span><i class="line-key dashed"></i>资源承载</span
+                ><span><i class="line-key compute-key"></i>卡组分配</span
+                ><span><i class="line-key dashed"></i>物理承载</span
                 ><span><i class="dot good"></i>正常</span
                 ><span><i class="dot warn"></i>性能关注</span
                 ><span><i class="dot bad"></i>异常</span
@@ -237,41 +303,123 @@
               >
             </div>
           </div>
-          <aside class="inspector" id="inspector" aria-label="所选对象详情"></aside>
+          <aside
+            class="inspector"
+            id="inspector"
+            aria-label="所选对象详情"
+          ></aside>
         </section>
       </main>
     </div>
-    <dialog id="operation-drawer" class="operations-drawer" aria-labelledby="drawer-title">
+    <dialog
+      id="operation-drawer"
+      class="operations-drawer"
+      aria-labelledby="drawer-title"
+    >
       <div class="drawer-header">
         <div>
           <h2 id="drawer-title">变更任务</h2>
-          <p>AI-Coding / 正式版本 v1.2.0<br />跟踪执行进度、保留配置快照，并核验恢复结果</p>
+          <p>
+            AI-Coding / 正式版本 v1.2.0<br />跟踪执行进度、保留配置快照，并核验恢复结果
+          </p>
         </div>
-        <button class="icon-btn" data-action="close-drawer" aria-label="关闭变更任务">
+        <button
+          class="icon-btn"
+          data-action="close-drawer"
+          aria-label="关闭变更任务"
+        >
           <i class="icon" data-lucide="x"></i>
         </button>
       </div>
       <div class="drawer-tabs" role="tablist" aria-label="变更任务详情">
-        <button role="tab" data-action="record-tab" data-value="records" class="active">
+        <button
+          role="tab"
+          data-action="record-tab"
+          data-value="records"
+          class="active"
+        >
           执行记录 <span class="record-count" id="record-count">0</span></button
-        ><button role="tab" data-action="record-tab" data-value="recovery">恢复核验</button>
+        ><button role="tab" data-action="record-tab" data-value="recovery">
+          恢复核验
+        </button>
       </div>
       <div class="records-body" id="records-body" role="tabpanel"></div>
       <div class="drawer-footer">
         <span>当前会话 · 演示数据</span
-        ><button data-action="reset"><i class="icon" data-lucide="refresh-cw"></i>重置演示</button>
+        ><button data-action="reset">
+          <i class="icon" data-lucide="refresh-cw"></i>重置演示
+        </button>
       </div>
     </dialog>
-    <div id="node-context" class="node-context" role="menu" aria-label="节点操作菜单" hidden></div>
+    <div
+      id="node-context"
+      class="node-context"
+      role="menu"
+      aria-label="节点操作菜单"
+      hidden
+    ></div>
     <dialog id="modal" aria-labelledby="modal-title">
       <div class="modal-header">
         <h2 id="modal-title"></h2>
-        <button class="icon-btn" data-action="close-modal" aria-label="关闭对话框">
+        <button
+          class="icon-btn"
+          data-action="close-modal"
+          aria-label="关闭对话框"
+        >
           <i class="icon" data-lucide="x"></i>
         </button>
       </div>
       <div class="modal-body" id="modal-body"></div>
       <div class="modal-footer" id="modal-footer"></div>
+    </dialog>
+    <dialog
+      id="invoke-dialog"
+      class="invoke-dialog"
+      aria-labelledby="invoke-title"
+    >
+      <header class="invoke-header">
+        <h2 id="invoke-title">
+          发起调用 <span id="invoke-target">Qwen3-32B</span>
+        </h2>
+        <span class="invoke-demo" title="本地流式演示，时延按浏览器流分片测量"
+          >本地演示</span
+        >
+        <button
+          class="icon-btn"
+          data-action="invoke-close"
+          aria-label="关闭调用面板"
+        >
+          <i class="icon" data-lucide="x"></i>
+        </button>
+      </header>
+      <section id="invoke-response" class="invoke-response" hidden>
+        <p class="invoke-route" id="invoke-route"></p>
+        <pre id="invoke-output" tabindex="0" aria-label="模型流式响应"></pre>
+        <span id="invoke-status" class="invoke-status" role="status"></span>
+        <div
+          id="invoke-metrics"
+          class="invoke-metrics"
+          title="本地演示计时"
+          hidden
+        ></div>
+      </section>
+      <form id="invoke-form" class="invoke-form">
+        <input
+          id="invoke-input"
+          aria-label="输入问题"
+          placeholder="问模型一个问题…"
+          autocomplete="off"
+          maxlength="2000"
+        />
+        <button
+          type="submit"
+          id="invoke-send"
+          aria-label="发送请求"
+          title="发送请求"
+        >
+          <i class="icon" data-lucide="arrow-up"></i>
+        </button>
+      </form>
     </dialog>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
   </body>

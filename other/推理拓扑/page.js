@@ -26,6 +26,11 @@ const initialState = () => ({
   cleared: false,
   deleted: [],
   snapshots: {},
+  placements: {},
+  externalPlacements: {},
+  scheduling: {},
+  maintenance: null,
+  location: null,
   trace: null,
   copyRole: "",
   pendingDelete: null,
@@ -169,7 +174,9 @@ function instances() {
       healthy: state.progress >= 3,
       building: state.progress < 4,
     });
-  return rows.filter((row) => !state.deleted.includes(row.id));
+  return rows
+    .filter((row) => !state.deleted.includes(row.id))
+    .map(hardwarePlacement);
 }
 function activeInstances() {
   return instances().filter(
@@ -223,8 +230,16 @@ function renderSummary() {
 }
 function highlightRelated() {
   const id = state.selected;
-  if (id.startsWith("g") && Number(id.split("-")[1]) >= 4) return;
-  const related = /^[ng]/.test(id) ? "i" + id[1] : /^i/.test(id) ? id : null;
+  const context = resourceContext(id);
+  const related = context
+    ? context.slot >= 0
+      ? context.job?.current
+        ? context.job.id
+        : null
+      : context.jobs.find((job) => job.current)?.id
+    : /^i/.test(id)
+      ? id
+      : null;
   if (!related) return;
   document
     .querySelector(`[data-select="${related}"]`)
@@ -355,7 +370,7 @@ function renderRecords() {
             <span>对象：${r.target}</span><time class="mono">${r.time}</time>
           </div>
           <p>
-            ${r.result === "执行中"
+            ${r.result === "执行中" && r.name === "同配置新建"
               ? [
                   "资源准备中",
                   "模型加载中",
@@ -381,9 +396,14 @@ function renderRecords() {
                 </button>`
               : r.name === "同配置新建"
                 ? /* HTML */ `<button data-select="i4">查看实例</button>`
-                : /* HTML */ `<button data-action="show-recovery">
-                    恢复核验
-                  </button>`}
+                : r.name === "节点维护" &&
+                    r.maintenanceId === state.maintenance?.id
+                  ? /* HTML */ `<button data-action="maintenance-reopen">
+                      查看维护
+                    </button>`
+                  : /* HTML */ `<button data-action="show-recovery">
+                      恢复核验
+                    </button>`}
           </div>
         </article>`,
     )
@@ -396,6 +416,7 @@ function render() {
   renderDiagram();
   renderInspector();
   renderRecords();
+  renderMaintenanceBanner();
   if (state.inspectorOpen) revealSelection();
   document.querySelectorAll('[data-action="filter"]').forEach((button) => {
     button.classList.toggle("active", button.dataset.value === state.filter);
@@ -406,14 +427,15 @@ function render() {
   });
   $("search").value = state.search;
 }
-function selectObject(id) {
+function selectObject(id, reveal = true) {
+  state.location = null;
   state.selected = id;
   state.detailTab = "metrics";
   state.inspectorOpen = true;
   $("workspace").classList.remove("inspector-hidden");
   renderDiagram();
   renderInspector();
-  revealSelection();
+  if (reveal) revealSelection();
 }
 function openDrawer(tabName = "records") {
   closeContextMenu(false);
@@ -425,7 +447,7 @@ function closeDrawer() {
   $("operation-drawer").close();
 }
 function menuEntries(id, s = state) {
-  const busy = invocationBusy();
+  const busy = invocationBusy() || hardwareBusy();
   if (/^i[1-4]$/.test(id) && !s.deleted.includes(id)) {
     const building = id === "i4" && s.progress < 4;
     const stopped = id === "i3";
@@ -469,30 +491,7 @@ function menuEntries(id, s = state) {
       },
     ];
   }
-  if (/^[ng]/.test(id)) {
-    const otherWorkload = id.startsWith("g") && Number(id.split("-")[1]) >= 4;
-    return [
-      ...(!otherWorkload
-        ? [
-            {
-              label: "定位关联实例",
-              icon: "Network",
-              action: "locate-related",
-              value: "i" + id[1],
-            },
-          ]
-        : []),
-      {
-        label: "查看监控",
-        icon: "ChartNoAxesCombined",
-        action: "object-metrics",
-      },
-      { label: "查看配置", icon: "FileText", action: "object-config" },
-      { label: "查看事件", icon: "Clock", action: "object-events" },
-      { divider: true },
-      { label: "节点维护", icon: "Wrench", action: "node-maintenance" },
-    ];
-  }
+  if (resourceContext(id)) return hardwareMenuEntries(id);
   if (id === "archive")
     return [
       { label: "查看配置快照", icon: "FileText", action: "object-config" },
@@ -534,7 +533,7 @@ function menuPosition(x, y, w, h, vw, vh) {
 }
 function openContextMenu(id, x, y) {
   contextOrigin = document.activeElement;
-  selectObject(id);
+  selectObject(id, false);
   const menu = $("node-context");
   menu.className = "node-context";
   menu.innerHTML = /* HTML */ `${menuEntries(id)
@@ -547,6 +546,7 @@ function openContextMenu(id, x, y) {
             data-action="${e.action}"
             ${e.value ? 'data-value="' + e.value + '"' : ""}
             ${e.disabled ? 'disabled aria-disabled="true"' : ""}
+            ${e.reason ? `title="${e.reason}"` : ""}
             tabindex="-1"
           >
             ${icon(e.icon)}${e.label}
@@ -579,6 +579,7 @@ function toast(message) {
   toastTimer = setTimeout(() => $("toast").classList.remove("show"), 3400);
 }
 function showModal(title, body, footer) {
+  delete $("modal").dataset.hardware;
   previousFocus = document.activeElement;
   $("modal-title").textContent = title;
   $("modal-body").innerHTML = body;
@@ -592,7 +593,7 @@ function closeModal() {
 }
 function openDeleteInstance() {
   const row = instances().find((item) => item.id === state.selected);
-  if (!row || row.building || invocationBusy()) return;
+  if (!row || row.building || invocationBusy() || hardwareBusy()) return;
   state.pendingDelete = row.id;
   showModal(
     "删除实例",
@@ -848,6 +849,8 @@ function isolate() {
   );
 }
 const actions = {
+  ...hardwareActions,
+  ...maintenanceActions,
   "close-modal": closeModal,
   "close-drawer": closeDrawer,
   "delete-instance": openDeleteInstance,
@@ -855,8 +858,8 @@ const actions = {
   "invoke-close": closeInvocation,
   "invoke-reopen": () => openInvocation(state.trace?.origin || "model"),
   create: (b) => {
-    if (invocationBusy()) {
-      toast("请先结束当前调用");
+    if (invocationBusy() || hardwareBusy()) {
+      toast("请先等待当前调用或节点维护结束");
       return;
     }
     const current =
@@ -940,10 +943,6 @@ const actions = {
     state.detailTab = "metrics";
     renderInspector();
   },
-  "locate-related": (b) => {
-    if ($("operation-drawer").open) closeDrawer();
-    selectObject(b.dataset.value);
-  },
   "hide-inspector": () => {
     state.inspectorOpen = false;
     $("workspace").classList.add("inspector-hidden");
@@ -985,6 +984,7 @@ const actions = {
     fitBoard();
   },
   reset: () => {
+    resetHardware();
     closeInvocation();
     clearTimeout(buildTimer);
     state = initialState();
@@ -1018,50 +1018,6 @@ const actions = {
     render();
     toast(is ? "已恢复接流" : "新请求已暂停分发，在途请求已排空");
   },
-  "node-maintenance": () => {
-    const host = instances().find((r) => r.id === "i" + state.selected[1]);
-    showModal(
-      "节点维护 · 影响范围",
-      /* HTML */ `<p class="modal-summary">
-          先查看承载对象，补齐其他节点的容量并确认接流，再安排原节点退出。
-        </p>
-        <div class="scope-box">
-          <dl class="config-list">
-            <dt>维护节点</dt>
-            <dd>${host.host}</dd>
-            <dt>关联实例</dt>
-            <dd>
-              ${host.id === "i3"
-                ? "原实例已停止，无当前设备绑定"
-                : host.name + " / 正式版本"}
-            </dd>
-            <dt>资源范围</dt>
-            <dd>8 × Ascend 910B（含其他负载）</dd>
-            <dt>维护条件</dt>
-            <dd>
-              所有承载业务完成迁出并确认接流；当前页面仅覆盖 AI-Coding 关联实例
-            </dd>
-          </dl>
-        </div>
-        <p class="quiet">
-          节点级维护需要进一步核对其他工作负载；本稿提供影响范围查看与实例定位。
-        </p>`,
-      /* HTML */ `<button data-action="close-modal">关闭</button
-        ><button
-          class="primary"
-          data-action="maintenance-locate"
-          data-value="${host.id}"
-        >
-          定位关联实例
-        </button>`,
-    );
-  },
-  "maintenance-locate": (b) => {
-    closeModal();
-    state.selected = b.dataset.value;
-    state.detailTab = "metrics";
-    render();
-  },
 };
 document.addEventListener("click", (e) => {
   const b = e.target.closest("[data-action]");
@@ -1078,7 +1034,9 @@ document.addEventListener("click", (e) => {
   }
 });
 document.addEventListener("contextmenu", (e) => {
-  const node = e.target.closest("#board [data-object]");
+  const node = e.target.closest(
+    "#board [data-object], .chassis-slot[data-object], .big-slot[data-object]",
+  );
   if (node) {
     e.preventDefault();
     openContextMenu(node.dataset.object, e.clientX, e.clientY);
@@ -1137,7 +1095,9 @@ document.addEventListener("keydown", (e) => {
     return;
   }
   if (e.key === "ContextMenu" || (e.shiftKey && e.key === "F10")) {
-    const node = document.activeElement.closest?.("#board [data-object]");
+    const node = document.activeElement.closest?.(
+      "#board [data-object], .chassis-slot[data-object], .big-slot[data-object]",
+    );
     if (node) {
       e.preventDefault();
       const r = node.getBoundingClientRect();
@@ -1239,10 +1199,29 @@ function runTopologyCheck() {
     "卡组不能出现实例删除",
   );
   assert(
-    !menuEntries("g2-7", initialState()).some(
-      (x) => x.action === "locate-related",
-    ),
-    "其他工作负载的设备不能关联本服务实例",
+    resourceContext("g2-7").job?.current === false,
+    "其他工作负载必须保持独立归属",
+  );
+  assert(
+    !menuEntries("g1-0").some((item) => item.action === "node-maintenance"),
+    "加速卡不能直接进入节点维护",
+  );
+  assert(
+    menuEntries("n1").some((item) => item.action === "node-maintenance"),
+    "物理节点提供维护向导",
+  );
+  assert(
+    hardwareGroup("g2-1").slots.join() === "0,1,2,3",
+    "同组卡对比必须按实际分配范围分组",
+  );
+  assert(
+    hardwareGroup("g2-6").slots.join() === "4,5,6,7",
+    "其他负载使用独立卡组",
+  );
+  assert(!hardwareGroup("g3-0"), "未绑定的卡不应伪造分组");
+  assert(
+    maintenanceFreeSlots(7, [{ slots: [0, 1, 2, 3] }]).join() === "4,5,6,7",
+    "替换卡组只能使用实际空闲槽位",
   );
   const p = menuPosition(1910, 1070, 220, 290, 1920, 1080);
   assert(p.left + 220 <= 1912 && p.top + 290 <= 1072, "右键菜单必须在视口内");

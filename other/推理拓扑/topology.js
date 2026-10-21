@@ -75,9 +75,9 @@ function renderRequestLinks(rows) {
             data-route-segment="request"
             d="${path}"
           />
-          ${[0, 1, 2, 3]
+          ${row.slots
             .map((slot) => {
-              const cardY = acceleratorY(index, slot) + 12;
+              const cardY = acceleratorY(index, row.slots.indexOf(slot)) + 12;
               const compute = `M548 ${y} C600 ${y} 610 ${cardY} 662 ${cardY}`;
               const host = `M798 ${cardY} C850 ${cardY} 846 ${y} 900 ${y}`;
               return /* HTML */ `
@@ -182,15 +182,15 @@ function renderInstanceCard(row, index) {
 }
 
 function renderAccelerators(row, index) {
-  const number = row.id.slice(1);
-  return [0, 1, 2, 3]
-    .map((slot) => {
-      const load = Math.max(0, row.load - [5, 1, 9, 4][slot]);
+  const number = row.hostKey;
+  return row.slots
+    .map((slot, position) => {
+      const load = cardTelemetry(number, slot).utilization;
       return /* HTML */ ` <button
         class="node accelerator-node${diagramSelection(
           `g${number}-${slot}`,
         )}${diagramDim(row)}"
-        style="left:662px;top:${acceleratorY(index, slot)}px"
+        style="left:662px;top:${acceleratorY(index, position)}px"
         data-select="g${number}-${slot}"
         data-object="g${number}-${slot}"
         data-trace-node="${row.id}"
@@ -206,7 +206,7 @@ function renderAccelerators(row, index) {
 }
 
 function renderPhysicalNode(row, index) {
-  const number = row.id.slice(1);
+  const number = row.hostKey;
   return /* HTML */ ` <button
     class="node physical-node${diagramSelection(`n${number}`)}${diagramDim(
       row,
@@ -230,19 +230,26 @@ function renderPhysicalNode(row, index) {
           ? "2,480"
           : "—"}<small>tokens/s</small></span
     >
-    <span class="physical-status"><span class="dot good"></span>资源健康</span>
+    <span class="physical-status"
+      ><span class="dot good"></span>${hostScheduling(number) === "可调度"
+        ? "资源健康"
+        : hostScheduling(number)}</span
+    >
   </button>`;
 }
 
 function renderDiagram() {
   const rows = instances();
+  const extraHosts = Object.keys(state.scheduling)
+    .map(Number)
+    .filter((key) => !rows.some((row) => row.hostKey === key)).length;
   const heading = (title, left, order, detail = "") =>
     /* HTML */ ` <span class="column-label" style="left:${left}px"
       ><small>${order}</small>${title}
       ${detail ? /* HTML */ `<em>${detail}</em>` : ""}</span
     >`;
   $("board").style.height =
-    `${Math.max(DIAGRAM.height, 34 + rows.length * DIAGRAM.rowGap)}px`;
+    `${Math.max(DIAGRAM.height, 34 + rows.length * DIAGRAM.rowGap) + extraHosts * 48}px`;
   $("board").innerHTML = /* HTML */ ` ${heading("模型", 24, "01")}${heading(
       "推理实例",
       330,
@@ -282,6 +289,7 @@ function renderDiagram() {
           renderPhysicalNode(row, index),
       )
       .join("")}
+    ${renderAuxiliaryHosts(rows)}
     ${state.cleared && !state.created
       ? /* HTML */ `<div class="board-note">
           实例-03 已删除<br />配置快照已保存在变更任务中
@@ -298,6 +306,7 @@ function renderDiagram() {
   fitBoard();
   highlightRelated();
   paintRequestTrace();
+  paintHardwareLocation();
 }
 
 function fitBoard() {

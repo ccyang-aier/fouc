@@ -13,8 +13,9 @@ const CHASSIS_SLOTS = [
   "270,148 294,126 326,136 303,160",
 ];
 
-function hardware(row, selected = -1) {
-  const number = row.id.slice(1);
+function hardware(host, selected = -1) {
+  const number = host.key;
+  const jobs = hardwareWorkloads(number);
   const clipId = /* HTML */ `chassis-${number}-${selected < 0
     ? "all"
     : selected}`;
@@ -49,14 +50,14 @@ function hardware(row, selected = -1) {
               role="button"
               tabindex="0"
               data-select="g${number}-${slot}"
-              aria-label="选择 ${row.host} NPU${slot} 槽位"
+              data-object="g${number}-${slot}"
+              aria-haspopup="menu"
+              aria-label="选择 ${host.host} NPU${slot} 槽位"
               aria-pressed="${selected === slot}"
             >
               <title>
                 NPU${slot} ·
-                ${slot < 4 && row.id !== "i3"
-                  ? "当前实例"
-                  : "其他负载 / 无绑定"}
+                ${jobs.find((job) => job.slots.includes(slot))?.name || "空闲"}
               </title>
             </polygon>
           `,

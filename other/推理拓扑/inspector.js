@@ -174,12 +174,14 @@ function instanceMonitoring(row, archived) {
         <dl class="config-list">
           <dt>物理节点</dt>
           <dd>
-            <button class="inline-resource" data-select="n${row.id.slice(1)}">
+            <button class="inline-resource" data-select="n${row.hostKey}">
               ${row.host} ${icon("ArrowRight")}
             </button>
           </dd>
           <dt>加速卡组</dt>
-          <dd>Ascend 910B · NPU 0–3</dd>
+          <dd>
+            Ascend 910B · NPU ${row.slots?.[0] ?? 0}–${row.slots?.at(-1) ?? 3}
+          </dd>
           <dt>并行配置</dt>
           <dd>TP = 4</dd>
           <dt>实例负载</dt>
@@ -222,45 +224,64 @@ ${stopped
       >
     </section>`;
 }
-function resourceMonitoring(row, slot) {
+function resourceMonitoring(host, slot) {
   const gpu = slot >= 0;
-  const load = gpu
-    ? Math.max(0, row.load - [5, 1, 9, 4, 12, 7, 16, 11][slot])
-    : row.load;
-  const mine = row.id !== "i3" && (!gpu || slot < 4);
-  return /* HTML */ ` ${statusNotice(
-      "资源健康正常",
-      mine
-        ? "当前物理资源与关联实例在拓扑中联动。"
-        : "当前设备未绑定本服务实例。",
-      "good",
+  const jobs = hardwareWorkloads(host.key);
+  const stats = cardTelemetry(host.key, gpu ? slot : 0);
+  const used = jobs.reduce((sum, job) => sum + job.slots.length, 0);
+  const allocated = jobs.some(
+    (job) => job.current && (!gpu || job.slots.includes(slot)),
+  );
+  const scheduling = hostScheduling(host.key);
+  return /* HTML */ `${statusNotice(
+      scheduling === "可调度" ? "资源健康正常" : scheduling,
+      scheduling === "维护中"
+        ? "业务负载已迁出，设备绑定已释放。"
+        : scheduling === "已暂停调度"
+          ? "不再放置新实例，按维护步骤处理现有负载。"
+          : gpu
+            ? "设备状态与所属实例接流分别观测。"
+            : "当前节点承载当前服务及其他服务负载。",
+      scheduling === "可调度" ? "good" : "info",
     )}
     <div class="data-pairs">
       <p>
         ${gpu ? "算力使用率" : "CPU 使用"}<strong
-          >${gpu ? load : "16 / 64"}<small>${gpu ? "%" : "核"}</small></strong
+          >${gpu ? stats.utilization : used ? "16 / 64" : "2 / 64"}<small
+            >${gpu ? "%" : "核"}</small
+          ></strong
         >
       </p>
       <p>
         ${gpu ? "显存使用" : "内存使用"}<strong
-          >${gpu ? "48.6 / 64" : "138 / 512"}<small>GiB</small></strong
+          >${gpu
+            ? stats.memory + " / 64"
+            : used
+              ? "138 / 512"
+              : "24 / 512"}<small>GiB</small></strong
         >
       </p>
+      ${gpu
+        ? `<p>温度<strong>${stats.temperature}<small>°C</small></strong></p><p>功耗<strong>${stats.power}<small>W</small></strong></p>`
+        : `<p>卡分配<strong>${used}<small>/ 8</small></strong></p><p>空闲卡<strong>${8 - used}</strong></p>`}
     </div>
     <section class="detail-section">
       <h3>GPU 槽位示意<small>KunLun G5680 V2</small></h3>
       <div class="panel-box physical-machine-panel">
-        ${hardware(row, slot)}
+        ${hardware(host, slot)}
         <div class="slot-view">
           ${Array.from(
             { length: 8 },
             (_, n) =>
               /* HTML */ `<button
-                class="big-slot ${n < 4 && row.id !== "i3" ? "mine" : ""}${n ===
-                slot
-                  ? " chosen"
-                  : ""}"
-                data-select="g${row.id.slice(1)}-${n}"
+                class="big-slot ${jobs.some(
+                  (job) => job.current && job.slots.includes(n),
+                )
+                  ? "mine"
+                  : ""}${n === slot ? " chosen" : ""}"
+                data-select="g${host.key}-${n}"
+                data-object="g${host.key}-${n}"
+                aria-haspopup="menu"
                 aria-pressed="${n === slot}"
               >
                 NPU ${n}
@@ -268,24 +289,79 @@ function resourceMonitoring(row, slot) {
           ).join("")}
         </div>
         <p class="quiet hardware-caption">
-          青色：所选卡片 · 点击机箱卡槽可定位
+          青色：所选卡片 · 右键槽位可查看设备操作
         </p>
       </div>
     </section>
-    <div class="resource-bar">
-      <span>算力使用 / 本服务分配</span
-      ><b>${load}% / ${mine ? (gpu ? "100" : "50") : "0"}%</b>
-      <span class="meter ${row.load > 80 ? "warn" : ""}"
-        ><i style="width:${load}%"></i
-      ></span>
-    </div>
+    ${gpu
+      ? `<div class="resource-bar"><span>算力使用 / 本服务分配</span><b>${stats.utilization}% / ${allocated ? "100" : "0"}%</b><span class="meter"><i style="width:${stats.utilization}%"></i></span></div>`
+      : ""}
+    ${hardwareWorkloadPanel(host)}`;
+}
+function resourceConfiguration(context) {
+  const { host, slot, job } = context;
+  return /* HTML */ `<section class="detail-section">
+      <h3>硬件详情</h3>
+      <div class="panel-box">
+        <dl class="config-list">
+          <dt>节点</dt>
+          <dd>${host.host}</dd>
+          <dt>IP</dt>
+          <dd class="mono">${host.ip}</dd>
+          <dt>服务器型号</dt>
+          <dd>KunLun G5680 V2</dd>
+          <dt>加速卡</dt>
+          <dd>Ascend 910B / 64 GiB × 8</dd>
+          <dt>驱动 / 固件</dt>
+          <dd>24.1.0 / 7.1.0 · 演示配置</dd>
+          <dt>调度状态</dt>
+          <dd>${hostScheduling(host.key)}</dd>
+          ${slot >= 0
+            ? /* HTML */ `<dt>设备 ID</dt>
+                <dd class="mono">${host.host}/npu/${slot}</dd>
+                <dt>序列号</dt>
+                <dd class="mono">
+                  DEMO-910B-${host.key}${String(slot).padStart(3, "0")}
+                </dd>
+                <dt>当前关联</dt>
+                <dd>${job ? job.service + " / " + job.name : "空闲"}</dd>`
+            : ""}
+        </dl>
+      </div>
+    </section>
+    ${hardware(host, slot)}`;
+}
+function resourceEvents(context) {
+  const task = state.maintenance;
+  const source = task?.sourceKey === context.key;
+  const target = task?.targetKey === context.key;
+  const details = source
+    ? task.phase >= 5
+      ? "全部负载已迁出，原节点在途与绑定均为 0。"
+      : MAINTENANCE_PHASES[task.phase]
+    : target && task.phase >= 3
+      ? "替换副本已就绪并实际接流。"
+      : "所选时段设备采集与健康状态正常。";
+  return /* HTML */ `${statusNotice(
+      hostScheduling(context.key),
+      details,
+      "good",
+    )}
     <section class="detail-section">
-      <h3>关联实例</h3>
-      ${mine
-        ? /* HTML */ `<button class="read-link" data-select="${row.id}">
-            ${icon("Layers")}${row.name}
-          </button>`
-        : /* HTML */ `<p class="quiet">其他工作负载 / 无当前绑定</p>`}
+      <h3>资源事件<small>同一观察时段</small></h3>
+      <div class="timeline">
+        ${event(
+          "刚刚",
+          source ? "节点维护状态" : target ? "承载实例迁入" : "设备采集正常",
+          details,
+          "success",
+        )}${event(
+          "14:25",
+          "设备发现完成",
+          "8 张 Ascend 910B 已识别，卡槽映射正常。",
+          "success",
+        )}
+      </div>
     </section>`;
 }
 function renderInspector() {
@@ -294,10 +370,8 @@ function renderInspector() {
   const row = archived
     ? state.snapshots.i3
     : instances().find((item) => item.id === id);
-  const resource = /^[ng]/.test(id);
-  const host = resource
-    ? instances().find((item) => item.id === "i" + id[1])
-    : null;
+  const context = resourceContext(id);
+  const host = context?.host;
   const tab = state.detailTab;
   let title,
     subtitle,
@@ -307,7 +381,8 @@ function renderInspector() {
     avatar;
   const tabs = [
     ["metrics", "监控"],
-    ...(row || host ? [["config", "配置"]] : []),
+    ...(row || host ? [["config", host ? "硬件" : "配置"]] : []),
+    ...(host && context.slot < 0 ? [["workloads", "承载"]] : []),
     ["events", "事件"],
   ];
   if (row) {
@@ -347,63 +422,23 @@ function renderInspector() {
     else if (tab === "events") content = instanceEvents(row, archived);
     else content = instanceMonitoring(row, archived);
   } else if (host) {
-    const slot = id.startsWith("g") ? Number(id.split("-")[1]) : -1;
+    const slot = context.slot;
     title = slot >= 0 ? `${host.host} · NPU${slot}` : host.host;
     subtitle = `${host.ip} / Ascend 910B`;
-    status = "资源健康";
+    status =
+      hostScheduling(host.key) === "可调度"
+        ? "资源健康"
+        : hostScheduling(host.key);
+    type = status === "资源健康" ? "" : "gray";
     avatar = slot >= 0 ? "Cpu" : "Server";
-    if (tab === "config")
-      content = /* HTML */ `<section class="detail-section">
-          <h3>物理资源配置</h3>
-          <div class="panel-box">
-            <dl class="config-list">
-              <dt>节点</dt>
-              <dd>${host.host}</dd>
-              <dt>IP</dt>
-              <dd>${host.ip}</dd>
-              <dt>服务器型号</dt>
-              <dd>KunLun G5680 V2</dd>
-              <dt>卡类型</dt>
-              <dd>Ascend 910B / 64 GiB</dd>
-              <dt>物理卡数</dt>
-              <dd>8</dd>
-              <dt>当前关联</dt>
-              <dd>
-                ${host.id === "i3"
-                  ? "原实例无绑定"
-                  : slot >= 4
-                    ? "其他工作负载"
-                    : host.name}
-              </dd>
-            </dl>
-          </div>
-        </section>
-        ${hardware(host, slot)}`;
-    else if (tab === "events")
-      content = /* HTML */ `${statusNotice(
-          "资源健康正常",
-          "所选时段无硬件健康告警。",
-          "good",
-        )}
-        <section class="detail-section">
-          <h3>资源事件</h3>
-          <div class="timeline">
-            ${event(
-              "14:28",
-              "设备采集正常",
-              "资源健康与实例接流分别观测。",
-              "success",
-            )}${event(
-              "14:25",
-              "关联负载变化",
-              host.id === "i3"
-                ? "原实例停止，设备绑定释放。"
-                : "关联实例持续承载请求。",
-              "warning",
-            )}
-          </div>
-        </section>`;
-    else content = resourceMonitoring(host, slot);
+    content =
+      tab === "config"
+        ? resourceConfiguration(context)
+        : tab === "events"
+          ? resourceEvents(context)
+          : tab === "workloads"
+            ? hardwareWorkloadPanel(host)
+            : resourceMonitoring(host, slot);
   } else {
     title = "Qwen3-32B";
     subtitle = `正式版本 v1.2.0 / ${state.mode === "pd" ? "P/D 分离" : "标准推理"}`;

@@ -118,6 +118,10 @@ function positionInvocation() {
 }
 
 function openInvocation(origin = state.selected) {
+  if (hardwareBusy()) {
+    toast("节点维护执行中，请等待接流切换与排空完成");
+    return;
+  }
   const panel = $("invoke-dialog");
   clearTimeout(toastTimer);
   $("toast").classList.remove("show");
@@ -255,7 +259,7 @@ function startInvocation() {
   $("invoke-status").textContent = "请求已发送";
   const rows = route.map((id) => instances().find((row) => row.id === id));
   $("invoke-route").textContent =
-    `${invocation.origin === "model" ? "模型 → " : ""}${rows.map((row) => row.name).join(" → ")} → NPU 0–3 → ${rows.at(-1).host}`;
+    `${invocation.origin === "model" ? "模型 → " : ""}${rows.map((row) => `${row.name} → NPU ${row.slots[0]}–${row.slots.at(-1)} → ${row.host}`).join(" → ")}`;
   state.filter = "all";
   state.search = "";
   state.zoom = 1;
@@ -314,6 +318,7 @@ function closeInvocation() {
   $("invoke-dialog").close();
   state.trace = null;
   renderDiagram();
+  renderMaintenanceBanner();
   document
     .querySelector(`#board [data-object="${invocation.origin}"]`)
     ?.focus({ preventScroll: true });

@@ -1,0 +1,429 @@
+/* Hardware operations share the existing shell, menu and dialog materials. */
+#modal[data-hardware="compare"] {
+  width: 720px;
+}
+#modal[data-hardware="compare"] .modal-body {
+  max-height: calc(100dvh - 200px);
+}
+.hardware-card-table th,
+.hardware-card-table td {
+  padding: 9px 6px;
+}
+#modal[data-hardware="maintenance"],
+#modal[data-hardware="progress"] {
+  width: 660px;
+}
+.hardware-compare-meta,
+.maintenance-context {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  font-size: 12px;
+}
+.hardware-compare-meta > span {
+  flex: 1;
+}
+.hardware-compare-meta select {
+  font-size: 11px;
+  padding: 6px 8px;
+}
+.maintenance-context strong {
+  font-weight: 600;
+}
+.maintenance-context > span:not(.tag) {
+  color: var(--muted);
+  font-size: 11px;
+}
+.maintenance-context .tag {
+  margin-left: auto;
+}
+.hardware-metric-tabs {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  padding-bottom: 15px;
+}
+.hardware-metric-tabs button {
+  border: 0;
+  font-size: 11px;
+  background: transparent;
+  color: var(--muted);
+  padding: 6px 10px;
+}
+.hardware-metric-tabs button[aria-selected="true"] {
+  color: var(--ink);
+  background: var(--active);
+}
+.hardware-bars {
+  padding: 12px 0 18px;
+  border-bottom: 1px solid var(--line);
+}
+.hardware-bar-row {
+  display: grid;
+  grid-template-columns: 60px minmax(60px, 1fr) 88px;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+.hardware-bar-row > button {
+  padding: 4px 5px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+}
+.hardware-bar-row > span {
+  height: 7px;
+  background: var(--field);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.hardware-bar-row i {
+  display: block;
+  height: 100%;
+  background: var(--muted);
+  border-radius: 2px;
+  transition: width 200ms;
+}
+.hardware-bar-row.is-current i {
+  background: var(--signal);
+}
+.hardware-bar-row.is-current > button {
+  color: var(--signal);
+  background: var(--signal-soft);
+}
+.hardware-bar-row > b {
+  text-align: right;
+  font-size: 15px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.hardware-bar-row small {
+  margin-left: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 400;
+}
+.hardware-table-wrap {
+  overflow-x: auto;
+}
+.hardware-card-table {
+  table-layout: fixed;
+  font-variant-numeric: tabular-nums;
+}
+.hardware-card-table caption {
+  text-align: left;
+  color: var(--muted);
+  font-size: 10px;
+  padding: 15px 6px 4px;
+}
+.hardware-card-table th:first-child {
+  width: 128px;
+}
+.hardware-card-table th:not(:first-child),
+.hardware-card-table td {
+  text-align: right;
+}
+.hardware-card-table td.is-current,
+.hardware-card-table th.is-current {
+  color: var(--signal);
+  background: var(--signal-soft);
+}
+.hardware-card-table small {
+  color: var(--muted);
+  font-size: 9px;
+}
+.hardware-card-table .active-metric th {
+  color: var(--ink);
+}
+.hardware-finding,
+.maintenance-impact {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 11px;
+  line-height: 1.8;
+  color: var(--amber);
+  margin: 16px 0 0;
+}
+.hardware-finding .icon,
+.maintenance-impact .icon {
+  flex-shrink: 0;
+  margin-top: 3px;
+  width: 14px;
+  height: 14px;
+}
+.hardware-job {
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  margin: 10px 0;
+}
+.hardware-job > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+.hardware-job strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+.hardware-job p {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.8;
+  margin-top: 6px;
+}
+.hardware-job-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 10px;
+  margin-top: 10px;
+}
+.hardware-job-foot .read-link {
+  width: auto;
+  margin: 0;
+  font-size: 10px;
+  padding: 3px 6px;
+}
+.hardware-workloads > .quiet {
+  margin-top: 15px;
+}
+.hardware-copy-text {
+  display: block;
+  width: 100%;
+  min-height: 170px;
+  padding: 12px;
+  margin-top: 12px;
+  background: var(--field);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  font-size: 12px;
+  line-height: 1.9;
+  resize: vertical;
+}
+.hardware-copy-text:focus {
+  border-color: var(--muted);
+  outline: none;
+}
+.maintenance-nav {
+  display: flex;
+  padding: 0;
+  list-style: none;
+  gap: 18px;
+  margin: 0 0 20px;
+  border-bottom: 1px solid var(--line);
+}
+.maintenance-nav li {
+  flex: 1;
+  color: var(--muted);
+  font-size: 11px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid transparent;
+}
+.maintenance-nav .current {
+  color: var(--ink);
+  border-color: var(--signal);
+}
+.maintenance-nav .done {
+  color: var(--good);
+}
+.maintenance-scope {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  color: var(--muted);
+  font-size: 11px;
+  padding-bottom: 8px;
+}
+.maintenance-plan {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  border: 1px solid var(--line);
+  padding: 15px;
+  margin: 20px 0 12px;
+  border-radius: 5px;
+  font-size: 12px;
+}
+.maintenance-plan .icon {
+  color: var(--muted);
+}
+.maintenance-phases {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.maintenance-phases li {
+  display: flex;
+  gap: 12px;
+  position: relative;
+  padding: 0 0 22px;
+}
+.maintenance-phases li:last-child {
+  padding-bottom: 5px;
+}
+.maintenance-phases li:not(:last-child)::before {
+  position: absolute;
+  content: "";
+  left: 11px;
+  top: 25px;
+  bottom: 4px;
+  width: 1px;
+  background: var(--line);
+}
+.phase-mark {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--muted);
+}
+.phase-mark .icon {
+  width: 13px;
+  height: 13px;
+}
+.maintenance-phases strong {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  line-height: 24px;
+}
+.maintenance-phases p {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+.maintenance-phases li > .tag {
+  margin-left: auto;
+  align-self: flex-start;
+}
+.maintenance-phases .current .phase-mark {
+  border-color: var(--signal);
+  color: var(--signal);
+  background: var(--signal-soft);
+}
+.maintenance-phases .current strong {
+  color: var(--ink);
+}
+.maintenance-phases .done .phase-mark {
+  color: var(--good);
+  background: var(--good-soft);
+  border-color: var(--good-soft);
+}
+.maintenance-result {
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--good-soft);
+  color: var(--good);
+  display: flex;
+  gap: 10px;
+  padding: 14px;
+  margin-top: 17px;
+  font-size: 12px;
+}
+.maintenance-result p {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.8;
+  margin-top: 5px;
+}
+.hardware-maintenance-banner {
+  position: absolute;
+  z-index: 3;
+  top: 17px;
+  right: 16px;
+  padding: 7px 10px;
+  background: var(--surface);
+  border-color: var(--line);
+  font-size: 10px;
+  color: var(--muted);
+}
+.hardware-maintenance-banner .icon {
+  width: 13px;
+  height: 13px;
+}
+.maintenance-origin {
+  position: absolute;
+  left: 24px;
+  right: 22px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  color: var(--muted);
+  border: 1px dashed var(--line);
+  background: var(--scene);
+  font-size: 11px;
+}
+.maintenance-origin strong {
+  color: var(--ink);
+  font-weight: 500;
+}
+.maintenance-origin small {
+  margin-left: auto;
+  font-size: 10px;
+}
+.location-path .request-edge,
+.location-path .compute-edge,
+.location-path .host-edge {
+  opacity: 1;
+  stroke: var(--signal);
+  stroke-width: 1.7px;
+}
+.node.location-path {
+  border-color: color-mix(in srgb, var(--signal) 55%, var(--line));
+}
+.node.location-target {
+  border-color: var(--signal);
+  background: var(--signal-soft);
+  animation: hardware-locate 900ms ease-in-out 3;
+}
+.chassis-slot.slot-located {
+  animation: slot-locate 900ms ease-in-out 3;
+}
+@keyframes hardware-locate {
+  50% {
+    border-color: var(--ink);
+  }
+}
+@keyframes slot-locate {
+  50% {
+    fill: #61e3da88;
+    stroke: #a4fff6;
+    stroke-width: 3px;
+  }
+}
+@media (max-width: 760px) {
+  .hardware-card-table {
+    min-width: 460px;
+  }
+  .hardware-compare-meta,
+  .maintenance-context {
+    flex-wrap: wrap;
+  }
+  .maintenance-nav {
+    gap: 8px;
+  }
+  .hardware-bar-row {
+    gap: 8px;
+    grid-template-columns: 50px minmax(50px, 1fr) 80px;
+  }
+  .hardware-maintenance-banner {
+    top: auto;
+    bottom: 17px;
+  }
+}

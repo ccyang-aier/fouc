@@ -7,10 +7,13 @@
     <link rel="icon" href="data:," />
     <link rel="stylesheet" href="./page.css" />
     <script defer src="./icons.js"></script>
+    <script defer src="./hardware-data.js"></script>
     <script defer src="./hardware.js"></script>
     <script defer src="./topology.js"></script>
     <script defer src="./inspector.js"></script>
     <script defer src="./invocation.js"></script>
+    <script defer src="./hardware-actions.js"></script>
+    <script defer src="./maintenance.js"></script>
     <script defer src="./page.js"></script>
   </head>
   <body>
@@ -261,6 +264,12 @@
                 </div>
               </div>
               <div class="notice" id="notice" role="status"></div>
+              <button
+                id="hardware-maintenance-banner"
+                class="hardware-maintenance-banner"
+                data-action="maintenance-reopen"
+                hidden
+              ></button>
               <button
                 class="request-indicator"
                 id="request-indicator"

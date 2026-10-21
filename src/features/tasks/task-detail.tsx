@@ -269,10 +269,10 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
             {fieldError && <p role="alert" className={styles.fieldError}>{t(fieldError)}</p>}
             {error && <AppAlert tone="error" title={t(error)} onClose={() => setError(null)} />}
             <div className={styles.schedule}><TaskScheduleSection value={draft.schedule} disabled={!canEdit || Boolean(busy)} onChange={value => update('schedule', value)} /></div>
-            <section className={styles.section}>
-              <div className={styles.sectionHeading}><TextAlignLeft size={15} aria-hidden /><h3>{t('description')}</h3></div>
-              {canEdit ? <textarea className={styles.description} aria-label={t('description')} rows={4} maxLength={12000} placeholder={t('descriptionPlaceholder')} value={draft.description} disabled={Boolean(busy)} onChange={event => update('description', event.target.value)} /> : <p className={styles.descriptionText} data-empty={!draft.description || undefined}>{draft.description || t('noDescription')}</p>}
-            </section>
+            <div className={`${styles.fieldRow} ${styles.descriptionRow}`}>
+              <label htmlFor={`${titleId}-description`}><TextAlignLeft size={14} aria-hidden />{t('description')}</label>
+              {canEdit ? <textarea id={`${titleId}-description`} className={styles.description} aria-label={t('description')} rows={4} maxLength={12000} placeholder={t('descriptionPlaceholder')} value={draft.description} disabled={Boolean(busy)} onChange={event => update('description', event.target.value)} /> : <p className={styles.descriptionText} data-empty={!draft.description || undefined}>{draft.description || t('noDescription')}</p>}
+            </div>
             <TaskDetailChecklist checklist={draft.checklist} onChecklist={value => update('checklist', value)} newItem={newItem} onNewItem={setNewItem} onAddItem={addItem} inputRef={checklistInput} editable={canEdit} busy={Boolean(busy)} />
           </section>
           <aside className={styles.commentsPanel} aria-label={t('comments')} hidden={activePane !== 'comments'} data-task-comments>

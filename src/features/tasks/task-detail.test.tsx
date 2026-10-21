@@ -52,7 +52,7 @@ beforeAll(async () => {
   });
   const icon = () => <svg aria-hidden />;
   mock.module('@phosphor-icons/react', () => Object.fromEntries([
-    'CalendarBlank', 'CaretDown', 'CheckSquare', 'Circle', 'Flag', 'Kanban', 'ListChecks',
+    'CalendarBlank', 'CaretDown', 'CaretRight', 'CheckSquare', 'Circle', 'Flag', 'Kanban', 'ListChecks',
     'LockSimple', 'Plus', 'Tag', 'TextAlignLeft', 'Trash', 'Users', 'Warning', 'X', 'Clock', 'LinkSimple', 'ChatCircle',
   ].map(name => [name, icon])));
   mock.module('@/components/ui/button', () => ({ Button: Control }));
@@ -121,14 +121,6 @@ function deferredSave() {
 async function switchPane(value: 'details' | 'comments') {
   await act(async () => host.querySelector<HTMLButtonElement>(`[data-detail-pane="${value}"]`)!.click());
 }
-function geometry() {
-  const style = host.querySelector('dialog')!.style;
-  return { left: parseFloat(style.left), top: parseFloat(style.top), width: parseFloat(style.width), height: parseFloat(style.height) };
-}
-async function pointer(target: EventTarget, type: string, x: number, y: number) {
-  await act(async () => target.dispatchEvent(new PointerEvent(type, { pointerId: 1, button: 0, clientX: x, clientY: y, bubbles: true, cancelable: true })));
-}
-
 test('page visibility closes and reopens the same card without losing task or comment drafts', async () => {
   await render();
   await type('Task title', 'Unfinished task edit');
@@ -209,6 +201,9 @@ test('task information owns subtasks and switching to comments preserves both dr
   expect(Boolean(comments.querySelector('[data-task-detail-checklist]'))).toBe(false);
   expect(host.querySelectorAll('[role="tablist"]')).toHaveLength(0);
   expect(host.querySelector('[data-detail-pane="comments"]')?.textContent).toBe('Comments');
+  const disclosure = main.querySelector<HTMLDetailsElement>('[data-task-detail-checklist]')!;
+  expect(disclosure.open).toBe(false);
+  disclosure.open = true;
   const input = main.querySelector<HTMLInputElement>('input[aria-label="Add a checklist item"]')!;
   await act(async () => {
     Object.getOwnPropertyDescriptor(browser.HTMLInputElement.prototype, 'value')!.set!.call(input, 'Review the prototype');
@@ -223,6 +218,8 @@ test('task information owns subtasks and switching to comments preserves both dr
   await switchPane('details');
   expect((main as HTMLElement).hidden).toBe(false);
   expect(comments.hidden).toBe(true);
+  disclosure.open = false;
+  disclosure.open = true;
   expect(main.querySelector<HTMLInputElement>('[aria-label="Checklist item"]')?.value).toBe('Review the prototype');
   expect(textarea('Comment draft') === comment).toBe(true);
   await switchPane('comments');
@@ -230,47 +227,6 @@ test('task information owns subtasks and switching to comments preserves both dr
   await act(async () => saveButton().click());
   expect(onSave.mock.calls[0][0].checklist[0]?.title).toBe('Review the prototype');
   expect(onClose.mock.calls).toHaveLength(0);
-});
-
-test('moving the card stays in the viewport and Escape restores geometry without discarding text', async () => {
-  await render();
-  await type('Task title', 'Keep this edit while moving');
-  const initial = geometry();
-  const move = host.querySelector<HTMLElement>('[aria-label="Move task details"]')!;
-  await pointer(move, 'pointerdown', 600, 100);
-  await pointer(window, 'pointermove', 10000, 10000);
-  const moved = geometry();
-  expect(moved.left + moved.width).toBeLessThanOrEqual(1440);
-  expect(moved.top + moved.height).toBeLessThanOrEqual(905);
-  expect(host.querySelector('dialog')!.dataset.windowGesture).toBe('move');
-  await act(async () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
-  expect(geometry()).toEqual(initial);
-  expect(host.querySelector('dialog')!.dataset.windowGesture).toBeUndefined();
-  expect(onClose.mock.calls).toHaveLength(0);
-  expect(textarea('Task title').value).toBe('Keep this edit while moving');
-  await pointer(textarea('Task title'), 'pointerdown', 600, 120);
-  expect(host.querySelector('dialog')!.dataset.windowGesture).toBeUndefined();
-});
-
-test('corner resize cancels cleanly and keyboard edge resize honors the fixed opposite edge', async () => {
-  await render();
-  const initial = geometry();
-  const corner = host.querySelector<HTMLElement>('[data-edge="nw"]')!;
-  await pointer(corner, 'pointerdown', initial.left, initial.top);
-  await pointer(window, 'pointermove', -2000, -2000);
-  const resized = geometry();
-  expect(resized.left).toBe(12);
-  expect(resized.top).toBe(52);
-  expect(resized.left + resized.width).toBe(initial.left + initial.width);
-  expect(resized.top + resized.height).toBe(initial.top + initial.height);
-  await pointer(window, 'pointercancel', -2000, -2000);
-  expect(geometry()).toEqual(initial);
-  const west = host.querySelector<HTMLElement>('[data-edge="w"]')!;
-  await act(async () => west.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true })));
-  expect(geometry()).toEqual({ ...initial, left: initial.left - 10, width: initial.width + 10 });
-  await act(async () => west.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', shiftKey: true, bubbles: true, cancelable: true })));
-  expect(geometry()).toEqual({ ...initial, left: initial.left + 30, width: initial.width - 30 });
-  expect(onSave.mock.calls).toHaveLength(0);
 });
 
 test('colored labels remain structured in the task draft sent to save', async () => {

@@ -18,7 +18,6 @@ import { TaskPriorityIcon } from './task-priority-icon';
 import { TaskSelect } from './task-select';
 import { TaskStatusIcon } from './task-status-icon';
 import { TaskScheduleSection } from './calendar/task-schedule-section';
-import { useTaskDetailWindow } from './use-task-detail-window';
 import { messages } from './task-detail.messages';
 import styles from './task-detail.module.css';
 
@@ -48,13 +47,10 @@ function initialDraft(task: BoardTask | null, columnId: string): TaskDraft {
   };
 }
 
-const resizeMessages = { n: 'resizeTop', s: 'resizeBottom', e: 'resizeRight', w: 'resizeLeft', ne: 'resizeTopRight', nw: 'resizeTopLeft', se: 'resizeBottomRight', sw: 'resizeBottomLeft' } as const;
-
 export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, onDelete, client, onCommentsChanged }: TaskDetailProps) {
   const { t } = useTranslation(messages);
   const visible = usePageVisible();
   const dialog = useRef<HTMLDialogElement>(null);
-  const floating = useTaskDetailWindow(visible);
   const active = useRef(true);
   const titleInput = useRef<HTMLTextAreaElement>(null);
   const statusInput = useRef<HTMLButtonElement>(null);
@@ -98,9 +94,14 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
   useLayoutEffect(() => {
     const input = titleInput.current;
     if (!input || !visible) return;
-    input.style.height = '0px';
-    input.style.height = `${input.scrollHeight + 2}px`;
-  }, [draft.title, visible, floating.rect?.width]);
+    const fitTitle = () => {
+      input.style.height = '0px';
+      input.style.height = `${input.scrollHeight + 2}px`;
+    };
+    fitTitle();
+    window.addEventListener('resize', fitTitle);
+    return () => window.removeEventListener('resize', fitTitle);
+  }, [draft.title, visible]);
 
   function update<K extends keyof TaskDraft>(key: K, value: TaskDraft[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
@@ -194,8 +195,8 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
   }
 
   return (
-    <dialog ref={dialog} className={styles.dialog} style={floating.style} aria-labelledby={titleId} data-window-gesture={floating.tracking ?? undefined}
-      onCancel={(event) => { event.preventDefault(); if (!floating.cancelGesture()) requestClose(); }}
+    <dialog ref={dialog} className={styles.dialog} aria-labelledby={titleId}
+      onCancel={(event) => { event.preventDefault(); requestClose(); }}
       onKeyDown={(event) => {
         if (!confirmation && event.key === 'Enter' && (event.metaKey || event.ctrlKey) && !(event.target instanceof Element && event.target.closest('[data-task-comments]'))) {
           event.preventDefault();
@@ -208,11 +209,9 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
         if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) requestClose();
       }}>
       <h2 id={titleId} className={styles.srOnly}>{t(task ? 'taskDetails' : 'newTask')}</h2>
-      <span id={`${titleId}-move-hint`} className={styles.srOnly}>{t('moveHint')}</span>
-      <span id={`${titleId}-resize-hint`} className={styles.srOnly}>{t('resizeHint')}</span>
       <div className={styles.surface}>
-        <div className={styles.titleArea} onPointerDown={floating.moveProps.onPointerDown}>
-          <span className={styles.reference} role="button" tabIndex={0} aria-label={t('moveWindow')} aria-describedby={`${titleId}-move-hint`} onKeyDown={floating.moveProps.onKeyDown}>{task ? taskReference(task) : t('newTask')}</span>
+        <div className={styles.titleArea}>
+          <span className={styles.reference}>{task ? taskReference(task) : t('newTask')}</span>
           <Button type="button" variant="ghost" size="icon-sm" className={styles.iconButton} aria-label={t('close')} onClick={requestClose} disabled={Boolean(busy)}><X size={16} /></Button>
           {canEdit ? <textarea ref={titleInput} className={styles.titleInput} aria-label={t('title')} placeholder={t('titlePlaceholder')}
             rows={1} maxLength={240} value={draft.title} disabled={Boolean(busy)} aria-invalid={fieldError === 'titleRequired'}
@@ -286,8 +285,6 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
           {canEdit && <Button type="button" loading={busy === 'save'} disabled={busy === 'delete'} onClick={() => void save()}>{task ? <CheckSquare size={14} /> : <Plus size={14} />}{t(task ? 'save' : 'create')}</Button>}
         </footer>
       </div>
-      {(Object.keys(resizeMessages) as Array<keyof typeof resizeMessages>).map(edge => <button key={edge} type="button" className={`fouc-resize-handle ${styles.resizeHandle}`} data-edge={edge} data-resize-axis={edge.length > 1 ? (edge === 'ne' || edge === 'sw' ? 'ne-sw' : 'nw-se') : edge === 'n' || edge === 's' ? 'y' : 'x'}
-        data-resizing={floating.tracking === edge || undefined} aria-label={t(resizeMessages[edge])} aria-describedby={`${titleId}-resize-hint`} {...floating.resizeProps(edge)} />)}
       {confirmation && <TaskConfirmation kind={confirmation} busy={busy === 'delete'} taskTitle={draft.title}
         onClose={() => { if (!busy) setConfirmation(null); }}
         onConfirm={() => { if (confirmation === 'discard') onClose(); else void remove(); }} />}

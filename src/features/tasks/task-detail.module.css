@@ -13,7 +13,7 @@
 .paneSwitch { display:flex; flex-shrink:0; gap:4px; padding:0 24px 13px; }
 .paneSwitch > button { height:28px; padding:0 10px; border-radius:5px; color:var(--muted-strong); font-size:11px; cursor:pointer; }
 .body { display:flex; flex-direction:column; flex:1; min-height:0; padding:0 20px 12px 24px; overflow:hidden; }
-.mainPanel { flex:1; min-width:0; min-height:0; padding:0 6px 12px 3px; overflow-y:auto; overscroll-behavior:contain; scrollbar-gutter:stable; }
+.mainPanel { flex:1; min-width:0; max-width:520px; min-height:0; padding:0 6px 12px 3px; overflow-y:auto; overscroll-behavior:contain; scrollbar-gutter:stable; }
 .mainPanel[hidden], .commentsPanel[hidden] { display:none; }
 .readonly { display:flex; align-items:center; gap:6px; margin-bottom:14px; color:var(--muted-strong); font-size:11px; }
 .fields { display:grid; gap:6px; min-width:0; margin:0; padding:0; border:0; }

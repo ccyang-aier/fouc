@@ -3,6 +3,8 @@ import { defineMessages } from '@/lib/i18n';
 export const messages = defineMessages({
   newTask: ['新建任务', 'New task'],
   taskDetails: ['任务详情', 'Task details'],
+  moveDetails: ['移动任务详情', 'Move task details'],
+  moveDetailsHint: ['拖动移动；方向键微调，Shift 加速。', 'Drag to move; use arrow keys to adjust, Shift for larger steps.'],
   detailsPane: ['任务信息', 'Task information'],
   subtasks: ['子任务', 'Subtasks'],
   comments: ['评论', 'Comments'],

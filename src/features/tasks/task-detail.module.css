@@ -2,8 +2,10 @@
 .dialog::backdrop { background:color-mix(in srgb,var(--modal-backdrop) 45%,transparent); }
 .surface { display:flex; flex-direction:column; height:100%; overflow:hidden; border-radius:inherit; }
 .srOnly { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
-.titleArea { position:relative; flex-shrink:0; padding:15px 18px 12px; }
-.reference { display:inline-flex; align-items:center; min-height:21px; padding:0 3px; color:var(--muted-strong); font-size:10px; line-height:18px; letter-spacing:.035em; font-variant-numeric:tabular-nums; }
+.titleArea { position:relative; flex-shrink:0; padding:15px 18px 12px; cursor:grab; touch-action:none; }
+.dialog[data-dragging] .titleArea, .dialog[data-dragging] .reference { cursor:grabbing; user-select:none; }
+.reference { display:inline-flex; align-items:center; min-height:21px; padding:0 3px; border-radius:3px; color:var(--muted-strong); font-size:10px; line-height:18px; letter-spacing:.035em; font-variant-numeric:tabular-nums; cursor:grab; }
+.reference:focus-visible { outline:1px solid var(--control-border); outline-offset:2px; }
 .iconButton { position:absolute; top:12px; right:15px; width:27px; height:27px; border-radius:6px; color:var(--muted-strong); }
 .titleInput, .title { display:block; width:calc(100% - 24px); min-height:29px; max-height:82px; margin:6px 0 0; padding:0 4px; border:0; border-radius:0; background:transparent; color:var(--ink); font:inherit; font-size:18px; font-weight:600; line-height:1.5; letter-spacing:-.02em; resize:none; cursor:text; }
 .titleInput::placeholder { color:var(--muted); }

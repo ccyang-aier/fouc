@@ -20,6 +20,7 @@ import { TaskStatusIcon } from './task-status-icon';
 import { TaskDateInput } from './task-date-input';
 import { TaskScheduleSection } from './calendar/task-schedule-section';
 import { messages } from './task-detail.messages';
+import { useTaskDetailDrag } from './use-task-detail-drag';
 import styles from './task-detail.module.css';
 
 export type TaskDetailProps = {
@@ -72,6 +73,7 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
   const currentColumn = board.columns.find((column) => column.id === draft.columnId);
   const selectedMembers = board.members.filter((member) => draft.assigneeIds.includes(member.userId));
   const matchingMembers = board.members.filter((member) => `${member.name} ${member.email}`.toLocaleLowerCase().includes(memberQuery.trim().toLocaleLowerCase()));
+  const drag = useTaskDetailDrag(dialog, visible && !confirmation);
 
   useEffect(() => {
     active.current = true;
@@ -183,7 +185,7 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
   }
 
   return (
-    <dialog ref={dialog} className={styles.dialog} aria-labelledby={titleId}
+    <dialog ref={dialog} className={styles.dialog} aria-labelledby={titleId} data-dragging={drag.dragging || undefined} {...drag.dialogProps}
       onCancel={(event) => { event.preventDefault(); requestClose(); }}
       onKeyDown={(event) => {
         if (!confirmation && event.key === 'Enter' && (event.metaKey || event.ctrlKey) && !(event.target instanceof Element && event.target.closest('[data-task-comments]'))) {
@@ -198,8 +200,10 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
       }}>
       <h2 id={titleId} className={styles.srOnly}>{t(task ? 'taskDetails' : 'newTask')}</h2>
       <div className={styles.surface}>
-        <div className={styles.titleArea}>
-          <span className={styles.reference}>{task ? taskReference(task) : t('newTask')}</span>
+        <div className={styles.titleArea} {...drag.handleProps}>
+          <span className={styles.reference} role="button" tabIndex={0} aria-label={t('moveDetails')} aria-describedby={`${titleId}-move-hint`}
+            onKeyDown={drag.onKeyDown}>{task ? taskReference(task) : t('newTask')}</span>
+          <span id={`${titleId}-move-hint`} className={styles.srOnly}>{t('moveDetailsHint')}</span>
           <Button type="button" variant="ghost" size="icon-sm" className={styles.iconButton} aria-label={t('close')} onClick={requestClose} disabled={Boolean(busy)}><X size={16} /></Button>
           {canEdit ? <textarea ref={titleInput} className={styles.titleInput} aria-label={t('title')} placeholder={t('titlePlaceholder')}
             rows={1} maxLength={240} value={draft.title} disabled={Boolean(busy)} aria-invalid={fieldError === 'titleRequired'}

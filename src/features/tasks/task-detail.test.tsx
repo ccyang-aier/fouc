@@ -76,6 +76,7 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   await act(async () => root.render(null));
+  Object.defineProperties(browser, { innerWidth: { configurable: true, value: 1452 }, innerHeight: { configurable: true, value: 917 } });
   onClose.mockClear();
   onSave.mockReset();
   onSave.mockImplementation(async draft => Boolean(draft.title));
@@ -121,6 +122,87 @@ function deferredSave() {
 async function switchPane(value: 'details' | 'comments') {
   await act(async () => host.querySelector<HTMLButtonElement>(`[data-detail-pane="${value}"]`)!.click());
 }
+function dragFixture() {
+  const dialog = host.querySelector('dialog')!;
+  const handle = host.querySelector<HTMLElement>('[aria-label="Move task details"]')!;
+  const header = handle.parentElement!;
+  let captured = false;
+  Object.assign(header, {
+    setPointerCapture: () => { captured = true; },
+    hasPointerCapture: () => captured,
+    releasePointerCapture: () => { captured = false; },
+  });
+  dialog.getBoundingClientRect = () => ({
+    left: parseFloat(dialog.style.left) || 1028,
+    top: parseFloat(dialog.style.top) || 76,
+    width: 400, height: 760,
+  } as DOMRect);
+  const pointer = async (type: string, x: number, y: number, target: HTMLElement = handle) => {
+    await act(async () => target.dispatchEvent(new PointerEvent(type, { bubbles: true, pointerId: 1, isPrimary: true, button: 0, clientX: x, clientY: y })));
+  };
+  return { dialog, handle, pointer };
+}
+
+test('dragging moves the card without changing its size or losing either draft', async () => {
+  await render();
+  await type('Task title', 'Keep this task edit');
+  await switchPane('comments');
+  await type('Comment draft', 'Keep this comment edit');
+  const { dialog, pointer } = dragFixture();
+  await pointer('pointerdown', 1050, 90);
+  await pointer('pointermove', 850, 110);
+  expect(dialog.style.left).toBe('828px');
+  expect(dialog.style.top).toBe('96px');
+  expect(dialog.dataset.dragging).toBe('true');
+  await pointer('pointerup', 850, 110);
+  expect(dialog.dataset.dragging).toBeUndefined();
+  expect(dialog.style.width).toBe('');
+  expect(dialog.style.height).toBe('');
+  await render(false);
+  await render(true);
+  expect(dialog.style.left).toBe('828px');
+  expect(textarea('Comment draft').value).toBe('Keep this comment edit');
+  await switchPane('details');
+  expect(textarea('Task title').value).toBe('Keep this task edit');
+  expect(onClose.mock.calls).toHaveLength(0);
+  await render(false);
+  Object.defineProperty(browser, 'innerWidth', { configurable: true, value: 900 });
+  await render(true);
+  expect(dialog.style.left).toBe('488px');
+});
+
+test('dragging respects viewport bounds and Escape only cancels the active gesture', async () => {
+  await render();
+  const { dialog, handle, pointer } = dragFixture();
+  await pointer('pointerdown', 1050, 90, textarea('Task title'));
+  await pointer('pointermove', 500, 200);
+  expect(dialog.style.left).toBe('');
+  await pointer('pointerdown', 1050, 90);
+  await pointer('pointermove', -500, -500);
+  expect(dialog.style.left).toBe('12px');
+  expect(dialog.style.top).toBe('52px');
+  const escape = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+  await act(async () => handle.dispatchEvent(escape));
+  expect(escape.defaultPrevented).toBe(true);
+  expect(dialog.style.left).toBe('1028px');
+  expect(dialog.style.top).toBe('76px');
+  expect(dialog.open).toBe(true);
+  expect(onClose.mock.calls).toHaveLength(0);
+  const releaseClick = new MouseEvent('click', { bubbles: true, cancelable: true, clientX: -500, clientY: -500 });
+  await act(async () => dialog.dispatchEvent(releaseClick));
+  expect(releaseClick.defaultPrevented).toBe(true);
+  expect(onClose.mock.calls).toHaveLength(0);
+  await act(async () => handle.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', shiftKey: true, bubbles: true, cancelable: true })));
+  expect(dialog.style.left).toBe('988px');
+  await pointer('pointerdown', 1000, 90);
+  await pointer('pointermove', 4000, 4000);
+  expect(dialog.style.left).toBe('1040px');
+  expect(dialog.style.top).toBe('145px');
+  await pointer('pointercancel', 4000, 4000);
+  expect(dialog.style.left).toBe('988px');
+  expect(dialog.style.top).toBe('76px');
+});
+
 test('page visibility closes and reopens the same card without losing task or comment drafts', async () => {
   await render();
   await type('Task title', 'Unfinished task edit');

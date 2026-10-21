@@ -12,7 +12,8 @@ const board: TaskBoardDetail = {
   createdAt: '2026-10-18T00:00:00Z', updatedAt: '2026-10-18T00:00:00Z',
   columns: [{ id: 'todo', name: 'To do', color: 'slate', isDone: false, position: 0 }],
   views: [],
-  members: [{ userId: 'owner', name: 'Owner', email: 'owner@example.test', image: null, role: 'owner' }],
+  members: [{ userId: 'owner', name: 'Owner', email: 'owner@example.test', image: null, role: 'owner' },
+    { userId: 'viewer', name: 'Viewer', email: 'viewer@example.test', image: null, role: 'viewer' }],
   tasks: [{ id: 'task', number: 1, columnId: 'todo', title: 'Original task', description: '', priority: 'medium',
     assigneeIds: [], labels: [], dueDate: null, schedule: null, checklist: [], position: 0, createdBy: 'owner',
     createdAt: '2026-10-18T00:00:00Z', updatedAt: '2026-10-18T00:00:00Z', commentCount: 0 }],
@@ -65,6 +66,11 @@ beforeAll(async () => {
   }));
   // Keep the card's save/lifecycle logic real; only replace comment networking.
   mock.module('./task-comments', () => ({ TaskComments: CommentsFixture }));
+  mock.module('./task-select', () => ({ TaskSelect: ({ value, options, onValueChange, ariaLabel, disabled }: {
+    value: string; options: { value: string; label: string }[]; onValueChange: (value: string) => void; ariaLabel: string; disabled?: boolean;
+  }) => <select aria-label={ariaLabel} value={value} disabled={disabled} onChange={event => onValueChange(event.target.value)}>
+    {options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+  </select> }));
   mock.module('./task-labels', () => ({ collectTaskLabels: () => [], TaskLabelsEditor: ({ labels, onChange, disabled }: { labels: TaskLabel[]; onChange: (labels: TaskLabel[]) => void; disabled?: boolean }) => <button type="button" data-add-label disabled={disabled} onClick={() => onChange([...labels, { name: 'Design', color: 'rose' }])}>Add label</button> }));
   ({ PageVisibility } = await import('@/lib/page-visibility'));
   ({ TaskDetail } = await import('./task-detail'));
@@ -119,7 +125,7 @@ function deferredSave() {
   onSave.mockImplementation(() => result);
   return finish;
 }
-async function switchPane(value: 'details' | 'comments') {
+async function switchPane(value: 'details' | 'subtasks' | 'comments') {
   await act(async () => host.querySelector<HTMLButtonElement>(`[data-detail-pane="${value}"]`)!.click());
 }
 function dragFixture() {
@@ -274,27 +280,32 @@ test('Escape protects an unsaved task draft until the user explicitly discards i
   expect(onSave.mock.calls).toHaveLength(0);
 });
 
-test('task information owns subtasks and switching to comments preserves both drafts without nested tabs', async () => {
+test('subtasks have their own pane after task information and retain assignments and drafts across panes', async () => {
   await render();
   const main = host.querySelector('[data-task-detail-main]')!;
   const comments = host.querySelector<HTMLElement>('[data-task-comments]')!;
+  const subtasks = host.querySelector<HTMLElement>('[data-task-subtasks]')!;
   expect(comments.hidden).toBe(true);
-  expect(Boolean(main.querySelector('[data-task-detail-checklist]'))).toBe(true);
+  expect(subtasks.hidden).toBe(true);
+  expect(Boolean(main.querySelector('[data-task-detail-checklist]'))).toBe(false);
+  expect(Boolean(subtasks.querySelector('[data-task-detail-checklist]'))).toBe(true);
   expect(Boolean(comments.querySelector('[data-task-detail-checklist]'))).toBe(false);
   expect(host.querySelectorAll('[role="tablist"]')).toHaveLength(0);
   expect(host.querySelector('[data-detail-pane="comments"]')?.textContent).toBe('Comments');
-  const disclosure = main.querySelector<HTMLDetailsElement>('[data-task-detail-checklist]')!;
-  expect(disclosure.open).toBe(false);
-  disclosure.open = true;
-  const add = [...main.querySelectorAll<HTMLButtonElement>('button')].find(button => button.textContent === 'Add subtask')!;
+  expect([...host.querySelectorAll<HTMLElement>('[data-detail-pane]')].map(node => node.dataset.detailPane)).toEqual(['details', 'subtasks', 'comments']);
+  await switchPane('subtasks');
+  const add = [...subtasks.querySelectorAll<HTMLButtonElement>('button')].find(button => button.textContent === 'Add subtask')!;
   expect(add.disabled).toBe(false);
   await act(async () => add.click());
-  const input = main.querySelector<HTMLInputElement>('input[type="text"][aria-label="Subtask title"]')!;
+  const input = subtasks.querySelector<HTMLInputElement>('input[type="text"][aria-label="Subtask title"]')!;
   expect(document.activeElement?.getAttribute('aria-label')).toBe('Subtask title');
   await act(async () => {
     Object.getOwnPropertyDescriptor(browser.HTMLInputElement.prototype, 'value')!.set!.call(input, 'Review the prototype');
     input.dispatchEvent(new Event('input', { bubbles: true }));
   });
+  const assignee = subtasks.querySelector<HTMLSelectElement>('select')!;
+  expect([...assignee.options].map(option => option.value)).toEqual(['unassigned', 'owner', 'viewer']);
+  await act(async () => { assignee.value = 'viewer'; assignee.dispatchEvent(new Event('change', { bubbles: true })); });
   await switchPane('comments');
   expect(comments.hidden).toBe(false);
   expect((main as HTMLElement).hidden).toBe(true);
@@ -303,30 +314,45 @@ test('task information owns subtasks and switching to comments preserves both dr
   await switchPane('details');
   expect((main as HTMLElement).hidden).toBe(false);
   expect(comments.hidden).toBe(true);
-  disclosure.open = false;
-  disclosure.open = true;
-  expect(main.querySelector<HTMLInputElement>('[aria-label="Subtask title"]')?.value).toBe('Review the prototype');
+  await switchPane('subtasks');
+  expect(subtasks.querySelector<HTMLInputElement>('[aria-label="Subtask title"]')?.value).toBe('Review the prototype');
+  expect(subtasks.querySelector<HTMLSelectElement>('select')?.value).toBe('viewer');
   expect(textarea('Comment draft') === comment).toBe(true);
   await switchPane('comments');
   expect(comment.value).toBe('Keep the discussion while checking subtasks');
   await act(async () => saveButton().click());
-  expect(onSave.mock.calls[0][0].checklist[0]?.title).toBe('Review the prototype');
+  expect(onSave.mock.calls[0][0].checklist[0]).toMatchObject({ title: 'Review the prototype', assigneeId: 'viewer' });
   expect(onClose.mock.calls).toHaveLength(0);
 });
 
 test('adding an empty subtask focuses its title, blocks saving and protects the new draft', async () => {
   await render();
-  host.querySelector<HTMLDetailsElement>('[data-task-detail-checklist]')!.open = true;
+  await switchPane('subtasks');
   const add = [...host.querySelectorAll<HTMLButtonElement>('button')].find(button => button.textContent === 'Add subtask')!;
   await act(async () => add.click());
   const input = host.querySelector<HTMLInputElement>('input[type="text"][aria-label="Subtask title"]')!;
   expect(document.activeElement?.getAttribute('aria-label')).toBe('Subtask title');
   expect(input.value).toBe('');
+  await switchPane('comments');
   await act(async () => saveButton().click());
   expect(onSave.mock.calls).toHaveLength(0);
   expect(host.querySelector('[role="alert"]')?.textContent).toBe('Enter a subtask title or remove the empty subtask.');
+  expect(host.querySelector<HTMLElement>('[data-task-subtasks]')?.hidden).toBe(false);
   await act(async () => host.querySelector('dialog')!.dispatchEvent(new Event('cancel', { cancelable: true })));
   expect(host.querySelector<HTMLDialogElement>('dialog[role="alertdialog"]')?.open).toBe(true);
+});
+
+test('viewers can inspect subtask assignments but cannot change them', async () => {
+  const task = { ...board.tasks[0], checklist: [{ id: 'subtask', title: 'Read only', done: false, assigneeId: 'owner' }] };
+  await act(async () => root.render(<TaskDetail board={{ ...board, permission: 'viewer' }} task={task} columnId="todo" actorId="viewer"
+    onClose={onClose} onSave={onSave} onDelete={async () => true} client={{} as TaskBoardClient} onCommentsChanged={() => {}} />));
+  await switchPane('subtasks');
+  const subtasks = host.querySelector<HTMLElement>('[data-task-subtasks]')!;
+  expect(subtasks.querySelector<HTMLSelectElement>('select')?.value).toBe('owner');
+  expect(subtasks.querySelector<HTMLSelectElement>('select')?.disabled).toBe(true);
+  expect(subtasks.querySelector<HTMLInputElement>('input[type="checkbox"]')?.disabled).toBe(true);
+  expect(subtasks.querySelector('input[type="text"]')).toBeNull();
+  expect([...subtasks.querySelectorAll('button')].some(button => button.textContent === 'Add subtask')).toBe(false);
 });
 
 test('colored labels remain structured in the task draft sent to save', async () => {

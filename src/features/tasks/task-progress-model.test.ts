@@ -3,7 +3,7 @@ import type { TaskChecklistItem } from '@fouc/shared/tasks';
 import { taskProgress } from './task-progress-model';
 
 function checklist(total: number, done: number): TaskChecklistItem[] {
-  return Array.from({ length: total }, (_, index) => ({ id: String(index), title: `Item ${index}`, done: index < done }));
+  return Array.from({ length: total }, (_, index) => ({ id: String(index), title: `Item ${index}`, done: index < done, assigneeId: null }));
 }
 const today = new Date(2026, 9, 19, 12);
 

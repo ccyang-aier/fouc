@@ -60,7 +60,7 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
   const [draft, setDraft] = useState(() => initialDraft(task, columnId));
   const [baseline, setBaseline] = useState(() => JSON.stringify(initialDraft(task, columnId)));
   const [memberQuery, setMemberQuery] = useState('');
-  const [activePane, setActivePane] = useState<'details' | 'comments'>('details');
+  const [activePane, setActivePane] = useState<'details' | 'subtasks' | 'comments'>('details');
   const [commentDirty, setCommentDirty] = useState(false);
   const commentDirtyRef = useRef(false);
   const changeCommentDirty = useCallback((value: boolean) => { commentDirtyRef.current = value; setCommentDirty(value); }, []);
@@ -139,6 +139,7 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
       return;
     }
     if (next.checklist.some((item) => !item.title)) {
+      setActivePane('subtasks');
       setFieldError('checklistTitleRequired');
       return;
     }
@@ -211,9 +212,12 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
         </div>
         <div className={styles.paneSwitch} role="group" aria-label={t('detailsPane')}>
           <button type="button" className="fouc-action" data-surface="plain" data-detail-pane="details" aria-pressed={activePane === 'details'} onClick={() => setActivePane('details')}>{t('detailsPane')}</button>
+          <button type="button" className="fouc-action" data-surface="plain" data-detail-pane="subtasks" aria-pressed={activePane === 'subtasks'} onClick={() => setActivePane('subtasks')}>{t('subtasks')}<span className={styles.paneCount}>{draft.checklist.length}</span></button>
           <button type="button" className="fouc-action" data-surface="plain" data-detail-pane="comments" aria-pressed={activePane === 'comments'} onClick={() => setActivePane('comments')}>{t('comments')}</button>
         </div>
         <div className={styles.body}>
+          {fieldError && <p role="alert" className={styles.fieldError}>{t(fieldError)}</p>}
+          {error && <AppAlert tone="error" title={t(error)} onClose={() => setError(null)} />}
           <section className={styles.mainPanel} aria-label={t('detailsPane')} hidden={activePane !== 'details'} data-task-detail-main>
             {!canEdit && <div className={styles.readonly}><LockSimple size={13} />{t('readonly')}</div>}
             <fieldset className={styles.fields} disabled={!canEdit || Boolean(busy)}>
@@ -256,14 +260,14 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
                 <div className={styles.labelsField}>{!canEdit && !draft.labels.length ? <span className={styles.emptyValue}>{t('noLabels')}</span> : <TaskLabelsEditor labels={draft.labels} availableLabels={collectTaskLabels(board.tasks)} disabled={!canEdit || Boolean(busy)} onChange={labels => update('labels', labels)} />}</div>
               </div>
             </fieldset>
-            {fieldError && <p role="alert" className={styles.fieldError}>{t(fieldError)}</p>}
-            {error && <AppAlert tone="error" title={t(error)} onClose={() => setError(null)} />}
             <div className={styles.schedule}><TaskScheduleSection value={draft.schedule} disabled={!canEdit || Boolean(busy)} onChange={value => update('schedule', value)} /></div>
             <div className={`${styles.fieldRow} ${styles.descriptionRow}`}>
               <label htmlFor={`${titleId}-description`}><TextAlignLeft size={14} aria-hidden />{t('description')}</label>
               {canEdit ? <textarea id={`${titleId}-description`} className={styles.description} aria-label={t('description')} rows={4} maxLength={12000} placeholder={t('descriptionPlaceholder')} value={draft.description} disabled={Boolean(busy)} onChange={event => update('description', event.target.value)} /> : <p className={styles.descriptionText} data-empty={!draft.description || undefined}>{draft.description || t('noDescription')}</p>}
             </div>
-            <TaskDetailChecklist checklist={draft.checklist} onChecklist={value => update('checklist', value)} editable={canEdit} busy={Boolean(busy)} />
+          </section>
+          <section className={styles.mainPanel} aria-label={t('subtasks')} hidden={activePane !== 'subtasks'} data-task-subtasks>
+            <TaskDetailChecklist checklist={draft.checklist} members={board.members} onChecklist={value => update('checklist', value)} editable={canEdit} busy={Boolean(busy)} invalid={fieldError === 'checklistTitleRequired'} />
           </section>
           <aside className={styles.commentsPanel} aria-label={t('comments')} hidden={activePane !== 'comments'} data-task-comments>
             <div className={styles.commentsBody}>{task ? <TaskComments board={board} taskId={task.id} actorId={actorId} client={client} onChanged={onCommentsChanged} onDirtyChange={changeCommentDirty} /> : <p className={styles.emptyText}>{t('commentsAfterCreate')}</p>}</div>

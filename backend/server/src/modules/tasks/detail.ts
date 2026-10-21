@@ -36,7 +36,8 @@ export async function taskBoardDetail({ db, board, permission }: TaskBoardContex
   const eligible = new Set(members.map(member => member.userId));
   const done = new Set(columns.filter(column => column.isDone).map(column => column.id));
   const tasks: BoardTask[] = rows.map(row => ({ id: row.id, number: row.number, columnId: row.columnId, title: row.title, description: row.description,
-    priority: row.priority, assigneeIds: row.assigneeIds.filter(id => eligible.has(id)), labels: row.labels, dueDate: row.dueDate, schedule: row.schedule, checklist: row.checklist,
+    priority: row.priority, assigneeIds: row.assigneeIds.filter(id => eligible.has(id)), labels: row.labels, dueDate: row.dueDate, schedule: row.schedule,
+    checklist: row.checklist.map(item => ({ ...item, assigneeId: item.assigneeId && eligible.has(item.assigneeId) ? item.assigneeId : null })),
     position: row.position, createdBy: row.createdBy, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString(), commentCount: commentCounts.get(row.id) ?? 0 }));
   const updatedAt = new Date(Math.max(board.updatedAt.getTime(), ...rows.map(row => row.updatedAt.getTime())));
   return { ...boardSummary(board, permission, tasks.length, tasks.filter(task => done.has(task.columnId)).length, updatedAt), views: board.views, columns, tasks, members };

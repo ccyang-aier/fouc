@@ -60,7 +60,7 @@ export interface TaskColumn {
   position: number;
 }
 
-export interface TaskChecklistItem { id: string; title: string; done: boolean }
+export interface TaskChecklistItem { id: string; title: string; done: boolean; assigneeId: string | null }
 
 /** A task's reserved time is independent of its delivery deadline. */
 export const taskScheduleSchema = z.strictObject({
@@ -148,7 +148,7 @@ export const reorderTaskColumnsInputSchema = z.strictObject({ columnIds: z.array
   .refine(({ columnIds }) => new Set(columnIds).size === columnIds.length);
 
 export const taskChecklistItemInputSchema = z.strictObject({
-  id: id.optional(), title: z.string().trim().min(1).max(240), done: z.boolean().default(false),
+  id: id.optional(), title: z.string().trim().min(1).max(240), done: z.boolean().default(false), assigneeId: id.nullable().default(null),
 });
 const taskFields = {
   columnId: id,

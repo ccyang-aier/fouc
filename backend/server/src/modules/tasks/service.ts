@@ -48,6 +48,15 @@ async function validateAssignees(context: TaskBoardContext, ids: string[]) {
 
 const checklist = (items: z.output<typeof createBoardTaskInputSchema>['checklist']): TaskChecklistItem[] => items.map(item => ({ ...item, id: item.id ?? randomUUID() }));
 
+async function pruneAssignments(context: TaskBoardContext) {
+  const eligible = sql.param((await taskBoardMembers(context.db, context.board)).map(member => member.userId));
+  await context.db.execute(sql`UPDATE resources.board_task SET
+    assignee_ids=ARRAY(SELECT a FROM unnest(assignee_ids) a WHERE a=ANY(${eligible}::uuid[])),
+    checklist=(SELECT coalesce(jsonb_agg(CASE WHEN item->>'assigneeId'=ANY(${eligible}::text[]) THEN item ELSE jsonb_set(item,'{assigneeId}','null'::jsonb) END ORDER BY position),'[]'::jsonb)
+      FROM jsonb_array_elements(checklist) WITH ORDINALITY AS entry(item,position))
+    WHERE project_id=${context.board.projectId}::uuid AND board_id=${context.board.id}::uuid`);
+}
+
 async function nextTaskPosition(context: TaskBoardContext, columnId: string) {
   const [last] = await context.db.select({ position: boardTask.position }).from(boardTask)
     .where(and(taskCondition(context), eq(boardTask.columnId, columnId))).orderBy(desc(boardTask.position)).limit(1);
@@ -117,12 +126,9 @@ export function createTaskBoardService(pool: Pool, storage?: TaskCommentImageSto
         // Private has one reader; discard assignments that would expose no work to their assignees.
         if (data.visibility === 'private') {
           await context.db.delete(taskBoardMember).where(and(eq(taskBoardMember.projectId, scope.projectId), eq(taskBoardMember.boardId, scope.boardId)));
-          await context.db.execute(sql`UPDATE resources.board_task SET assignee_ids = ARRAY(SELECT a FROM unnest(assignee_ids) a WHERE a=${context.userId}::uuid) WHERE project_id=${scope.projectId}::uuid AND board_id=${scope.boardId}::uuid`);
         }
-        if (data.visibility === 'invited' && context.board.visibility === 'project') {
-          const members = await taskBoardMembers(context.db, board!);
-          const eligible = members.map(member => member.userId);
-          await context.db.execute(sql`UPDATE resources.board_task SET assignee_ids = ARRAY(SELECT a FROM unnest(assignee_ids) a WHERE a=ANY(${eligible}::uuid[])) WHERE project_id=${scope.projectId}::uuid AND board_id=${scope.boardId}::uuid`);
+        if (data.visibility === 'private' || (data.visibility === 'invited' && context.board.visibility === 'project')) {
+          await pruneAssignments({ ...context, board: board! });
         }
         return taskBoardDetail({ ...context, board: board! });
       });
@@ -154,7 +160,7 @@ export function createTaskBoardService(pool: Pool, storage?: TaskCommentImageSto
         if (scope.userId === context.board.ownerId) throw new ResourceRequestError('INVALID_INPUT', '不能移除看板创建人。', 400);
         const [removed] = await context.db.delete(taskBoardMember).where(and(eq(taskBoardMember.projectId, scope.projectId), eq(taskBoardMember.boardId, scope.boardId), eq(taskBoardMember.userId, scope.userId))).returning();
         if (!removed) throw new ResourceRequestError('MEMBER_NOT_FOUND', '该成员没有单独授予的看板权限。', 404);
-        if (context.board.visibility === 'invited') await context.db.execute(sql`UPDATE resources.board_task SET assignee_ids=array_remove(assignee_ids, ${scope.userId}::uuid) WHERE project_id=${scope.projectId}::uuid AND board_id=${scope.boardId}::uuid`);
+        if (context.board.visibility === 'invited') await pruneAssignments(context);
         return taskBoardDetail(context);
       });
     },
@@ -225,7 +231,7 @@ export function createTaskBoardService(pool: Pool, storage?: TaskCommentImageSto
       const { scope, data } = taskRequest(taskBoardScopeSchema, createBoardTaskInputSchema, input);
       return withTaskBoard(pool, identity, scope, 'edit', async context => {
         await requireColumn(context, data.columnId);
-        await validateAssignees(context, data.assigneeIds);
+        await validateAssignees(context, [...data.assigneeIds, ...data.checklist.flatMap(item => item.assigneeId ? [item.assigneeId] : [])]);
         const allocated = await context.db.execute<{ number: number }>(sql`SELECT resources.allocate_task_number(${scope.projectId}::uuid, ${scope.boardId}::uuid) AS number`);
         const number = allocated.rows[0]!.number;
         await context.db.insert(boardTask).values({ ...scope, ...data, id: randomUUID(), number, checklist: checklist(data.checklist), assigneeIds: [...new Set(data.assigneeIds)], position: await nextTaskPosition(context, data.columnId), createdBy: context.userId });
@@ -237,7 +243,7 @@ export function createTaskBoardService(pool: Pool, storage?: TaskCommentImageSto
       return withTaskBoard(pool, identity, scope, 'edit', async context => {
         const task = await requireTask(context, scope.taskId);
         if (data.columnId) await requireColumn(context, data.columnId);
-        if (data.assigneeIds) await validateAssignees(context, data.assigneeIds);
+        if (data.assigneeIds || data.checklist) await validateAssignees(context, [...(data.assigneeIds ?? []), ...(data.checklist ?? []).flatMap(item => item.assigneeId ? [item.assigneeId] : [])]);
         const { checklist: items, ...fields } = data;
         await context.db.update(boardTask).set({ ...fields, updatedAt: new Date(),
           ...(data.assigneeIds ? { assigneeIds: [...new Set(data.assigneeIds)] } : {}),

@@ -256,13 +256,15 @@ test('invitation ACL, assignment and stale project membership are enforced on ea
   expect(seen.permission).toBe('viewer');
   expect((await request(viewer, `/${created.id}/columns`, 'POST', { name: 'Denied' })).status).toBe(403);
   expect((await request(owner, `/${created.id}/tasks`, 'POST', { title: 'Invalid assignment', columnId: created.columns[0]!.id, assigneeIds: [editor.userId] })).status).toBe(400);
-  const assigned = await detail(await request(owner, `/${created.id}/tasks`, 'POST', { title: 'Assigned', columnId: created.columns[0]!.id, assigneeIds: [viewer.userId] }));
+  const assigned = await detail(await request(owner, `/${created.id}/tasks`, 'POST', { title: 'Assigned', columnId: created.columns[0]!.id, assigneeIds: [viewer.userId], checklist: [{ title: 'Assigned subtask', assigneeId: viewer.userId }] }));
   await server.database.admin.query('DELETE FROM resources.project_member WHERE project_id=$1 AND user_id=$2', [projectId, viewer.userId]);
   expect((await request(viewer, `/${created.id}`)).status).toBe(404);
   expect((await detail(await request(owner, `/${created.id}`))).tasks[0]?.assigneeIds).toEqual([]);
+  expect((await detail(await request(owner, `/${created.id}`))).tasks[0]?.checklist[0]?.assigneeId).toBeNull();
   const unrelatedEdit = await detail(await request(owner, `/${created.id}/tasks/${assigned.tasks[0]!.id}`, 'PATCH', { title: 'Updated after member removal' }));
   expect(unrelatedEdit.tasks[0]).toMatchObject({ title: 'Updated after member removal', assigneeIds: [] });
   expect((await request(owner, `/${created.id}/tasks/${assigned.tasks[0]!.id}`, 'PATCH', { assigneeIds: [viewer.userId] })).status).toBe(400);
+  expect((await request(owner, `/${created.id}/tasks/${assigned.tasks[0]!.id}`, 'PATCH', { checklist: assigned.tasks[0]!.checklist })).status).toBe(400);
   await server.database.admin.query("INSERT INTO resources.project_member(project_id,user_id,role) VALUES ($1,$2,'member')", [projectId, viewer.userId]);
   // Rejoining the project does not restore an old board invitation.
   expect((await request(viewer, `/${created.id}`)).status).toBe(404);
@@ -270,6 +272,52 @@ test('invitation ACL, assignment and stale project membership are enforced on ea
   expect((await detail(await request(viewer, `/${created.id}`))).permission).toBe('editor');
   await detail(await request(owner, `/${created.id}`, 'PATCH', { visibility: 'private' }));
   expect((await request(viewer, `/${created.id}`)).status).toBe(404);
+});
+
+test('subtask assignments persist, allow every board member and reject unauthorized writes or assignees', async () => {
+  let created = await board('invited');
+  for (const [member, role] of [[editor, 'editor'], [viewer, 'viewer']] as const) {
+    created = await detail(await request(owner, `/${created.id}/members`, 'POST', { userId: member.userId, role }));
+  }
+  const payload = { columnId: created.columns[0]!.id, title: 'Assigned subtasks', checklist: [
+    { title: 'Viewer handles review', assigneeId: viewer.userId }, { title: 'Owner handles release', assigneeId: owner.userId }, { title: 'Available work' },
+  ] };
+  created = await detail(await request(editor, `/${created.id}/tasks`, 'POST', payload));
+  const task = created.tasks[0]!;
+  expect(task.assigneeIds).toEqual([]);
+  expect(task.checklist.map(item => item.assigneeId)).toEqual([viewer.userId, owner.userId, null]);
+  expect((await detail(await request(viewer, `/${created.id}`))).tasks[0]?.checklist).toEqual(task.checklist);
+  const invalid = (assigneeId: string) => ({ ...payload, checklist: [{ title: 'Invalid', assigneeId }] });
+  for (const assigneeId of [admin.userId, outsider.userId]) {
+    expect((await request(editor, `/${created.id}/tasks`, 'POST', invalid(assigneeId))).status).toBe(400);
+    expect((await request(editor, `/${created.id}/tasks/${task.id}`, 'PATCH', { checklist: invalid(assigneeId).checklist })).status).toBe(400);
+  }
+  expect((await request(viewer, `/${created.id}/tasks/${task.id}`, 'PATCH', { checklist: task.checklist })).status).toBe(403);
+  const changed = task.checklist.map((item, index) => index === 0 ? { ...item, assigneeId: editor.userId, done: true } : item);
+  const updated = await detail(await request(editor, `/${created.id}/tasks/${task.id}`, 'PATCH', { checklist: changed }));
+  expect(updated.tasks[0]?.checklist).toEqual(changed);
+  expect((await detail(await request(owner, `/${created.id}`))).tasks[0]?.checklist).toEqual(changed);
+});
+
+test('subtask assignments clear when board access is revoked and never return after reinviting', async () => {
+  let created = await board('project');
+  await detail(await request(owner, `/${created.id}/members`, 'POST', { userId: viewer.userId }));
+  created = await detail(await request(owner, `/${created.id}/tasks`, 'POST', { columnId: created.columns[0]!.id, title: 'Access changes',
+    assigneeIds: [admin.userId, viewer.userId, owner.userId], checklist: [
+      { title: 'Project member', assigneeId: admin.userId }, { title: 'Invited member', assigneeId: viewer.userId }, { title: 'Owner', assigneeId: owner.userId },
+    ] }));
+  created = await detail(await request(owner, `/${created.id}`, 'PATCH', { visibility: 'invited' }));
+  expect(created.tasks[0]?.checklist.map(item => item.assigneeId)).toEqual([null, viewer.userId, owner.userId]);
+  expect(created.tasks[0]?.assigneeIds).toEqual([viewer.userId, owner.userId]);
+  created = await detail(await request(owner, `/${created.id}/members/${viewer.userId}`, 'DELETE'));
+  expect(created.tasks[0]?.checklist.map(item => item.assigneeId)).toEqual([null, null, owner.userId]);
+  created = await detail(await request(owner, `/${created.id}/members`, 'POST', { userId: viewer.userId }));
+  expect(created.tasks[0]?.checklist[1]?.assigneeId).toBeNull();
+  const assigned = created.tasks[0]!.checklist.map((item, index) => index === 1 ? { ...item, assigneeId: viewer.userId } : item);
+  await detail(await request(owner, `/${created.id}/tasks/${created.tasks[0]!.id}`, 'PATCH', { checklist: assigned }));
+  created = await detail(await request(owner, `/${created.id}`, 'PATCH', { visibility: 'private' }));
+  expect(created.tasks[0]?.checklist.map(item => item.assigneeId)).toEqual([null, null, owner.userId]);
+  expect(created.tasks[0]?.assigneeIds).toEqual([owner.userId]);
 });
 
 test('tasks retain all fields, stable checklist IDs, accurate progress and deterministic moves', async () => {

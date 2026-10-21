@@ -10,7 +10,8 @@
 .titleInput, .title { display:block; width:calc(100% - 24px); min-height:29px; max-height:82px; margin:6px 0 0; padding:0 4px; border:0; border-radius:0; background:transparent; color:var(--ink); font:inherit; font-size:18px; font-weight:600; line-height:1.5; letter-spacing:-.02em; resize:none; cursor:text; }
 .titleInput::placeholder { color:var(--muted); }
 .paneSwitch { display:flex; flex-shrink:0; gap:4px; padding:0 20px 13px; }
-.paneSwitch > button { height:28px; padding:0 10px; border-radius:5px; color:var(--muted-strong); font-size:11px; cursor:pointer; }
+.paneSwitch > button { display:inline-flex; align-items:center; gap:5px; height:28px; padding:0 10px; border-radius:5px; color:var(--muted-strong); font-size:11px; cursor:pointer; }
+.paneCount { font-size:10px; font-variant-numeric:tabular-nums; color:var(--muted); }
 .body { display:flex; flex-direction:column; flex:1; min-height:0; padding:0 18px 10px; overflow:hidden; }
 .mainPanel { flex:1; min-width:0; min-height:0; padding:0 5px 12px 2px; overflow-y:auto; overscroll-behavior:contain; scrollbar-gutter:stable; }
 .mainPanel[hidden], .commentsPanel[hidden] { display:none; }
@@ -33,40 +34,35 @@
 .noResults { margin:0; padding:12px 8px; color:var(--muted); font-size:11px; text-align:center; }
 .emptyValue { color:var(--muted-strong); font-size:11px; }
 .labelsField { display:flex; align-items:center; min-width:0; min-height:30px; }
-.fieldError { margin:12px 0 0; color:var(--err-ink); font-size:11px; line-height:1.6; }
+.fieldError { flex-shrink:0; margin:0 0 10px; color:var(--err-ink); font-size:11px; line-height:1.6; }
 .mainPanel > [data-app-alert] { margin-top:14px; }
 .mainPanel .schedule > section { margin:16px 0 0; gap:8px; }
 .mainPanel .schedule > section > header { min-height:22px; font-size:12px; font-weight:500; }
 .mainPanel .schedule > section > header > button { width:24px; height:24px; padding:0; }
 .dialog .schedule > section > label { grid-template-columns:var(--detail-label-width) minmax(0,1fr); gap:var(--detail-field-gap); min-height:30px; }
 .dialog .schedule > section > label > input { height:30px; background:var(--interaction-hover-bg); border-color:transparent; font-size:11px; }
-.section { display:flex; flex-direction:column; margin-top:12px; }
-.sectionHeading { display:flex; align-items:center; gap:7px; color:var(--muted-strong); }
-.sectionHeading h3 { margin:0; color:var(--ink-soft); font-size:12px; font-weight:500; }
 .descriptionRow { margin-top:17px; }
 .description { width:100%; min-width:0; height:104px; min-height:104px; padding:9px 10px; border:1px solid var(--control-border); border-radius:7px; resize:vertical; background:var(--panel); color:var(--ink-soft); font:inherit; font-size:12px; line-height:1.8; }
 .descriptionText { margin:0; color:var(--ink-soft); font-size:12px; line-height:1.8; white-space:pre-wrap; overflow-wrap:anywhere; }
 .descriptionText[data-empty=true], .emptyText { color:var(--muted-strong); }
 .commentsPanel { display:flex; flex:1; flex-direction:column; min-width:0; min-height:0; overflow:hidden; }
-.sectionCount { min-width:17px; padding:1px 4px; border-radius:4px; background:var(--surface-subtle); color:var(--muted-strong); font-size:10px; text-align:center; font-variant-numeric:tabular-nums; }
 .commentsBody { flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; scrollbar-gutter:stable; }
-.checklistSummary { margin-left:auto; color:var(--muted-strong); font-size:10px; font-variant-numeric:tabular-nums; }
-.checklistToggle { min-height:30px; padding:0 3px; border:1px solid transparent; border-radius:5px; list-style:none; cursor:pointer; }
-.checklistToggle::-webkit-details-marker { display:none; }
-.checklistToggle:focus-visible { border-color:var(--control-border); outline:none; box-shadow:none; }
-.checklistChevron { flex-shrink:0; transition:transform 160ms ease; }
-.checklistSection[open] .checklistChevron { transform:rotate(90deg); }
-.checklistBody { display:flex; flex-direction:column; gap:4px; padding-top:4px; }
-.checklist { display:flex; flex-direction:column; gap:4px; margin:0; padding:0; list-style:none; }
-.checklist li { display:flex; align-items:center; gap:6px; min-height:31px; }
-.checklist input[type=checkbox] { position:relative; width:13px; height:13px; flex-shrink:0; margin:0; appearance:none; border:1px solid var(--control-border); border-radius:4px; background:var(--panel); cursor:pointer; }
+.checklistSection { display:flex; flex-direction:column; gap:10px; }
+.checklistSummary { padding:2px 4px; color:var(--muted-strong); font-size:10px; text-align:right; font-variant-numeric:tabular-nums; }
+.checklistBody { display:flex; flex-direction:column; gap:8px; }
+.checklist { display:flex; flex-direction:column; gap:8px; margin:0; padding:0; list-style:none; }
+.checklist li { display:flex; align-items:flex-start; gap:7px; }
+.checklistItemContent { flex:1; min-width:0; }
+.checklist input[type=checkbox] { position:relative; width:13px; height:13px; flex-shrink:0; margin:9px 0 0; appearance:none; border:1px solid var(--control-border); border-radius:4px; background:var(--panel); cursor:pointer; }
 .checklist input[type=checkbox]:checked { border-color:var(--ink-soft); background:var(--ink-soft); }
 .checklist input[type=checkbox]:checked::after { position:absolute; top:1px; left:3px; width:4px; height:7px; border-right:1.5px solid var(--panel); border-bottom:1.5px solid var(--panel); content:''; transform:rotate(45deg); }
 .checklistTitle { min-width:0; width:100%; height:30px; padding:0 4px; border:1px solid transparent; border-radius:4px; background:transparent; color:var(--ink-soft); font:inherit; font-size:11px; }
 .checklistTitle:hover { border-color:var(--control-border); }
-.checklistLabel { min-width:0; color:var(--ink-soft); font-size:11px; line-height:1.7; overflow-wrap:anywhere; }
+.checklistLabel { display:block; min-width:0; min-height:30px; padding:6px 4px; color:var(--ink-soft); font-size:11px; line-height:1.7; overflow-wrap:anywhere; }
+.checklist .subtaskAssignee { width:max-content; max-width:100%; height:25px; gap:6px; padding:0 5px; border-color:transparent; border-radius:5px; background:transparent; font-size:11px; }
+.subtaskAvatar { width:16px; height:16px; font-size:8px; }
 .checklist [data-done=true] :is(.checklistTitle,.checklistLabel) { color:var(--muted-strong); text-decoration:line-through; }
-.removeItem { flex-shrink:0; width:22px; height:23px; padding:0; color:var(--menu-danger-ink); }
+.removeItem { flex-shrink:0; width:22px; height:23px; margin-top:3px; padding:0; color:var(--menu-danger-ink); }
 .addItem { display:flex; align-self:flex-start; justify-content:flex-start; gap:6px; height:28px; padding:0 3px; border-radius:5px; color:var(--muted-strong); font-size:12px; }
 .emptyText { margin:3px 0 0; font-size:11px; line-height:1.7; }
 .commentsBody > section > div:first-child:has(h3) { display:none; }

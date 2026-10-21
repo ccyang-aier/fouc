@@ -104,14 +104,6 @@
   height: 14px;
   color: var(--muted);
 }
-.task-trigger {
-  padding: 5px 9px;
-}
-.task-trigger .icon {
-  width: 14px;
-  height: 14px;
-}
-.task-count,
 .record-count {
   font-size: 10px;
   line-height: 16px;
@@ -121,10 +113,6 @@
   background: var(--active);
   color: var(--ink);
   text-align: center;
-}
-.task-count.pending {
-  background: var(--signal-soft);
-  color: var(--signal);
 }
 .detail-trigger {
   display: none;

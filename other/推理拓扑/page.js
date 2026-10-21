@@ -236,11 +236,6 @@ function highlightRelated() {
 }
 function renderRecords() {
   $("record-count").textContent = state.records.length;
-  $("task-count").textContent = state.records.length;
-  $("task-count").classList.toggle(
-    "pending",
-    state.created && state.progress < 4,
-  );
   document.querySelectorAll('[data-action="record-tab"]').forEach((b) => {
     b.classList.toggle("active", b.dataset.value === state.recordTab);
     b.setAttribute("aria-selected", b.dataset.value === state.recordTab);
@@ -428,7 +423,6 @@ function openDrawer(tabName = "records") {
 }
 function closeDrawer() {
   $("operation-drawer").close();
-  document.querySelector(".task-trigger")?.focus();
 }
 function menuEntries(id, s = state) {
   const busy = invocationBusy();

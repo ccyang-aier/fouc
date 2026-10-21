@@ -162,12 +162,6 @@
   .toolbar button {
     font-size: 10px;
   }
-  .task-trigger {
-    padding: 5px 7px;
-  }
-  .task-trigger .icon {
-    display: none;
-  }
   .topology-footer {
     padding: 10px;
     gap: 6px;

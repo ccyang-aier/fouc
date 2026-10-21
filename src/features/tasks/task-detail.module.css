@@ -67,7 +67,7 @@
 .checklistLabel { min-width:0; color:var(--ink-soft); font-size:11px; line-height:1.7; overflow-wrap:anywhere; }
 .checklist [data-done=true] :is(.checklistTitle,.checklistLabel) { color:var(--muted-strong); text-decoration:line-through; }
 .removeItem { flex-shrink:0; width:22px; height:23px; padding:0; color:var(--menu-danger-ink); }
-.addItem { display:flex; align-self:flex-start; justify-content:flex-start; gap:6px; height:28px; padding:0 3px; border-radius:5px; color:var(--muted-strong); }
+.addItem { display:flex; align-self:flex-start; justify-content:flex-start; gap:6px; height:28px; padding:0 3px; border-radius:5px; color:var(--muted-strong); font-size:12px; }
 .emptyText { margin:3px 0 0; font-size:11px; line-height:1.7; }
 .commentsBody > section > div:first-child:has(h3) { display:none; }
 .commentsBody > section { gap:15px; }

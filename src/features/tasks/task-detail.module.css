@@ -22,16 +22,13 @@
 .avatars { display:flex; flex-shrink:0; padding-left:3px; }
 .avatars > span { width:19px; height:19px; margin-left:-3px; border:2px solid var(--interaction-hover-bg); font-size:8px; }
 .memberNames { min-width:0; overflow:hidden; color:var(--ink-soft); font-size:11px; text-overflow:ellipsis; white-space:nowrap; }
-.memberMenu { width:205px; }
+.memberMenu { width:var(--radix-dropdown-menu-trigger-width); min-width:0; max-width:calc(100vw - 24px); }
 .memberOptions { max-height:220px; overflow-y:auto; }
 .memberMenu[data-density=compact] .memberOptions > [role=menuitemcheckbox] { height:30px; min-height:30px; gap:8px; padding-block:4px; }
 .menuAvatar { flex-shrink:0; width:20px; height:20px; font-size:9px; }
 .memberIdentity { display:block; min-width:0; overflow:hidden; font-size:12px; line-height:20px; text-overflow:ellipsis; white-space:nowrap; }
 .memberOptions > [data-state=checked] .memberIdentity { font-weight:600; }
 .noResults { margin:0; padding:12px 8px; color:var(--muted); font-size:11px; text-align:center; }
-.dateWrap { position:relative; display:flex; align-items:center; min-width:0; min-height:30px; }
-.dateInput { width:100%; min-width:0; height:30px; padding:0 34px 0 9px; border:1px solid transparent; border-radius:6px; background:var(--interaction-hover-bg); color:var(--ink-soft); font:inherit; font-size:11px; font-variant-numeric:tabular-nums; cursor:text; }
-.clearDate { position:absolute; right:4px; width:22px; height:24px; padding:0; }
 .emptyValue { color:var(--muted-strong); font-size:11px; }
 .labelsField { display:flex; align-items:center; min-width:0; min-height:30px; }
 .fieldError { margin:12px 0 0; color:var(--err-ink); font-size:11px; line-height:1.6; }
@@ -40,8 +37,8 @@
 .mainPanel .schedule > section > header { min-height:22px; font-size:12px; font-weight:500; }
 .mainPanel .schedule > section > header > button { width:24px; height:24px; padding:0; }
 .dialog .schedule > section > label { grid-template-columns:var(--detail-label-width) minmax(0,1fr); gap:var(--detail-field-gap); min-height:30px; }
-.dialog .schedule input { height:30px; background:var(--interaction-hover-bg); border-color:transparent; font-size:11px; }
-.section { display:flex; flex-direction:column; gap:8px; margin-top:17px; }
+.dialog .schedule > section > label > input { height:30px; background:var(--interaction-hover-bg); border-color:transparent; font-size:11px; }
+.section { display:flex; flex-direction:column; margin-top:12px; }
 .sectionHeading { display:flex; align-items:center; gap:7px; color:var(--muted-strong); }
 .sectionHeading h3 { margin:0; color:var(--ink-soft); font-size:12px; font-weight:500; }
 .descriptionRow { margin-top:17px; }
@@ -57,9 +54,7 @@
 .checklistToggle:focus-visible { border-color:var(--control-border); outline:none; box-shadow:none; }
 .checklistChevron { flex-shrink:0; transition:transform 160ms ease; }
 .checklistSection[open] .checklistChevron { transform:rotate(90deg); }
-.checklistBody { display:flex; flex-direction:column; gap:8px; padding-top:8px; }
-.progress { flex-shrink:0; height:3px; overflow:hidden; border-radius:3px; background:var(--separator-color); }
-.progress > span { display:block; height:100%; border-radius:inherit; background:var(--ink-soft); transition:width 180ms ease; }
+.checklistBody { display:flex; flex-direction:column; gap:4px; padding-top:4px; }
 .checklist { display:flex; flex-direction:column; gap:4px; margin:0; padding:0; list-style:none; }
 .checklist li { display:flex; align-items:center; gap:6px; min-height:31px; }
 .checklist input[type=checkbox] { position:relative; width:13px; height:13px; flex-shrink:0; margin:0; appearance:none; border:1px solid var(--control-border); border-radius:4px; background:var(--panel); cursor:pointer; }
@@ -70,10 +65,7 @@
 .checklistLabel { min-width:0; color:var(--ink-soft); font-size:11px; line-height:1.7; overflow-wrap:anywhere; }
 .checklist [data-done=true] :is(.checklistTitle,.checklistLabel) { color:var(--muted-strong); text-decoration:line-through; }
 .removeItem { flex-shrink:0; width:22px; height:23px; padding:0; color:var(--menu-danger-ink); }
-.addItem { display:flex; align-items:center; gap:5px; min-height:31px; padding:0 3px; border:1px solid transparent; border-radius:5px; color:var(--muted-strong); }
-.addItem > input { flex:1; min-width:0; width:0; height:29px; padding:0 3px; border:0; background:transparent; color:var(--ink-soft); font:inherit; font-size:11px; }
-.addItem:focus-within { border-color:var(--ink); }
-.addItem button { width:23px; height:23px; padding:0; }
+.addItem { display:flex; align-self:flex-start; justify-content:flex-start; gap:6px; height:28px; padding:0 3px; border-radius:5px; color:var(--muted-strong); }
 .emptyText { margin:3px 0 0; font-size:11px; line-height:1.7; }
 .commentsBody > section > div:first-child:has(h3) { display:none; }
 .commentsBody > section { gap:15px; }

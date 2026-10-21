@@ -17,6 +17,7 @@ import { TaskLabelsEditor, collectTaskLabels } from './task-labels';
 import { TaskPriorityIcon } from './task-priority-icon';
 import { TaskSelect } from './task-select';
 import { TaskStatusIcon } from './task-status-icon';
+import { TaskDateInput } from './task-date-input';
 import { TaskScheduleSection } from './calendar/task-schedule-section';
 import { messages } from './task-detail.messages';
 import styles from './task-detail.module.css';
@@ -54,11 +55,9 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
   const active = useRef(true);
   const titleInput = useRef<HTMLTextAreaElement>(null);
   const statusInput = useRef<HTMLButtonElement>(null);
-  const checklistInput = useRef<HTMLInputElement>(null);
   const titleId = useId();
   const [draft, setDraft] = useState(() => initialDraft(task, columnId));
   const [baseline, setBaseline] = useState(() => JSON.stringify(initialDraft(task, columnId)));
-  const [newItem, setNewItem] = useState('');
   const [memberQuery, setMemberQuery] = useState('');
   const [activePane, setActivePane] = useState<'details' | 'comments'>('details');
   const [commentDirty, setCommentDirty] = useState(false);
@@ -69,7 +68,7 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
   const [error, setError] = useState<'saveFailed' | 'deleteFailed' | null>(null);
   const [fieldError, setFieldError] = useState<'titleRequired' | 'statusRequired' | 'labelsLimit' | 'checklistTitleRequired' | 'scheduleInvalid' | null>(null);
   const canEdit = board.permission === 'owner' || board.permission === 'editor';
-  const dirty = JSON.stringify(draft) !== baseline || Boolean(newItem.trim()) || commentDirty;
+  const dirty = JSON.stringify(draft) !== baseline || commentDirty;
   const currentColumn = board.columns.find((column) => column.id === draft.columnId);
   const selectedMembers = board.members.filter((member) => draft.assigneeIds.includes(member.userId));
   const matchingMembers = board.members.filter((member) => `${member.name} ${member.email}`.toLocaleLowerCase().includes(memberQuery.trim().toLocaleLowerCase()));
@@ -114,13 +113,6 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
     else onClose();
   }
 
-  function addItem() {
-    if (!newItem.trim() || draft.checklist.length >= 100) return;
-    update('checklist', [...draft.checklist, { id: crypto.randomUUID(), title: newItem.trim(), done: false }]);
-    setNewItem('');
-    checklistInput.current?.focus();
-  }
-
   async function save() {
     if (busy || !canEdit) return;
     const next: TaskDraft = {
@@ -128,10 +120,7 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
       title: draft.title.trim(),
       labels: draft.labels.map(label => ({ ...label, name: label.name.trim() })),
       assigneeIds: draft.assigneeIds.filter((id) => board.members.some((member) => member.userId === id)),
-      checklist: [
-        ...draft.checklist.map((item) => ({ ...item, title: item.title.trim() })),
-        ...(newItem.trim() ? [{ id: crypto.randomUUID(), title: newItem.trim(), done: false }] : []),
-      ],
+      checklist: draft.checklist.map((item) => ({ ...item, title: item.title.trim() })),
     };
     if (!next.title) {
       setFieldError('titleRequired');
@@ -164,7 +153,6 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
       if (saved) {
         if (commentDirtyRef.current) {
           setDraft(next);
-          setNewItem('');
           setBaseline(JSON.stringify(next));
         } else onClose();
       } else setError('saveFailed');
@@ -256,10 +244,8 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
               </div>
               <div className={styles.fieldRow}>
                 <label htmlFor={`${titleId}-due`}><CalendarBlank size={14} />{t('dueDate')}</label>
-                <div className={styles.dateWrap}>
-                  {canEdit || draft.dueDate ? <input id={`${titleId}-due`} type="date" className={styles.dateInput} value={draft.dueDate ?? ''} onInput={event => update('dueDate', event.currentTarget.value || null)} /> : <span className={styles.emptyValue}>{t('noDueDate')}</span>}
-                  {canEdit && draft.dueDate && <Button type="button" variant="ghost" size="icon-sm" className={styles.clearDate} aria-label={t('clearDate')} onClick={() => update('dueDate', null)}><X size={12} /></Button>}
-                </div>
+                {canEdit || draft.dueDate ? <TaskDateInput id={`${titleId}-due`} type="date" value={draft.dueDate ?? ''} onChange={event => update('dueDate', event.currentTarget.value || null)}
+                  clearLabel={t('clearDate')} onClear={canEdit ? () => update('dueDate', null) : undefined} /> : <span className={styles.emptyValue}>{t('noDueDate')}</span>}
               </div>
               <div className={styles.fieldRow}>
                 <span className={styles.fieldLabel}><Tag size={14} />{t('labels')}</span>
@@ -273,7 +259,7 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
               <label htmlFor={`${titleId}-description`}><TextAlignLeft size={14} aria-hidden />{t('description')}</label>
               {canEdit ? <textarea id={`${titleId}-description`} className={styles.description} aria-label={t('description')} rows={4} maxLength={12000} placeholder={t('descriptionPlaceholder')} value={draft.description} disabled={Boolean(busy)} onChange={event => update('description', event.target.value)} /> : <p className={styles.descriptionText} data-empty={!draft.description || undefined}>{draft.description || t('noDescription')}</p>}
             </div>
-            <TaskDetailChecklist checklist={draft.checklist} onChecklist={value => update('checklist', value)} newItem={newItem} onNewItem={setNewItem} onAddItem={addItem} inputRef={checklistInput} editable={canEdit} busy={Boolean(busy)} />
+            <TaskDetailChecklist checklist={draft.checklist} onChecklist={value => update('checklist', value)} editable={canEdit} busy={Boolean(busy)} />
           </section>
           <aside className={styles.commentsPanel} aria-label={t('comments')} hidden={activePane !== 'comments'} data-task-comments>
             <div className={styles.commentsBody}>{task ? <TaskComments board={board} taskId={task.id} actorId={actorId} client={client} onChanged={onCommentsChanged} onDirtyChange={changeCommentDirty} /> : <p className={styles.emptyText}>{t('commentsAfterCreate')}</p>}</div>

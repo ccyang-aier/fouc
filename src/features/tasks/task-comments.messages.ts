@@ -3,8 +3,7 @@ import { defineMessages } from '@/lib/i18n';
 export const messages = defineMessages({
   comments: ['评论', 'Comments'],
   loading: ['正在加载评论', 'Loading comments'],
-  empty: ['还没有评论', 'No comments yet'],
-  emptyHint: ['在这里讨论进展、记录反馈。', 'Discuss progress and share feedback here.'],
+  empty: ['暂无评论数据', 'No comments yet'],
   placeholder: ['写下评论…', 'Write a comment…'],
   publish: ['发布评论', 'Post comment'],
   shortcut: ['⌘ / Ctrl + Enter 发布', '⌘ / Ctrl + Enter to post'],

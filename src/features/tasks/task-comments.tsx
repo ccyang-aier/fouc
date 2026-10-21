@@ -4,6 +4,7 @@ import type { TaskBoardDetail, TaskComment } from '@fouc/shared/tasks';
 import { ChatCircle, Trash } from '@phosphor-icons/react';
 import { useEffect, useRef, useState } from 'react';
 import { AppAlert } from '@/components/app-alert';
+import { EmptyState } from '@/components/empty-state';
 import { Button } from '@/components/ui/button';
 import { UserAvatar } from '@/components/user-avatar';
 import { useTranslation } from '@/lib/i18n';
@@ -106,10 +107,7 @@ export function TaskComments({
           }}>{t('retry')}</Button>
         } />
       ) : comments.length === 0 ? (
-        <div className={styles.empty}>
-          <p>{t('empty')}</p>
-          {canComment && <span>{t('emptyHint')}</span>}
-        </div>
+        <EmptyState label={t('empty')} />
       ) : (
         <ol className={styles.list}>
           {comments.map((comment) => (

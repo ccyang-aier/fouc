@@ -204,12 +204,15 @@ test('task information owns subtasks and switching to comments preserves both dr
   const disclosure = main.querySelector<HTMLDetailsElement>('[data-task-detail-checklist]')!;
   expect(disclosure.open).toBe(false);
   disclosure.open = true;
-  const input = main.querySelector<HTMLInputElement>('input[aria-label="Add a checklist item"]')!;
+  const add = [...main.querySelectorAll<HTMLButtonElement>('button')].find(button => button.textContent === 'Add subtask')!;
+  expect(add.disabled).toBe(false);
+  await act(async () => add.click());
+  const input = main.querySelector<HTMLInputElement>('input[type="text"][aria-label="Subtask title"]')!;
+  expect(document.activeElement?.getAttribute('aria-label')).toBe('Subtask title');
   await act(async () => {
     Object.getOwnPropertyDescriptor(browser.HTMLInputElement.prototype, 'value')!.set!.call(input, 'Review the prototype');
     input.dispatchEvent(new Event('input', { bubbles: true }));
   });
-  await act(async () => main.querySelector<HTMLButtonElement>('[aria-label="Add checklist item"]')!.click());
   await switchPane('comments');
   expect(comments.hidden).toBe(false);
   expect((main as HTMLElement).hidden).toBe(true);
@@ -220,13 +223,28 @@ test('task information owns subtasks and switching to comments preserves both dr
   expect(comments.hidden).toBe(true);
   disclosure.open = false;
   disclosure.open = true;
-  expect(main.querySelector<HTMLInputElement>('[aria-label="Checklist item"]')?.value).toBe('Review the prototype');
+  expect(main.querySelector<HTMLInputElement>('[aria-label="Subtask title"]')?.value).toBe('Review the prototype');
   expect(textarea('Comment draft') === comment).toBe(true);
   await switchPane('comments');
   expect(comment.value).toBe('Keep the discussion while checking subtasks');
   await act(async () => saveButton().click());
   expect(onSave.mock.calls[0][0].checklist[0]?.title).toBe('Review the prototype');
   expect(onClose.mock.calls).toHaveLength(0);
+});
+
+test('adding an empty subtask focuses its title, blocks saving and protects the new draft', async () => {
+  await render();
+  host.querySelector<HTMLDetailsElement>('[data-task-detail-checklist]')!.open = true;
+  const add = [...host.querySelectorAll<HTMLButtonElement>('button')].find(button => button.textContent === 'Add subtask')!;
+  await act(async () => add.click());
+  const input = host.querySelector<HTMLInputElement>('input[type="text"][aria-label="Subtask title"]')!;
+  expect(document.activeElement?.getAttribute('aria-label')).toBe('Subtask title');
+  expect(input.value).toBe('');
+  await act(async () => saveButton().click());
+  expect(onSave.mock.calls).toHaveLength(0);
+  expect(host.querySelector('[role="alert"]')?.textContent).toBe('Enter a subtask title or remove the empty subtask.');
+  await act(async () => host.querySelector('dialog')!.dispatchEvent(new Event('cancel', { cancelable: true })));
+  expect(host.querySelector<HTMLDialogElement>('dialog[role="alertdialog"]')?.open).toBe(true);
 });
 
 test('colored labels remain structured in the task draft sent to save', async () => {

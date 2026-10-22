@@ -76,6 +76,19 @@ test('date/time lists and exact input preserve second precision on confirmation'
   expect(changed.mock.calls).toEqual([['2026-10-22T09:17:43']]);
 });
 
+test('date-only fields share the time layout while retaining date-only values and bounds', async () => {
+  await render({ min: '2026-10-21', max: '2026-10-21' }); await open();
+  const options = [...panel()!.querySelectorAll<HTMLButtonElement>('[role="option"]')];
+  expect(options).toHaveLength(48);
+  expect(panel()!.querySelector('input[type="time"]')).not.toBeNull();
+  const ten = options.find(item => item.textContent === '10:00 AM')!;
+  expect(ten.disabled).toBe(false);
+  await act(async () => ten.click());
+  expect(changed.mock.calls.length).toBe(0);
+  await act(async () => button('Schedule').click());
+  expect(changed.mock.calls).toEqual([['2026-10-21']]);
+});
+
 test('bounds disable unavailable days and times; required and read-only controls cannot clear', async () => {
   await render({ type: 'datetime-local', value: '2026-10-21T10:00', min: '2026-10-21T10:00', max: '2026-10-22T11:00', required: true }); await open();
   expect(day('2026-10-20').disabled).toBe(true);

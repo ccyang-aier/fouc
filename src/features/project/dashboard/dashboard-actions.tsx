@@ -1,4 +1,6 @@
 'use client';
+
+import { DatePicker } from '@/components/ui/date-picker';
 import { translateFixed } from '../i18n/display';
 
 import { useTranslation } from '@/lib/i18n';
@@ -174,22 +176,22 @@ function CreateTaskForm({
             </label>
             <label>
               {t('Due date')}
-              <input
+              <DatePicker
                 type="date"
                 required
                 value={dueDate}
-                onInput={(event) => setDueDate(event.currentTarget.value)}
+                onValueChange={setDueDate}
               />
             </label>
           </div>
           <div className={styles.fieldGrid}>
             <label>
               {t('Scheduled date')}
-              <input
+              <DatePicker
                 type="date"
                 required
                 value={scheduledDate}
-                onInput={(event) => setScheduledDate(event.currentTarget.value)}
+                onValueChange={setScheduledDate}
               />
             </label>
             <label>

@@ -60,30 +60,9 @@
   outline: 1px solid var(--ink);
   outline-offset: -1px;
 }
-.timelineDates input {
-  width: 106px;
-  height: 22px;
-  padding: 0 3px;
-  border: 1px solid transparent;
-  border-radius: 3px;
-  background: transparent;
-  color: var(--muted-strong);
-  font: inherit;
-  font-size: 10px;
-  line-height: 20px;
-  outline: none;
-  box-shadow: none;
-}
-.timelineDates input:focus {
-  border-color: var(--ink);
-  outline: none;
-  box-shadow: none;
-}
-.timelineDates input::-webkit-calendar-picker-indicator {
-  width: 12px;
-  height: 12px;
-  cursor: pointer;
-}
+
+.timelineDate { width:116px; }
+.timelineDate [data-date-picker-trigger] { height:24px; padding-inline:4px; font-size:10px; }
 
 .timeline {
   --timeline-label-width: 104px;

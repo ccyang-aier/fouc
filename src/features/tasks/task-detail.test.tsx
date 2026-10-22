@@ -53,7 +53,7 @@ beforeAll(async () => {
   });
   const icon = () => <svg aria-hidden />;
   mock.module('@phosphor-icons/react', () => Object.fromEntries([
-    'CalendarBlank', 'CaretDown', 'CaretRight', 'CheckSquare', 'Circle', 'Flag', 'Kanban', 'ListChecks',
+    'CalendarBlank', 'CaretDown', 'CaretLeft', 'CaretRight', 'CheckSquare', 'Circle', 'Flag', 'Kanban', 'ListChecks',
     'LockSimple', 'Plus', 'Tag', 'TextAlignLeft', 'Trash', 'Users', 'Warning', 'X', 'Clock', 'LinkSimple', 'ChatCircle',
   ].map(name => [name, icon])));
   mock.module('@/components/ui/button', () => ({ Button: Control }));

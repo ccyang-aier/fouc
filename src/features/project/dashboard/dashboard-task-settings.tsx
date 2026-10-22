@@ -1,5 +1,7 @@
 'use client';
 
+import { DatePicker } from '@/components/ui/date-picker';
+
 import { useTranslation } from '@/lib/i18n';
 import { fixtureField, translateFixed } from '../i18n/display';
 import { messages } from './i18n/dashboard-task-settings';
@@ -99,10 +101,10 @@ export function DashboardTaskSettings({
       <div className={styles.scheduleFields}>
         <label className={styles.settingField}>
           {t('Scheduled date')}
-          <input
+          <DatePicker
             type="date"
             value={task.scheduledDate}
-            onInput={(event) => onChange({ ...task, scheduledDate: event.currentTarget.value })}
+            onValueChange={(dateValue) => onChange({ ...task, scheduledDate: dateValue })}
           />
         </label>
         <label className={styles.settingField}>

@@ -1,5 +1,7 @@
 'use client';
 
+import { DatePicker } from '@/components/ui/date-picker';
+
 import { backendFetch } from '@/lib/backend';
 import { useTranslation } from '@/lib/i18n';
 import {
@@ -427,12 +429,12 @@ export function RedisMutationDialog({
                       {expiryMode === 'absolute' && (
                         <label className={styles.field}>
                           {tu('本地过期时间')}
-                          <input
+                          <DatePicker
                             aria-label={tu('本地过期时间')}
                             type="datetime-local"
                             step="1"
                             value={date}
-                            onChange={(event) => setDate(event.target.value)}
+                            onValueChange={setDate}
                           />
                         </label>
                       )}

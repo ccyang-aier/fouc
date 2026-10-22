@@ -63,3 +63,15 @@ test('a virtual context menu survives the browser returning focus to its right-c
   await act(async () => document.querySelector<HTMLButtonElement>('#trigger')!.focus());
   expect(Boolean(document.querySelector('[role="menu"]'))).toBe(true);
 });
+
+test('when neither side fits, a tall popover stays near its anchor within the viewport', async () => {
+  const original = browser.HTMLElement.prototype.getBoundingClientRect;
+  Object.defineProperty(browser, 'innerHeight', { configurable: true, value: 400 });
+  browser.HTMLElement.prototype.getBoundingClientRect = function () {
+    return this.id === 'trigger' ? new browser.DOMRect(120, 200, 100, 30) : new browser.DOMRect(0, 0, 260, 340);
+  };
+  try {
+    await open();
+    expect(document.querySelector<HTMLElement>('[role="dialog"]')!.style.top).toBe('52px');
+  } finally { browser.HTMLElement.prototype.getBoundingClientRect = original; }
+});

@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CalendarBlank, CaretLeft, CaretRight, Clock, Plus, Tray } from '@phosphor-icons/react';
+import { CaretLeft, CaretRight, Clock, Plus, Tray } from '@phosphor-icons/react';
 import type { BoardTask, TaskBoardDetail, TaskSchedule } from '@fouc/shared/tasks';
 import { Button } from '@/components/ui/button';
+import { DatePicker } from '@/components/ui/date-picker';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSearch, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTranslation } from '@/lib/i18n';
@@ -55,7 +56,7 @@ export function TaskCalendar({ board, tasks, busy, onSave, onSchedule, onDetails
       <div className={styles.dateNavigation}><h2 aria-live="polite">{heading}</h2><div className={styles.periodArrows}>
         <Tooltip><TooltipTrigger asChild><button type="button" className={`fouc-action ${styles.navButton}`} aria-label={t('previous')} onClick={() => setAnchor(shiftAnchor(anchor, range, -1))}><CaretLeft size={16} /></button></TooltipTrigger><TooltipContent>{t('previous')}</TooltipContent></Tooltip>
         <Tooltip><TooltipTrigger asChild><button type="button" className={`fouc-action ${styles.navButton}`} aria-label={t('next')} onClick={() => setAnchor(shiftAnchor(anchor, range, 1))}><CaretRight size={16} /></button></TooltipTrigger><TooltipContent>{t('next')}</TooltipContent></Tooltip>
-      </div><Button variant="outline" size="sm" className={styles.todayButton} onClick={() => { setNow(new Date()); setAnchor(localDay()); }}>{t('today')}</Button><label className={styles.datePicker}><CalendarBlank size={16} /><input type="date" aria-label={t('chooseDate')} value={anchor} onChange={event => { if (event.target.value) setAnchor(event.target.value); }} /></label></div>
+      </div><Button variant="outline" size="sm" className={styles.todayButton} onClick={() => { setNow(new Date()); setAnchor(localDay()); }}>{t('today')}</Button><DatePicker iconOnly required aria-label={t('chooseDate')} value={anchor} onValueChange={setAnchor} /></div>
       <div className={styles.calendarTools}><div className={styles.rangeSwitcher} role="group" aria-label={t('range')}>{(['day', 'week', 'month'] as const).map(value => <button key={value} type="button" className={`fouc-action ${styles.rangeButton}`} aria-pressed={range === value} onClick={() => setRange(value)}>{t(value)}</button>)}</div>
         <DropdownMenu onOpenChange={open => { if (open) setSearch(''); }}><DropdownMenuTrigger className={styles.unscheduledTrigger} aria-label={t('unscheduledCount', { count: unscheduled.length })}><Tray size={16} /><span>{t('unscheduled')}</span><span className={styles.unscheduledBadge}>{unscheduled.length}</span></DropdownMenuTrigger><DropdownMenuContent align="end" density="compact" className={styles.unscheduledMenu}><DropdownMenuSearch value={search} onValueChange={setSearch} placeholder={t('searchUnscheduled')} clearLabel={t('clearSearch')} /><div className={styles.unscheduledList}>{matching.map(task => <DropdownMenuItem key={task.id} className={styles.unscheduledItem} onSelect={event => { const rect = (event.currentTarget as HTMLElement).getBoundingClientRect(); open(task, { x: rect.right, y: rect.top }); }}><Clock size={16} /><span><strong>{task.title}</strong><small>{taskReference(task)}{task.dueDate ? ` · ${task.dueDate}` : ''}</small></span></DropdownMenuItem>)}{!matching.length && <p className={styles.menuEmpty}>{t(unscheduled.length ? 'noResults' : 'allScheduled')}</p>}</div></DropdownMenuContent></DropdownMenu>
         {editable && <Button ref={create} size="sm" className={styles.newSchedule} disabled={busy} onClick={() => newSchedule()}><Plus size={15} />{t('newSchedule')}</Button>}

@@ -1,4 +1,6 @@
 'use client';
+
+import { DatePicker } from '@/components/ui/date-picker';
 import { BackendRequestError, backendFetch } from '@/lib/backend';
 import { useTranslation } from '@/lib/i18n';
 import type {
@@ -235,14 +237,14 @@ export function RedisBulkDialog({
               {kind === 'absolute-ttl' && (
                 <label>
                   {tu('本地绝对过期时间')}
-                  <input
+                  <DatePicker
                     aria-label={tu('批量绝对过期时间')}
                     type="datetime-local"
                     step="1"
                     value={deadline}
-                    onChange={(event) => {
+                    onValueChange={(value) => {
                       invalidate();
-                      setDeadline(event.target.value);
+                      setDeadline(value);
                     }}
                   />
                   <small>{tu('使用当前浏览器时区；过去的期限会立即删除。')}</small>

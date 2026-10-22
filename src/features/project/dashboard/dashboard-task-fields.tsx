@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslation } from '@/lib/i18n';
+import { DatePicker } from '@/components/ui/date-picker';
 import { fixtureField, registerProjectFixtures, translateFixed } from '../i18n/display';
 import { messages } from './i18n/dashboard-task-fields';
 
@@ -127,10 +128,6 @@ export function DashboardTaskFields({
   const { t, locale } = useTranslation(messages);
 
   const dateId = useId();
-  const dueDate = new Date(`${task.dueDate}T12:00:00`);
-  const formattedDate = Number.isNaN(dueDate.valueOf())
-    ? translateFixed('Choose a date', locale)
-    : dueDate.toLocaleDateString(locale, { month: 'short', day: '2-digit', year: 'numeric' });
 
   function toggleAssignee(id: DashboardPersonId) {
     const assignees = task.assignees.includes(id)
@@ -212,20 +209,13 @@ export function DashboardTaskFields({
           <CalendarBlank size={16} />
           {t('Due date')}
         </label>
-        <div className={styles.dateControl}>
-          <span>{formattedDate}</span>
-          <input
-            id={dateId}
-            type="date"
-            value={task.dueDate}
-            onClick={(event) => event.currentTarget.showPicker?.()}
-            onInput={(event) => {
-              const dueDate = event.currentTarget.value;
-              if (dueDate) onChange({ ...task, dueDate });
-            }}
-            aria-label={t('Due date')}
-          />
-        </div>
+        <DatePicker
+          id={dateId}
+          required
+          value={task.dueDate}
+          onValueChange={(dueDate) => onChange({ ...task, dueDate })}
+          aria-label={t('Due date')}
+        />
       </div>
       <div className={styles.fieldRow}>
         <span className={styles.fieldLabel}>

@@ -22,7 +22,8 @@ export function AnchoredPopover({ anchor, onClose, label, children, width = 260,
       const bounds = panel!.getBoundingClientRect();
       const left = align === 'end' ? rect.right - bounds.width : rect.left;
       const below = rect.bottom + 7;
-      const top = below + bounds.height > window.innerHeight - 8 ? rect.top - bounds.height - 7 : below;
+      const above = rect.top - bounds.height - 7;
+      const top = below + bounds.height <= window.innerHeight - 8 || above < 8 ? below : above;
       panel!.style.left = `${Math.max(8, Math.min(left, window.innerWidth - bounds.width - 8))}px`;
       panel!.style.top = `${Math.max(8, Math.min(top, window.innerHeight - bounds.height - 8))}px`;
       panel!.style.visibility = 'visible';

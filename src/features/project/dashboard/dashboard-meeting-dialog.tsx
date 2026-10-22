@@ -1,4 +1,6 @@
 'use client';
+
+import { DatePicker } from '@/components/ui/date-picker';
 import { translateFixed } from '../i18n/display';
 
 import { getLocale, useTranslation } from '@/lib/i18n';
@@ -354,10 +356,10 @@ export function DashboardMeetingDialog({
                 <div className={common.fieldGrid}>
                   <label>
                     {t('Date')}
-                    <input
+                    <DatePicker
                       type="date"
                       value={date}
-                      onInput={(event) => setDate(event.currentTarget.value)}
+                      onValueChange={setDate}
                     />
                   </label>
                   <label>

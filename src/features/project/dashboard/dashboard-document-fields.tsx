@@ -1,4 +1,6 @@
 'use client';
+
+import { DatePicker } from '@/components/ui/date-picker';
 import { translateFixed } from '../i18n/display';
 
 import { useTranslation } from '@/lib/i18n';
@@ -44,10 +46,10 @@ export function InvoiceFields({ value, onChange }: FieldProps<DashboardInvoice>)
       <div className={common.fieldGrid}>
         <label>
           {t('Due date')}
-          <input
+          <DatePicker
             type="date"
             value={value.dueDate}
-            onInput={(event) => onChange({ ...value, dueDate: event.currentTarget.value })}
+            onValueChange={(dateValue) => onChange({ ...value, dueDate: dateValue })}
           />
         </label>
         <label>
@@ -220,10 +222,10 @@ export function ProposalFields({ value, onChange }: FieldProps<DashboardProposal
         </label>
         <label>
           {t('Valid until')}
-          <input
+          <DatePicker
             type="date"
             value={value.validUntil}
-            onInput={(event) => onChange({ ...value, validUntil: event.currentTarget.value })}
+            onValueChange={(dateValue) => onChange({ ...value, validUntil: dateValue })}
           />
         </label>
       </div>
@@ -254,18 +256,18 @@ export function ContractFields({ value, onChange }: FieldProps<DashboardContract
       <div className={common.fieldGrid}>
         <label>
           {t('Start date')}
-          <input
+          <DatePicker
             type="date"
             value={value.startDate}
-            onInput={(event) => onChange({ ...value, startDate: event.currentTarget.value })}
+            onValueChange={(dateValue) => onChange({ ...value, startDate: dateValue })}
           />
         </label>
         <label>
           {t('End date')}
-          <input
+          <DatePicker
             type="date"
             value={value.endDate}
-            onInput={(event) => onChange({ ...value, endDate: event.currentTarget.value })}
+            onValueChange={(dateValue) => onChange({ ...value, endDate: dateValue })}
           />
         </label>
       </div>

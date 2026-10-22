@@ -1,4 +1,6 @@
 'use client';
+
+import { DatePicker } from '@/components/ui/date-picker';
 import { translateFixed } from '../i18n/display';
 
 import { getLocale, useTranslation, type Locale } from '@/lib/i18n';
@@ -288,14 +290,13 @@ export function ActivityMap({
             >
               <CaretLeft size={12} />
             </button>
-            <input
+            <DatePicker
               type="date"
+              required
+              className={styles.timelineDate}
               aria-label={t('Timeline date')}
               value={selectedDate}
-              onInput={(event) => {
-                const value = event.currentTarget.value;
-                if (value) setSelectedDate(value);
-              }}
+              onValueChange={setSelectedDate}
             />
             <button
               type="button"

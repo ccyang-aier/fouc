@@ -5,7 +5,7 @@ import type { TaskSchedule } from '@fouc/shared/tasks';
 import { useTranslation } from '@/lib/i18n';
 import { localDateTime } from './calendar-model';
 import { messages } from './calendar.messages';
-import { TaskDateInput } from '../task-date-input';
+import { DatePicker } from '@/components/ui/date-picker';
 import styles from './calendar.module.css';
 
 export function ScheduleFields({ value, onChange, disabled = false }: {
@@ -18,8 +18,8 @@ export function ScheduleFields({ value, onChange, disabled = false }: {
     onChange({ ...value, startsAt, endsAt: startsAt ? new Date(Date.parse(startsAt) + duration).toISOString() : value.endsAt });
   }
   return <>
-    <label className={styles.formRow}><span><CalendarBlank size={14} />{t('startsAt')}</span><TaskDateInput type="datetime-local" required disabled={disabled} aria-label={t('startsAt')} value={localDateTime(value.startsAt)} onChange={event => changeStart(event.target.value)} /></label>
-    <label className={styles.formRow}><span><Clock size={14} />{t('endsAt')}</span><TaskDateInput type="datetime-local" required disabled={disabled} aria-label={t('endsAt')} value={localDateTime(value.endsAt)} onChange={event => onChange({ ...value, endsAt: event.target.value ? new Date(event.target.value).toISOString() : '' })} /></label>
+    <label className={styles.formRow}><span><CalendarBlank size={14} />{t('startsAt')}</span><DatePicker type="datetime-local" required disabled={disabled} aria-label={t('startsAt')} value={localDateTime(value.startsAt)} onValueChange={changeStart} /></label>
+    <label className={styles.formRow}><span><Clock size={14} />{t('endsAt')}</span><DatePicker type="datetime-local" required disabled={disabled} aria-label={t('endsAt')} value={localDateTime(value.endsAt)} onValueChange={local => onChange({ ...value, endsAt: local ? new Date(local).toISOString() : '' })} /></label>
     <label className={styles.formRow}><span><LinkSimple size={14} />{t('link')}</span><input type="url" disabled={disabled} aria-label={t('link')} value={value.url} placeholder={t('linkPlaceholder')} maxLength={2048} onChange={event => onChange({ ...value, url: event.target.value })} /></label>
   </>;
 }

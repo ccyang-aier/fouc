@@ -6,10 +6,6 @@
 .periodArrows { gap:0; }
 .navButton { display:grid; place-items:center; width:25px; height:28px; border-radius:5px; color:var(--muted-strong); cursor:pointer; }
 .todayButton[data-slot="button"] { height:28px; padding:0 10px; border-radius:6px; font-size:11px; box-shadow:none; }
-.datePicker { position:relative; display:grid; place-items:center; width:26px; height:28px; border:1px solid transparent; color:var(--muted-strong); border-radius:5px; }
-.datePicker input { position:absolute; inset:0; width:26px; height:28px; border:0; opacity:0; cursor:pointer; }
-.datePicker input::-webkit-calendar-picker-indicator { position:absolute; inset:0; width:100%; height:100%; cursor:pointer; }
-.datePicker:focus-within { border-color:var(--control-border); }
 .calendarTools { flex-wrap:wrap; gap:10px; margin-left:auto; }
 .rangeSwitcher { display:flex; gap:2px; padding:3px; border-radius:7px; background:var(--surface-subtle); }
 .rangeButton { display:grid; place-items:center; min-width:45px; height:26px; padding:0 12px; border:1px solid transparent; border-radius:5px; color:var(--muted-strong); font-size:12px; cursor:pointer; }

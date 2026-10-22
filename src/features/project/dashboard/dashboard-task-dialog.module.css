@@ -82,8 +82,7 @@
   color: var(--muted-strong);
   flex-shrink: 0;
 }
-.control,
-.dateControl {
+.control {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -108,19 +107,6 @@
 }
 .menuCheck {
   margin-left: auto;
-}
-.dateControl {
-  position: relative;
-}
-.dateControl input {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  opacity: 0;
-  cursor: pointer;
-}
-.dateControl:focus-within {
-  border-color: var(--ink);
 }
 .assignees {
   display: flex;

@@ -17,7 +17,7 @@ import { TaskLabelsEditor, collectTaskLabels } from './task-labels';
 import { TaskPriorityIcon } from './task-priority-icon';
 import { TaskSelect } from './task-select';
 import { TaskStatusIcon } from './task-status-icon';
-import { TaskDateInput } from './task-date-input';
+import { DatePicker } from '@/components/ui/date-picker';
 import { TaskScheduleSection } from './calendar/task-schedule-section';
 import { messages } from './task-detail.messages';
 import { useTaskDetailDrag } from './use-task-detail-drag';
@@ -252,8 +252,8 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
               </div>
               <div className={styles.fieldRow}>
                 <label htmlFor={`${titleId}-due`}><CalendarBlank size={14} />{t('dueDate')}</label>
-                {canEdit || draft.dueDate ? <TaskDateInput id={`${titleId}-due`} type="date" value={draft.dueDate ?? ''} onChange={event => update('dueDate', event.currentTarget.value || null)}
-                  clearLabel={t('clearDate')} onClear={canEdit ? () => update('dueDate', null) : undefined} /> : <span className={styles.emptyValue}>{t('noDueDate')}</span>}
+                {canEdit || draft.dueDate ? <DatePicker id={`${titleId}-due`} value={draft.dueDate ?? ''} onValueChange={value => update('dueDate', value || null)}
+                  disabled={!canEdit || Boolean(busy)} clearLabel={t('clearDate')} /> : <span className={styles.emptyValue}>{t('noDueDate')}</span>}
               </div>
               <div className={styles.fieldRow}>
                 <span className={styles.fieldLabel}><Tag size={14} />{t('labels')}</span>

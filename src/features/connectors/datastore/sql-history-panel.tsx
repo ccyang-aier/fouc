@@ -1,4 +1,6 @@
 'use client';
+
+import { DatePicker } from '@/components/ui/date-picker';
 import { uiText, type UiMessage, uiFailure, createUiMessages } from '../i18n/ui-message';
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './sql-history-panel.messages';
@@ -175,20 +177,20 @@ export function SqlHistoryPanel({
         />
         <label>
           {tConnector('from')}
-          <input
+          <DatePicker
             aria-label={tConnector('historyStartDate')}
             type="date"
             value={start}
-            onChange={(event) => setStart(event.target.value)}
+            onValueChange={setStart}
           />
         </label>
         <label>
           {tConnector('to')}
-          <input
+          <DatePicker
             aria-label={tConnector('historyEndDate')}
             type="date"
             value={end}
-            onChange={(event) => setEnd(event.target.value)}
+            onValueChange={setEnd}
           />
         </label>
         <button type="submit" disabled={history.busy}>

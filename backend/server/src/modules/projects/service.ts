@@ -7,25 +7,22 @@ import type { ResourceTransaction } from '../../platform/database/resources/tran
 import { withFoucIdentity, withProject } from '../../platform/database/resources/transaction';
 import type { FoucIdentity } from '../../platform/identity/identity';
 import { currentIdentity, pageOf, requireManager } from '../../platform/resources/context';
-import { ResourceRequestError, parseInput } from '../../platform/resources/errors';
+import { parseInput } from '../../platform/resources/errors';
+import { withProjectMember } from './access';
+import { createProjectMemberService } from './members';
 
 const view = (row: typeof project.$inferSelect) => ({ id: row.id, name: row.name });
 
 /** Projects own their membership independently of knowledgeBases and global resources. */
 export function createProjectService(pool: Pool) {
   async function mutate<T>(identity: FoucIdentity, projectId: string, operation: (db: ResourceTransaction) => Promise<T>) {
-    return withProject(pool, projectId, identity.sessionId, async (db) => {
-      const actor = await currentIdentity(db, identity, true);
-      const [record] = await db.select().from(project).where(eq(project.id, projectId)).for('update');
-      if (!record) throw new ResourceRequestError('PROJECT_NOT_FOUND', 'Project is not available.', 404);
-      await currentIdentity(db, identity);
-      const [membership] = await db.select().from(projectMember).where(and(eq(projectMember.projectId, projectId), eq(projectMember.userId, actor.userId)));
-      if (!membership) throw new ResourceRequestError('PROJECT_NOT_FOUND', 'Project is not available.', 404);
+    return withProjectMember(pool, identity, projectId, true, async ({ db, membership }) => {
       requireManager(membership.role);
       return operation(db);
     });
   }
   return {
+    ...createProjectMemberService(pool),
     async list(identity: FoucIdentity, input: unknown = {}) {
       const parsed = parseInput(listProjectsInputSchema, input);
       return withFoucIdentity(pool, identity.sessionId, async (db) => {

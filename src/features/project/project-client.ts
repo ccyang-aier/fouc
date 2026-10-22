@@ -1,9 +1,13 @@
 import { authenticatedFetch } from '@/lib/authenticated-fetch';
 import { getFoucApiOrigin } from '@/lib/fouc-api-endpoint';
-import { projectSchema, type Project } from '@fouc/shared/projects';
+import { projectSchema, projectMembersSchema, type Project, type ProjectMemberRole } from '@fouc/shared/projects';
 import { registerProjectFixtures } from './i18n/display';
 
 type ProjectPage = { items: Project[]; nextCursor: string | null };
+
+export class ProjectRequestError extends Error {
+  constructor(readonly code: string, readonly status: number, message: string) { super(message); }
+}
 
 async function request<T>(
   path: string,
@@ -21,7 +25,8 @@ async function request<T>(
   });
   const payload: unknown = await response.json().catch(() => null);
   if (!response.ok)
-    throw new Error(
+    throw new ProjectRequestError(
+      typeof payload === 'object' && payload !== null && 'code' in payload ? String(payload.code) : 'UNAVAILABLE', response.status,
       typeof payload === 'object' &&
         payload !== null &&
         'message' in payload &&
@@ -33,6 +38,18 @@ async function request<T>(
 }
 
 export const projectClient = {
+  async members(projectId: string, signal?: AbortSignal) {
+    return projectMembersSchema.parse(await request(`/${projectId}/members`, 'GET', undefined, signal));
+  },
+  async addMember(projectId: string, email: string, role: ProjectMemberRole) {
+    return projectMembersSchema.parse(await request(`/${projectId}/members`, 'POST', { email, role }));
+  },
+  async updateMember(projectId: string, userId: string, role: ProjectMemberRole) {
+    return projectMembersSchema.parse(await request(`/${projectId}/members/${userId}`, 'PATCH', { role }));
+  },
+  async removeMember(projectId: string, userId: string) {
+    return projectMembersSchema.parse(await request(`/${projectId}/members/${userId}`, 'DELETE'));
+  },
   async list(signal?: AbortSignal) {
     const items: Project[] = [];
     let cursor: string | null = null;

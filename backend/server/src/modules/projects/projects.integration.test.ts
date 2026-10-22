@@ -62,3 +62,37 @@ test('project role limits remain independent of other resource memberships', asy
   await server.database.admin.query('DELETE FROM resources.project_member WHERE project_id=$1 AND user_id=$2', [project.id, outsider.userId]);
   expect((await request(outsider, `/${project.id}`, 'DELETE')).status).toBe(404);
 });
+
+test('member directory and management enforce project scope and protected roles', async () => {
+  const admin = await actor('project-admin');
+  const member = await actor('project-member');
+  const target = await actor('project-target');
+  const project = await (await request(owner, '', 'POST', { name: 'Member directory' })).json() as { id: string };
+  const base = `/${project.id}/members`;
+  expect((await request(outsider, base)).status).toBe(404);
+  expect((await request(outsider, base, 'POST', { email: 'project-target@projects.test', role: 'member' })).status).toBe(404);
+  const add = (email: string, role = 'member') => request(owner, base, 'POST', { email, role });
+  expect((await add('project-admin@projects.test', 'admin')).status).toBe(201);
+  expect((await add('project-member@projects.test')).status).toBe(201);
+  const directory = await (await request(member, base)).json() as { actorRole: string; items: { userId: string; joinedAt: string; role: string }[] };
+  expect(directory.actorRole).toBe('member'); expect(directory.items).toHaveLength(3);
+  expect(directory.items.every(item => Number.isFinite(Date.parse(item.joinedAt)))).toBe(true);
+  expect((await request(member, base, 'POST', { email: 'project-target@projects.test', role: 'member' })).status).toBe(403);
+  expect((await request(member, `${base}/${admin.userId}`, 'DELETE')).status).toBe(403);
+  expect((await request(admin, base, 'POST', { email: 'project-target@projects.test', role: 'admin' })).status).toBe(403);
+  expect((await request(admin, base, 'POST', { email: 'project-target@projects.test', role: 'guest' })).status).toBe(201);
+  expect((await add('project-target@projects.test')).status).toBe(409);
+  expect((await add('missing@projects.test')).status).toBe(404);
+  expect((await request(admin, `${base}/${owner.userId}`, 'DELETE')).status).toBe(403);
+  expect((await request(owner, `${base}/${owner.userId}`, 'PATCH', { role: 'member' })).status).toBe(403);
+  expect((await request(admin, `${base}/${member.userId}`, 'PATCH', { role: 'admin' })).status).toBe(403);
+  expect((await request(owner, `${base}/${target.userId}`, 'PATCH', { role: 'admin' })).status).toBe(200);
+  expect((await request(admin, `${base}/${target.userId}`, 'DELETE')).status).toBe(403);
+  expect((await request(owner, `${base}/${target.userId}`, 'PATCH', { role: 'member' })).status).toBe(200);
+  expect((await request(admin, `${base}/${target.userId}`, 'DELETE')).status).toBe(200);
+  expect((await request(target, base)).status).toBe(404);
+  expect((await request(owner, base, 'POST', { email: 'project-target@projects.test', role: 'owner' })).status).toBe(400);
+  expect((await request(owner, base, 'POST', { email: 'project-target@projects.test', role: 'member', projectId: project.id })).status).toBe(400);
+  expect((await request(owner, `${base}/${member.userId}`, 'DELETE')).status).toBe(200);
+  expect((await request(member, base)).status).toBe(404);
+});

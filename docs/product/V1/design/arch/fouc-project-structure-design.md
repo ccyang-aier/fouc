@@ -68,7 +68,7 @@ Web 和桌面都能调用统一业务服务。普通 Web 用户不需要安装�
 
 ### 2.3 前端状态归属与当前实施边界
 
-shell 始终组合一套主导航、系统栏与当前工作面；features/project 拥有顶部项目切换和当前项目范围，features/home/chat 拥有按身份、来源和项目隔离的会话预览。工作台入口迁移既有 Dashboard 首页；features/tasks 管理真实服务端项目的多看板、Kanban、日历排期、分组表格、任务与成员授权，features/project/members 管理真实项目成员目录、添加、角色调整与移除，资产主页面仍为空状态；聊天呈现当前项目历史，Agents 复用真实设备管理。旧项目目录、内置项目导航、其它旧工作台分区与自动化模块清理删除。任务用例由业务服务 modules/tasks 持有，公开契约经 @fouc/shared/tasks 导出，接口位于 /api/projects/:projectId/task-boards 和 /api/projects/:projectId/task-members；五张任务资源表使用项目组合外键和看板 ACL 强制 RLS。知识库目录使用 /api/knowledge-bases?projectId=…，开放项目配置使用 /api/knowledge-bases/:knowledgeBaseId/projects，项目 CRUD 使用 /api/projects，成员目录与管理使用 /api/projects/:projectId/members；知识库文件夹、页面与协作继续保持原资源授权。
+shell 始终组合一套主导航、系统栏与当前工作面；features/project 拥有顶部项目切换和当前项目范围，features/home/chat 拥有按身份、来源和项目隔离的会话预览。工作台入口迁移既有 Dashboard 首页；features/tasks 管理真实服务端项目的多看板、Kanban、日历排期、分组表格、任务与成员授权，features/project/members 当前呈现本机成员目录与自由标签预览，团队结构为未开发空态；真实项目成员及角色接口由 modules/projects 持有，资产主页面仍为空状态；聊天呈现当前项目历史，Agents 复用真实设备管理。旧项目目录、内置项目导航、其它旧工作台分区与自动化模块清理删除。任务用例由业务服务 modules/tasks 持有，公开契约经 @fouc/shared/tasks 导出，接口位于 /api/projects/:projectId/task-boards 和 /api/projects/:projectId/task-members；五张任务资源表使用项目组合外键和看板 ACL 强制 RLS。知识库目录使用 /api/knowledge-bases?projectId=…，开放项目配置使用 /api/knowledge-bases/:knowledgeBaseId/projects，项目 CRUD 使用 /api/projects，成员目录与管理使用 /api/projects/:projectId/members；知识库文件夹、页面与协作继续保持原资源授权。
 
 本机 UI 恢复记录通过 `lib/project-ui-session` 存入 WebView／浏览器 IndexedDB，以完整项目范围为键。shell 拥有页签、顺序和激活页；页面功能通过明确命名的状态项保存草稿、筛选与浏览位置，聊天预览由 features/home/chat 维护。恢复记录不授予资源访问权限，不保存第二份知识库正文，不转换为真实设备 Agent 会话；File／Date 使用结构化克隆保存，关闭页签只清理其界面状态，刷新及项目返回复用相应记录。
 
@@ -86,7 +86,7 @@ shell 始终组合一套主导航、系统栏与当前工作面；features/proje
 
 | 能力 | 已实现的资源边界 | 尚未实现的产品能力 |
 | --- | --- | --- |
-| 项目 | 真实本机／服务端目录与 CRUD，服务端项目成员及强制 RLS；单一工作台的顶部项目切换，身份／来源／项目隔离；Dashboard 首页保留本机交互样例 | 成员主页面接入真实项目目录与角色管理，资产主页面仍为空状态；首页样例不等于服务端任务、资产或团队成员能力 |
+| 项目 | 真实本机／服务端目录与 CRUD，服务端项目成员及强制 RLS；单一工作台的顶部项目切换，身份／来源／项目隔离；Dashboard 首页保留本机交互样例 | 成员主页面目前为本机参考目录与自由标签预览，团队结构暂未开发；真实项目成员与角色管理接口已实现但未由该预览接线；资产主页面仍为空状态 |
 | 任务看板 | 服务端项目隔离的多看板、默认私有／项目可见／受邀成员、只读与编辑授权；默认零视图、用户创建和命名多个看板／日历／表格视图；完整 Kanban、日／周／月日历排期、按状态分组表格、可拖动缩放的分栏任务详情、八色标签、任务清单、负责人、日期、含图片和表情的评论、搜索筛选与持久化排序 | 未接入任务级附件、AI 拆解、外部通知与 Agent 执行；本机项目不生成任务副本 |
 | 知识库 | 独立目录、文件夹与文档；库成员、组、邀请、页面 ACL、编辑、协作与分享；owner 配置开放项目，目录以项目成员与库成员交集过滤 | 跨宿主访客能力仍需逐项收敛，项目关联不授予页面权限 |
 | 连接器与本机 Agent | 全局目录；设备连接、会话、授权和执行能力 | 团队实例分享与跨设备执行；设备凭据不等同于公开资源 |

@@ -1,16 +1,15 @@
 'use client';
 
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
-import { CaretDown, X } from '@phosphor-icons/react';
-import { AppAlert } from '@/components/app-alert';
+import { X } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-picker';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { usePageVisible } from '@/lib/page-visibility';
-import { MemberPortrait, MemberStatusBadge } from './member-collection';
-import { memberStatuses, type DirectoryMember, type MemberStatus } from './members.data';
+import { MemberPortrait } from './member-collection';
+import type { DirectoryMember } from './members.data';
 import { messages } from './members.messages';
 import { useTranslation } from '@/lib/i18n';
+import { MemberLabelEditor } from './member-label-editor';
 import styles from './members.module.css';
 
 function MemberModal({ title, onClose, children, alert = false }: { title: string; onClose: () => void; children: ReactNode; alert?: boolean }) {
@@ -40,13 +39,13 @@ function MemberModal({ title, onClose, children, alert = false }: { title: strin
   </dialog>;
 }
 
-export function MemberDialog({ member, initialDepartment = '', departments, onClose, onSave, onRemove }: {
-  member?: DirectoryMember; initialDepartment?: string; departments: string[]; onClose: () => void;
+export function MemberDialog({ member, departments, labels, onClose, onSave, onRemove }: {
+  member?: DirectoryMember; departments: string[]; labels: string[]; onClose: () => void;
   onSave: (member: DirectoryMember) => void; onRemove: (id: string) => void;
 }) {
   const { t } = useTranslation(messages);
   const [draft, setDraft] = useState<DirectoryMember>(() => member ? { ...member } : {
-    id: crypto.randomUUID(), name: '', position: '', department: initialDepartment, email: '', phone: '', status: 'Active',
+    id: crypto.randomUUID(), name: '', position: '', department: '', email: '', phone: '', labels: [],
     joinedOn: new Date().toLocaleDateString('en-CA'), portrait: null,
   });
   const [removing, setRemoving] = useState(false);
@@ -62,8 +61,8 @@ export function MemberDialog({ member, initialDepartment = '', departments, onCl
         <div className={styles.formGrid}>
           {(['name', 'position', 'department', 'email', 'phone'] as const).map(key => <label key={key} className={styles.field}>{t(key)}<input value={draft[key]} type={key === 'email' ? 'email' : key === 'phone' ? 'tel' : 'text'} required={key === 'name' || key === 'email'} maxLength={key === 'email' ? 254 : 120} list={key === 'department' ? departmentList : undefined} data-autofocus={key === 'name' ? '' : undefined} onChange={event => field(key, event.target.value)} /></label>)}
           <label className={styles.field}>{t('joined')}<DatePicker value={draft.joinedOn} required onValueChange={joinedOn => setDraft(current => ({ ...current, joinedOn }))} aria-label={t('joined')} /></label>
-          <div className={styles.field}><span>{t('status')}</span><DropdownMenu><DropdownMenuTrigger type="button" className={styles.roleTrigger} aria-label={t('status')}><MemberStatusBadge status={draft.status} /><CaretDown size={12} /></DropdownMenuTrigger><DropdownMenuContent density="compact"><DropdownMenuRadioGroup value={draft.status} onValueChange={status => setDraft(current => ({ ...current, status: status as MemberStatus }))}>{memberStatuses.map(status => <DropdownMenuRadioItem value={status} key={status} indicator="none">{t(status)}</DropdownMenuRadioItem>)}</DropdownMenuRadioGroup></DropdownMenuContent></DropdownMenu></div>
         </div>
+        <MemberLabelEditor value={draft.labels} options={labels} onChange={labels => setDraft(current => ({ ...current, labels }))} />
         <datalist id={departmentList}>{departments.map(department => <option key={department} value={department} />)}</datalist>
       </div>
       <footer>{member && <Button type="button" variant="ghost" size="sm" data-variant="destructive" className={styles.remove} onClick={() => setRemoving(true)}>{t('remove')}</Button>}
@@ -72,14 +71,4 @@ export function MemberDialog({ member, initialDepartment = '', departments, onCl
       </footer>
     </form>}
   </MemberModal>;
-}
-
-export function DepartmentDialog({ departments, onClose, onSave }: { departments: string[]; onClose: () => void; onSave: (name: string) => void }) {
-  const { t } = useTranslation(messages);
-  const [name, setName] = useState('');
-  const duplicate = departments.some(value => value.toLocaleLowerCase() === name.trim().toLocaleLowerCase());
-  return <MemberModal title={t('newDepartment')} onClose={onClose}><form onSubmit={event => { event.preventDefault(); if (name.trim() && !duplicate) { onSave(name.trim()); onClose(); } }}>
-    <div className={styles.dialogBody}><label className={styles.field}>{t('departmentName')}<input data-autofocus value={name} onChange={event => setName(event.target.value)} required maxLength={120} /></label>{duplicate && <AppAlert tone="error" title={t('duplicateDepartment')} />}</div>
-    <footer><Button type="button" variant="outline" size="sm" onClick={onClose}>{t('cancel')}</Button><Button type="submit" size="sm" disabled={!name.trim() || duplicate}>{t('create')}</Button></footer>
-  </form></MemberModal>;
 }

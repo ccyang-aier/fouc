@@ -2,18 +2,11 @@ import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 import { Window } from 'happy-dom';
 import { act } from 'react';
 import type { Root } from 'react-dom/client';
-import type { ProjectMembers } from '@fouc/shared/projects';
 
 let browser: Window, host: HTMLDivElement, root: Root;
 let Page: typeof import('./members-page').ProjectMembersPage;
 let scope = 'project-a';
-let actorRole: ProjectMembers['actorRole'] = 'owner';
-let addFailure = false;
-const added = mock(async () => { if (addFailure) throw new Error('Unavailable'); return directory(); });
-const directory = (): ProjectMembers => ({ actorRole, items: [
-  { userId: 'owner', name: 'Project owner', email: 'owner@example.test', role: 'owner', image: null, joinedAt: '2026-10-01T00:00:00Z' },
-  { userId: 'reader', name: scope === 'project-a' ? 'Alice Reader' : 'Bob Reader', email: scope === 'project-a' ? 'alice@example.test' : 'bob@example.test', role: 'member', image: null, joinedAt: '2026-10-02T00:00:00Z' },
-] });
+let setLocale: typeof import('@/lib/i18n').setLocale;
 
 beforeAll(async () => {
   browser = new Window({ url: 'http://localhost:3000/?view=members' });
@@ -22,56 +15,88 @@ beforeAll(async () => {
   globals.window = browser; globals.IS_REACT_ACT_ENVIRONMENT = true;
   globals.requestAnimationFrame = browser.requestAnimationFrame.bind(browser);
   globals.cancelAnimationFrame = browser.cancelAnimationFrame.bind(browser);
-  browser.localStorage.setItem('fouc.language', 'en-US');
   Object.defineProperties(browser.HTMLDialogElement.prototype, {
     showModal: { configurable: true, value(this: HTMLDialogElement) { this.setAttribute('open', ''); } },
     close: { configurable: true, value(this: HTMLDialogElement) { this.removeAttribute('open'); } },
   });
-  mock.module('@phosphor-icons/react', () => Object.fromEntries(['ArrowClockwise', 'CaretDown', 'CaretRight', 'Check', 'MagnifyingGlass', 'ShieldCheck', 'SlidersHorizontal', 'UserPlus', 'UsersThree', 'X', 'ArrowRight', 'Copy', 'CheckCircle', 'Info', 'WarningCircle', 'XCircle', 'SquaresFour', 'Table'].map(name => [name, () => <svg aria-hidden />])));
+  mock.module('@phosphor-icons/react', () => Object.fromEntries(['ClipboardText', 'FolderPlus', 'MagnifyingGlass', 'Plus', 'SlidersHorizontal', 'Stack', 'UserCircleGear', 'UserPlus', 'UsersThree', 'X', 'ArrowRight', 'CaretDown', 'CaretRight', 'Check', 'CheckCircle', 'Info', 'WarningCircle', 'XCircle', 'SquaresFour', 'Table'].map(name => [name, () => <svg aria-hidden />])));
   mock.module('@/components/user-avatar', () => ({ UserAvatar: ({ name }: { name: string }) => <span>{name[0]}</span> }));
+  mock.module('@/components/ui/date-picker', () => ({ DatePicker: ({ value }: { value: string }) => <button type="button">{value}</button> }));
   mock.module('@/components/app-alert-provider', () => ({ useAppAlert: () => ({ notify: () => {} }) }));
-  mock.module('@/features/identity/identity-provider', () => ({ useIdentity: () => ({ session: { status: 'authenticated', user: { id: 'owner' } } }) }));
-  mock.module('../project-resources', () => ({ useProjectResources: () => ({ selectedProject: { source: 'server', id: scope }, scopeKey: scope }) }));
-  mock.module('../project-client', () => ({ projectClient: { members: async () => directory(), addMember: added }, ProjectRequestError: class extends Error {} }));
+  mock.module('../project-resources', () => ({ useProjectResources: () => ({ scopeKey: scope }) }));
+  setLocale = (await import('@/lib/i18n')).setLocale;
   Page = (await import('./members-page')).ProjectMembersPage;
   const { createRoot } = await import('react-dom/client');
   host = document.createElement('div'); document.body.append(host); root = createRoot(host);
 });
-beforeEach(async () => { await act(async () => root.render(null)); scope = 'project-a'; actorRole = 'owner'; addFailure = false; added.mockClear(); });
+beforeEach(async () => { await act(async () => root.render(null)); scope = 'project-a'; setLocale('zh-CN'); });
 afterAll(async () => { await act(async () => root.unmount()); await browser.happyDOM.abort(); mock.restore(); });
-async function until(condition: () => boolean) { for (let i = 0; i < 40 && !condition(); i++) await act(async () => { await Bun.sleep(0); }); expect(condition()).toBe(true); }
-async function render() { await act(async () => root.render(<Page />)); await until(() => host.textContent!.includes(scope === 'project-a' ? 'Alice Reader' : 'Bob Reader')); }
+async function render() { await act(async () => root.render(<Page />)); }
 const button = (text: string) => [...host.querySelectorAll<HTMLButtonElement>('button')].find(node => node.textContent === text)!;
+const card = (name: string) => host.querySelector<HTMLButtonElement>(`[aria-label="查看 ${name}"]`)!;
+const control = (name: string) => [...host.querySelectorAll('dialog label')].find(node => node.firstChild?.textContent === name)!.querySelector<HTMLInputElement>('input')!;
 async function input(element: HTMLInputElement, value: string) { await act(async () => { Object.getOwnPropertyDescriptor(browser.HTMLInputElement.prototype, 'value')!.set!.call(element, value); element.dispatchEvent(new Event('input', { bubbles: true })); }); }
+async function submit() { await act(async () => host.querySelector('dialog form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))); }
 
-test('search, empty results and list mode update the real directory projection', async () => {
-  await render();
-  const search = host.querySelector<HTMLInputElement>('input[type="search"]')!;
-  await input(search, 'alice@'); expect(host.querySelectorAll('ul li')).toHaveLength(1);
-  await input(search, 'not-found'); expect(host.textContent).toContain('No matching members');
-  await act(async () => button('Clear filters').click()); expect(host.querySelectorAll('ul li')).toHaveLength(2);
-  await act(async () => host.querySelector<HTMLButtonElement>('[aria-label="Member list"]')!.click()); expect(host.querySelectorAll('tbody tr')).toHaveLength(2);
+test('the eight reference profiles remain searchable and switch to a complete list', async () => {
+  await render(); expect(host.querySelectorAll('ul li')).toHaveLength(8);
+  expect(host.textContent).toContain('Chief Operating Officer'); expect(host.textContent).toContain('(704) 555-0127');
+  await input(host.querySelector<HTMLInputElement>('input[type=search]')!, 'binhan628');
+  expect(host.querySelectorAll('ul li')).toHaveLength(1);
+  await input(host.querySelector<HTMLInputElement>('input[type=search]')!, 'missing-person'); expect(host.textContent).toContain('没有匹配的成员');
+  await act(async () => button('清除筛选').click());
+  await act(async () => host.querySelector<HTMLButtonElement>('[aria-label="成员列表"]')!.click());
+  expect(host.querySelectorAll('tbody tr')).toHaveLength(8);
 });
 
-test('switching projects resets filters and discards the previous project directory', async () => {
-  await render(); await input(host.querySelector<HTMLInputElement>('input[type="search"]')!, 'alice');
+test('project scope changes discard reference edits and active search from the previous scope', async () => {
+  await render(); await input(host.querySelector<HTMLInputElement>('input[type=search]')!, 'Esther');
   scope = 'project-b'; await render();
-  expect(host.textContent).not.toContain('Alice Reader'); expect(host.querySelector<HTMLInputElement>('input[type="search"]')!.value).toBe('');
+  expect(host.querySelector<HTMLInputElement>('input[type=search]')!.value).toBe('');
+  expect(host.querySelectorAll('ul li')).toHaveLength(8);
 });
 
-test('ordinary members cannot add people and owner details expose no mutation controls', async () => {
-  actorRole = 'member'; await render(); expect(button('Add member')).toBeUndefined();
-  await act(async () => host.querySelector<HTMLButtonElement>('[aria-label="View member: Project owner"]')!.click());
-  expect(host.querySelector('dialog')).not.toBeNull(); expect(button('Remove member')).toBeUndefined(); expect(button('Save changes')).toBeUndefined();
-  await act(async () => button('Done').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
+test('editing, cancellation, Escape and removal confirmation form a complete preview flow', async () => {
+  await render(); await act(async () => card('Esther Howard').click());
+  await input(control('姓名'), 'Uncommitted name'); await act(async () => button('取消').click());
+  expect(card('Esther Howard')).not.toBeNull(); expect(card('Uncommitted name')).toBeNull();
+  await act(async () => card('Esther Howard').click()); await input(control('姓名'), 'Esther Howard Jr'); await submit();
+  expect(card('Esther Howard Jr')).not.toBeNull();
+  await act(async () => card('Esther Howard Jr').click()); await act(async () => button('移除成员').click());
+  expect(host.querySelector('[role=alertdialog]')).not.toBeNull();
+  await act(async () => button('取消').click()); expect(host.querySelectorAll('ul li')).toHaveLength(8);
+  await act(async () => button('保存更改').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
   expect(host.querySelector('dialog')).toBeNull();
+  await act(async () => card('Esther Howard Jr').click()); await act(async () => button('移除成员').click()); await act(async () => button('移除成员').click());
+  expect(host.querySelectorAll('ul li')).toHaveLength(7);
 });
 
-test('failed additions preserve the email draft and remain retryable', async () => {
-  await render(); await act(async () => button('Add member').click());
-  await input(host.querySelector<HTMLInputElement>('input[type="email"]')!, 'someone@example.test'); addFailure = true;
-  await act(async () => host.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
-  await until(() => Boolean(host.querySelector('[role="alert"]')));
-  expect(host.querySelector<HTMLInputElement>('input[type="email"]')!.value).toBe('someone@example.test');
-  expect(host.querySelector<HTMLButtonElement>('button[type="submit"]')!.disabled).toBe(false);
+test('a new department accepts a new preview member and reports duplicate department names', async () => {
+  await render(); await act(async () => button('新建部门').click()); await input(control('部门名称'), 'Product');
+  expect(host.querySelector('[role=alert]')).not.toBeNull(); expect(button('创建').disabled).toBe(true);
+  await input(control('部门名称'), 'Design'); await submit();
+  expect(host.querySelector('[role=tabpanel]')!.textContent).toContain('Design');
+  await act(async () => host.querySelector<HTMLButtonElement>('[aria-label="添加 Design 成员"]')!.click());
+  expect(control('部门').value).toBe('Design');
+  await input(control('姓名'), 'New Designer'); await input(control('邮箱'), 'designer@example.test'); await submit();
+  await act(async () => button('团队概览').click());
+  expect(host.querySelectorAll('ul li')).toHaveLength(9); expect(card('New Designer')).not.toBeNull();
+});
+
+
+test('interface language follows app locale without discarding the open member draft', async () => {
+  await render();
+  expect(host.querySelector('h1')!.textContent).toBe('团队');
+  expect(host.textContent).toContain('远程');
+  expect(host.querySelector('time')!.textContent).toBe('2018年2月28日');
+  await act(async () => card('Esther Howard').click());
+  await input(control('姓名'), '草稿姓名');
+  await act(async () => setLocale('en-US'));
+  expect(host.querySelector('h1')!.textContent).toBe('Teams');
+  expect(host.querySelector('time')!.textContent).toBe('February 28, 2018');
+  expect(host.querySelector('dialog')!.textContent).toContain('Member details');
+  expect(control('Name').value).toBe('草稿姓名');
+  await act(async () => setLocale('zh-CN'));
+  expect(control('姓名').value).toBe('草稿姓名');
+  expect(button('保存更改')).toBeDefined();
 });

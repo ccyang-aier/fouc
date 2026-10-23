@@ -19,7 +19,7 @@ const board: TaskBoardDetail = {
     createdAt: '2026-10-18T00:00:00Z', updatedAt: '2026-10-18T00:00:00Z', commentCount: 0 }],
 };
 const onClose = mock(() => {});
-const onSave = mock(async (draft: TaskDraft) => Boolean(draft.title));
+const onSave = mock<(draft: TaskDraft, baseline: TaskDraft, taskId?: string) => Promise<boolean>>(async draft => Boolean(draft.title));
 let browser: Window;
 let root: Root;
 let host: HTMLDivElement;
@@ -93,10 +93,10 @@ afterAll(async () => {
   mock.restore();
 });
 
-async function render(visible = true) {
+async function render(visible = true, snapshot = board) {
   await act(async () => root.render(
     <PageVisibility.Provider value={visible}>
-      <TaskDetail board={board} task={board.tasks[0]} columnId="todo" actorId="owner"
+      <TaskDetail board={snapshot} task={snapshot.tasks[0]} columnId="todo" actorId="owner"
         onClose={onClose} onSave={onSave} onDelete={async () => true}
         client={{} as TaskBoardClient} onCommentsChanged={() => {}} />
     </PageVisibility.Provider>,
@@ -360,4 +360,24 @@ test('colored labels remain structured in the task draft sent to save', async ()
   await act(async () => host.querySelector<HTMLButtonElement>('[data-add-label]')!.click());
   await act(async () => saveButton().click());
   expect(onSave.mock.calls[0][0].labels).toEqual([{ name: 'Design', color: 'rose' }]);
+});
+
+test('background updates do not replace the editor baseline and a successful save advances it', async () => {
+  await render();
+  await type('Description', 'My description');
+  await switchPane('comments');
+  await type('Comment draft', 'Keep the editor open');
+  const remoteTask = { ...board.tasks[0], priority: 'high' as const,
+    checklist: [{ id: 'remote-item', title: 'Added by another member', done: false, assigneeId: null }] };
+  await render(true, { ...board, tasks: [remoteTask] });
+  await act(async () => saveButton().click());
+  expect(onSave.mock.calls[0][1]).toMatchObject({ description: '', priority: 'medium', checklist: [] });
+  expect(onSave.mock.calls[0][2]).toBe('task');
+  expect(onClose.mock.calls).toHaveLength(0);
+
+  await switchPane('details');
+  await type('Task title', 'My next edit');
+  await act(async () => saveButton().click());
+  expect(onSave.mock.calls[1][1]).toMatchObject({ title: 'Original task', description: 'My description' });
+  expect(onSave.mock.calls[1][0].title).toBe('My next edit');
 });

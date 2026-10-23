@@ -101,7 +101,15 @@ function TaskBoardsContent({ projectId, actorId }: { projectId: string; actorId:
     finally { pending.current = false; setBusy(false); }
   }
   function refresh() { void query.invalidateQueries({ queryKey: ['task-boards'] }); void query.invalidateQueries({ queryKey: ['task-board'] }); }
-  function saveTask(draft: TaskDraft, taskId?: string) { return mutate(() => taskId ? client.updateTask(board!.id, taskId, draft) : client.addTask(board!.id, draft)); }
+  function saveTask(draft: TaskDraft, baseline: TaskDraft, taskId?: string) {
+    if (!taskId) return mutate(() => client.addTask(board!.id, draft));
+    // Compare against the editor's saved baseline, not a background refetch:
+    // untouched fields may have been changed by another board member.
+    const patch = Object.fromEntries((Object.keys(draft) as (keyof TaskDraft)[])
+      .filter(key => JSON.stringify(draft[key]) !== JSON.stringify(baseline[key]))
+      .map(key => [key, draft[key]]));
+    return Object.keys(patch).length ? mutate(() => client.updateTask(board!.id, taskId, patch)) : Promise.resolve(true);
+  }
   async function createView(draft: CreateTaskBoardViewInput): Promise<TaskBoardView | null> {
     let created: TaskBoardView | null = null;
     const ok = await mutate(async () => {
@@ -112,7 +120,7 @@ function TaskBoardsContent({ projectId, actorId }: { projectId: string; actorId:
     return ok ? created : null;
   }
   function saveCalendarTask(draft: TaskDraft, original?: BoardTask) {
-    if (!original) return saveTask(draft);
+    if (!original) return mutate(() => client.addTask(board!.id, draft));
     const patch = scheduleTaskPatch(original, draft);
     return Object.keys(patch).length ? mutate(() => client.updateTask(board!.id, original.id, patch)) : Promise.resolve(true);
   }

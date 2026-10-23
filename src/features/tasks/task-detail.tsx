@@ -29,7 +29,7 @@ export type TaskDetailProps = {
   columnId: string;
   actorId: string;
   onClose: () => void;
-  onSave: (draft: TaskDraft, taskId?: string) => Promise<boolean>;
+  onSave: (draft: TaskDraft, baseline: TaskDraft, taskId?: string) => Promise<boolean>;
   onDelete: (taskId: string) => Promise<boolean>;
   client: TaskBoardClient;
   onCommentsChanged: () => void;
@@ -151,7 +151,7 @@ export function TaskDetail({ board, task, columnId, actorId, onClose, onSave, on
     setFieldError(null);
     setBusy('save');
     try {
-      const saved = await onSave(next, task?.id);
+      const saved = await onSave(next, JSON.parse(baseline) as TaskDraft, task?.id);
       if (!active.current) return;
       if (saved) {
         if (commentDirtyRef.current) {

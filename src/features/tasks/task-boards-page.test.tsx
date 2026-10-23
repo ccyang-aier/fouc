@@ -3,7 +3,7 @@ import { Window } from 'happy-dom';
 import { act, useState, type ComponentProps, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import type { BoardTask, TaskBoardDetail, TaskBoardSummary } from '@fouc/shared/tasks';
-import type { BoardDraft } from './task-board-client';
+import type { BoardDraft, TaskDraft } from './task-board-client';
 import type { TaskDetailProps } from './task-detail';
 
 function makeBoard(id: string, name: string): TaskBoardDetail {
@@ -34,6 +34,12 @@ const api = {
   update: mock(async (id: string, draft: BoardDraft) => ({ ...fixtures.get(id)!, ...draft })),
   remove: mock(async () => ({ removed: true as const })),
   projectMembers: mock(async () => []),
+  updateTask: mock(async (id: string, taskId: string, patch: Partial<TaskDraft>) => {
+    const current = fixtures.get(id)!;
+    const next = { ...current, tasks: current.tasks.map(task => task.id === taskId ? { ...task, ...patch } : task) };
+    fixtures.set(id, next);
+    return next;
+  }),
 };
 
 let browser: Window;
@@ -48,9 +54,14 @@ function Control(props: ComponentProps<'button'>) {
 function MenuItem({ children, onSelect }: { children: ReactNode; onSelect?: () => void }) {
   return <button type="button" data-menu-item onClick={onSelect}>{children}</button>;
 }
-function EditorFixture({ task }: TaskDetailProps) {
+function EditorFixture({ task, onSave }: TaskDetailProps) {
   const [draft, setDraft] = useState(task?.title ?? '');
-  return <div data-task-editor><input aria-label="Task draft" value={draft} readOnly /><button type="button" onClick={() => setDraft('Unsaved task draft')}>Edit task draft</button></div>;
+  const [baseline] = useState<TaskDraft>(() => {
+    const { columnId, title, description, priority, assigneeIds, labels, dueDate, schedule, checklist } = task!;
+    return { columnId, title, description, priority, assigneeIds, labels, dueDate, schedule, checklist };
+  });
+  return <div data-task-editor><input aria-label="Task draft" value={draft} readOnly /><button type="button" onClick={() => setDraft('Unsaved task draft')}>Edit task draft</button>
+    <button type="button" data-save-task onClick={() => void onSave({ ...baseline, title: draft }, baseline, task?.id)}>Save task draft</button></div>;
 }
 function BoardFormFixture({ board, onSubmit, onClose }: {
   board?: TaskBoardDetail; onSubmit: (draft: BoardDraft) => Promise<boolean>; onClose: () => void;
@@ -115,6 +126,8 @@ beforeAll(async () => {
 beforeEach(async () => {
   await act(async () => root.render(null));
   directory = [boardA, boardB];
+  fixtures.set(boardA.id, boardA);
+  fixtures.set(boardB.id, boardB);
   failBackgroundDetail = false;
   for (const method of Object.values(api)) method.mockClear();
   focusManager.setFocused(true);
@@ -180,4 +193,27 @@ test.each(['settings', 'deletion'] as const)('removing Board A from the director
   expect(api.update.mock.calls).toHaveLength(0);
   expect(api.remove.mock.calls).toHaveLength(0);
   expect(boardB.name).toBe('Board B');
+});
+
+test('saving a detail edit preserves concurrent task moves, assignments and checklist changes', async () => {
+  await render();
+  await click('[data-open-task]');
+  await click('[data-task-editor] button');
+  const remoteTask = { ...boardA.tasks[0], columnId: 'in-progress', assigneeIds: ['teammate'],
+    checklist: [{ id: 'remote-item', title: 'New checklist item', done: true, assigneeId: null }] };
+  fixtures.set(boardA.id, { ...boardA, tasks: [remoteTask] });
+  const previousRequests = api.get.mock.calls.length;
+  await backgroundRefetch();
+  await until(() => api.get.mock.calls.length > previousRequests);
+  await click('[data-save-task]');
+  await until(() => api.updateTask.mock.calls.length === 1);
+  expect(api.updateTask.mock.calls[0]).toEqual([boardA.id, remoteTask.id, { title: 'Unsaved task draft' }]);
+  expect(fixtures.get(boardA.id)!.tasks[0]).toMatchObject({ ...remoteTask, title: 'Unsaved task draft' });
+});
+
+test('saving an unchanged detail does not write an outdated task snapshot', async () => {
+  await render();
+  await click('[data-open-task]');
+  await click('[data-save-task]');
+  expect(api.updateTask.mock.calls).toHaveLength(0);
 });

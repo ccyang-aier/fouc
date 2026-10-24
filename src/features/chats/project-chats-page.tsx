@@ -16,6 +16,7 @@ import { ChannelEmpty } from './channel-ui';
 import { channelClient } from './channel-client';
 import { useChannelWorkbench } from './use-channel-workbench';
 import { useChannelAssets } from './channel-data';
+import './channel-fonts.css';
 import styles from './channels.module.css';
 
 export function ProjectChatsPage() {

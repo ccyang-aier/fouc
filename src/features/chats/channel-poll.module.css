@@ -1,26 +1,26 @@
-section.poll { width:400px; max-width:100%; margin:11px 0 4px; padding:15px; border-radius:13px; background:var(--panel); font-family:var(--font-channel-sans); }
-.label { display:flex; align-items:center; gap:6px; color:var(--muted); font-size:11px; line-height:17px; }
+section.poll { width:340px; max-width:100%; margin:8px 0 3px; padding:12px; border-radius:10px; background:var(--panel); font-family:var(--font-channel-sans); }
+.label { display:flex; align-items:center; gap:5px; color:var(--muted); font-size:10px; line-height:15px; }
 .label > svg { color:var(--info-ink); }
 .closed { display:inline-flex; align-items:center; gap:4px; margin-left:auto; padding:1px 5px; border-radius:4px; background:var(--surface-subtle); font-size:10px; }
-.poll h4 { margin:8px 0 13px; color:var(--ink); font-size:14px; font-weight:600; line-height:22px; overflow-wrap:anywhere; }
-.options { display:flex; flex-direction:column; gap:8px; }
-button.option { position:relative; isolation:isolate; display:flex; justify-content:flex-start; width:100%; height:auto; min-height:40px; padding:9px 10px; overflow:hidden; border:1px solid var(--control-border); border-radius:8px; box-shadow:none; outline:none; white-space:normal; text-align:left; transform:none; }
+.poll h4 { margin:6px 0 10px; color:var(--ink); font-size:13px; font-weight:600; line-height:20px; overflow-wrap:anywhere; }
+.options { display:flex; flex-direction:column; gap:6px; }
+button.option { position:relative; isolation:isolate; display:flex; justify-content:flex-start; width:100%; height:auto; min-height:32px; padding:6px 8px; overflow:hidden; border:1px solid var(--control-border); border-radius:6px; box-shadow:none; outline:none; white-space:normal; text-align:left; transform:none; }
 .option:disabled { opacity:1; cursor:default; }
 .option[aria-pressed="true"] { --action-state-bg:color-mix(in srgb,var(--info-soft) 30%,var(--panel)); --action-state-ink:var(--info-ink); border-color:var(--info-soft-line); background:color-mix(in srgb,var(--info-soft) 30%,var(--panel)); }
 .option:focus-visible { border-color:var(--info-ink); box-shadow:none; outline:none; }
-.option [data-slot="button-content"],.optionContent { display:flex; align-items:center; gap:9px; width:100%; min-width:0; }
+.option [data-slot="button-content"],.optionContent { display:flex; align-items:center; gap:7px; width:100%; min-width:0; }
 .optionContent { position:relative; z-index:1; }
 .marker { flex-shrink:0; color:var(--muted); }
 .option[aria-pressed="true"] .marker { color:var(--info); }
-.optionLabel { flex:1; min-width:0; color:var(--ink-soft); font-size:13px; font-weight:400; line-height:20px; overflow-wrap:anywhere; }
+.optionLabel { flex:1; min-width:0; color:var(--ink-soft); font-size:12px; font-weight:400; line-height:18px; overflow-wrap:anywhere; }
 .option[aria-pressed="true"] .optionLabel { color:var(--info-ink); font-weight:500; }
-.percentage { flex-shrink:0; color:var(--muted); font-size:12px; font-weight:400; font-variant-numeric:tabular-nums; }
+.percentage { flex-shrink:0; color:var(--muted); font-size:11px; font-weight:400; font-variant-numeric:tabular-nums; }
 .option[aria-pressed="true"] .percentage { color:var(--info-ink); }
 .resultFill { position:absolute; inset:0; z-index:0; pointer-events:none; transform-origin:left center; background:var(--surface-subtle); transition:transform 240ms cubic-bezier(.22,1,.36,1); }
 .option[aria-pressed="true"] .resultFill { background:var(--info-soft); }
-.footer { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:14px; min-height:22px; color:var(--muted); font-size:11px; line-height:18px; }
+.footer { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:10px; min-height:20px; color:var(--muted); font-size:10px; line-height:16px; }
 .voters,.voted { display:inline-flex; align-items:center; gap:6px; }
 .voted { color:var(--info-ink); }
 .portraits { display:inline-flex; padding-left:4px; }
 .portraits > span { margin-left:-4px; border:1px solid var(--panel); }
-.hint { margin:5px 0 0; color:var(--muted); font-size:11px; line-height:17px; }
+.hint { margin:4px 0 0; color:var(--muted); font-size:10px; line-height:15px; }

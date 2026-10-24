@@ -1,17 +1,17 @@
 /* The explicit dialog selector outranks the shared .dialog regardless of lazy CSS order. */
-dialog.previewDialog { width:min(780px,calc(100vw - 64px)); height:min(740px,calc(100dvh - 80px)); max-height:calc(100dvh - 80px); overflow:hidden; border-radius:13px; font-family:var(--font-channel-sans); }
-dialog.previewDialog.readingDialog { height:fit-content; min-height:min(420px,calc(100dvh - 80px)); max-height:min(740px,calc(100dvh - 80px)); }
-dialog.previewDialog.compact { height:min(420px,calc(100dvh - 80px)); }
-dialog.previewDialog>header { flex-shrink:0; gap:12px; padding:17px 20px; border-bottom:var(--separator-width) solid var(--separator-color); }
+dialog.previewDialog { --dialog-footer-inset:16px; width:min(720px,calc(100vw - 48px)); height:fit-content; min-height:min(300px,calc(100dvh - 64px)); max-height:min(660px,calc(100dvh - 64px)); overflow:hidden; border-radius:12px; font-family:var(--font-channel-sans); }
+dialog.previewDialog.readingDialog { max-height:min(600px,calc(100dvh - 64px)); }
+dialog.previewDialog.compact { max-height:min(360px,calc(100dvh - 64px)); }
+dialog.previewDialog>header { flex-shrink:0; gap:10px; padding:12px 16px; border-bottom:var(--separator-width) solid var(--separator-color); }
 dialog.previewDialog>header>div { flex:1; min-width:0; }
-dialog.previewDialog>header h2 { overflow:hidden; color:var(--ink); font-family:var(--font-channel-sans); font-size:14px; font-weight:550; letter-spacing:0; line-height:1.65; text-overflow:ellipsis; white-space:nowrap; }
-dialog.previewDialog>header>button { width:28px; height:28px; flex-shrink:0; border-radius:6px; }
-.fileMark { display:flex; align-items:center; justify-content:center; width:42px; height:46px; flex-shrink:0; border:1px solid var(--resource-card-border); border-radius:10px; color:var(--info-ink); background:var(--surface-subtle); }
-.metadata { display:flex; align-items:center; gap:7px; min-width:0; margin-top:3px; color:var(--muted); font-size:12px; font-weight:400; line-height:1.6; }
+dialog.previewDialog>header h2 { overflow:hidden; color:var(--ink); font-family:var(--font-channel-sans); font-size:13px; font-weight:550; letter-spacing:0; line-height:1.5; text-overflow:ellipsis; white-space:nowrap; }
+dialog.previewDialog>header>button { width:26px; height:26px; flex-shrink:0; border-radius:6px; }
+.fileMark { display:flex; align-items:center; justify-content:center; width:36px; height:40px; flex-shrink:0; border:1px solid var(--resource-card-border); border-radius:8px; color:var(--info-ink); background:var(--surface-subtle); }
+.metadata { display:flex; align-items:center; gap:6px; min-width:0; margin-top:2px; color:var(--muted); font-size:12px; font-weight:400; line-height:1.5; }
 .metadata>span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .metadata>span:first-child { max-width:180px; letter-spacing:.025em; }
 .readingArea { flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; background:var(--surface-subtle); }
-.document { min-height:100%; max-width:720px; margin:0 auto; padding:32px 42px 44px; color:var(--ink-soft); background:var(--panel); font-family:var(--font-channel-reading); font-size:14px; line-height:1.85; overflow-wrap:anywhere; }
+.document { min-height:100%; max-width:680px; margin:0 auto; padding:22px 28px 28px; color:var(--ink-soft); background:var(--panel); font-family:var(--font-channel-reading); font-size:14px; line-height:1.85; overflow-wrap:anywhere; }
 .document>:first-child { margin-top:0; }.document>:last-child { margin-bottom:0; }
 .document :is(h1,h2,h3,h4,h5,h6) { margin:1.6em 0 .65em; color:var(--ink); font-weight:600; line-height:1.55; text-wrap:pretty; }
 .document h1 { margin-bottom:1em; padding-bottom:.65em; border-bottom:1px solid var(--line); font-size:23px; letter-spacing:-.02em; }
@@ -30,23 +30,23 @@ dialog.previewDialog>header>button { width:28px; height:28px; flex-shrink:0; bor
 .document input[type="checkbox"] { width:12px; height:12px; margin-right:5px; accent-color:var(--ink); }
 .embeddedImage { display:inline-flex; align-items:center; gap:5px; padding:3px 8px; color:var(--muted-strong); background:var(--surface-subtle); border:1px solid var(--line); border-radius:5px; font-size:11px; }
 .codeDocument { min-height:100%; background:var(--panel); }
-.codeHeading { display:flex; align-items:center; justify-content:space-between; gap:15px; position:sticky; top:0; z-index:1; padding:10px 20px; border-bottom:1px solid var(--line); color:var(--muted); background:var(--surface-subtle); font-size:10px; line-height:1.6; }
+.codeHeading { display:flex; align-items:center; justify-content:space-between; gap:15px; position:sticky; top:0; z-index:1; padding:8px 16px; border-bottom:1px solid var(--line); color:var(--muted); background:var(--surface-subtle); font-size:10px; line-height:1.6; }
 .codeHeading>span:first-child { color:var(--muted-strong); letter-spacing:.06em; }
-.codeDocument pre { margin:0; padding:20px 24px 32px; color:var(--ink-soft); line-height:1.9; tab-size:2; }
-.imageStage { display:flex; align-items:center; justify-content:center; width:100%; height:100%; min-height:220px; padding:22px; }
-.image { display:block; width:auto; height:auto; max-width:100%; max-height:100%; flex:none; object-fit:contain; border-radius:4px; }
+.codeDocument pre { margin:0; padding:16px 20px 24px; color:var(--ink-soft); line-height:1.9; tab-size:2; }
+.imageStage { display:flex; align-items:center; justify-content:center; width:100%; height:auto; min-height:180px; padding:16px; }
+.image { display:block; width:auto; height:auto; max-width:100%; max-height:min(480px,calc(100dvh - 192px)); flex:none; object-fit:contain; border-radius:4px; }
 .imageStage[data-actual-size="true"] { align-items:flex-start; justify-content:flex-start; width:max-content; min-width:100%; height:max-content; min-height:100%; }
 .imageStage[data-actual-size="true"] .image { max-width:none; max-height:none; }
-.pdf { display:block; width:100%; height:100%; min-height:300px; border:0; }
-.state { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; min-height:100%; padding:32px; text-align:center; }
+.pdf { display:block; width:100%; height:min(460px,calc(100dvh - 184px)); min-height:220px; border:0; }
+.state { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; min-height:100%; padding:22px; text-align:center; }
 .state>[data-app-alert] { max-width:520px; text-align:left; }
 .state h3 { margin:0; color:var(--ink-soft); font-size:14px; font-weight:550; line-height:1.6; }
 .state p { max-width:330px; margin:0; color:var(--muted); font-size:12px; line-height:1.8; }
-.unsupportedIcon { display:flex; align-items:center; justify-content:center; width:66px; height:70px; margin-bottom:3px; color:var(--muted); border:1px solid var(--resource-card-border); border-radius:15px; background:var(--panel); }
-.loading { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:15px; min-height:100%; padding:28px; }
-.loadingSheet { display:flex; flex-direction:column; gap:13px; width:min(300px,75%); padding:26px; border:1px solid var(--resource-card-border); border-radius:8px; background:var(--panel); }
+.unsupportedIcon { display:flex; align-items:center; justify-content:center; width:52px; height:56px; margin-bottom:2px; color:var(--muted); border:1px solid var(--resource-card-border); border-radius:12px; background:var(--panel); }
+.loading { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; min-height:100%; padding:18px; }
+.loadingSheet { display:flex; flex-direction:column; gap:10px; width:min(240px,75%); padding:18px; border:1px solid var(--resource-card-border); border-radius:7px; background:var(--panel); }
 .loadingSheet span { height:7px; border-radius:3px; background:var(--line); }.loadingSheet span:first-child { width:60%; height:12px; margin-bottom:11px; }.loadingSheet span:nth-child(3n) { width:75%; }
 .loading p { margin:0; color:var(--muted); font-size:11px; }
 dialog.previewDialog>footer.footer { border-top:var(--separator-width) solid var(--separator-color); }
 .readOnly { display:flex; align-items:center; gap:5px; margin-right:auto; color:var(--muted); font-size:11px; white-space:nowrap; }
-@media(max-width:720px) { dialog.previewDialog { width:calc(100vw - 32px); height:calc(100dvh - 56px); max-height:calc(100dvh - 56px); }dialog.previewDialog.compact { height:min(420px,calc(100dvh - 56px)); }dialog.previewDialog>header { padding:14px 16px; }.document { padding:24px 24px 34px; }.document h1 { font-size:21px; }.metadata>span:first-child { max-width:110px; }.imageStage { padding:14px; } }
+@media(max-width:720px) { dialog.previewDialog { width:calc(100vw - 32px); max-height:calc(100dvh - 56px); }dialog.previewDialog.readingDialog { max-height:min(600px,calc(100dvh - 56px)); }dialog.previewDialog.compact { max-height:min(360px,calc(100dvh - 56px)); }dialog.previewDialog>header { padding:10px 14px; }.document { padding:20px 22px 24px; }.document h1 { font-size:21px; }.metadata>span:first-child { max-width:110px; }.imageStage { padding:12px; } }

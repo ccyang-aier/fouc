@@ -1,11 +1,8 @@
 {
   "sources": {
-    "fluent": {
-      "repository": "microsoft/fluentui-emoji",
-      "revision": "1ffb34c752ecf5d402f04cfb4b392c77f57c54bc"
-    },
     "twemoji": {
       "repository": "jdecked/twemoji",
+      "version": "17.0.2",
       "revision": "388f518b756404152f128a3539f5e7f9a6f1ebd6"
     },
     "cldr": {
@@ -15,14 +12,12 @@
     "unicode": "https://unicode.org/Public/17.0.0/emoji/emoji-test.txt"
   },
   "sizes": {
-    "fluent": 1594,
-    "twemoji": 2415,
+    "twemoji": 4009,
     "catalog": 1914,
-    "bytes": 11930710
+    "bytes": 10121593
   },
-  "conversion": {
-    "size": 96,
-    "format": "webp",
-    "quality": 84
+  "artwork": {
+    "format": "svg",
+    "modified": false
   }
 }

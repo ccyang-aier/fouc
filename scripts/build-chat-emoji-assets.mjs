@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
-import { createRequire } from 'node:module';
-import { createWriteStream, realpathSync } from 'node:fs';
+import { createWriteStream } from 'node:fs';
 import { mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -9,11 +8,10 @@ import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { fileURLToPath } from 'node:url';
 
-// Rebuilds checked-in artwork and catalogs only. Source PNGs stay outside the repository.
-// Existing Next.js/sharp supplies conversion; no application dependency is added.
+// Rebuilds the local Twemoji SVG artwork and Unicode/CLDR search catalogs.
+// Official archives stay in a reusable source cache outside the repository.
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const fluent = { repository: 'microsoft/fluentui-emoji', revision: '1ffb34c752ecf5d402f04cfb4b392c77f57c54bc' };
-const twemoji = { repository: 'jdecked/twemoji', revision: '388f518b756404152f128a3539f5e7f9a6f1ebd6' }; // v17.0.2
+const twemoji = { repository: 'jdecked/twemoji', version: '17.0.2', revision: '388f518b756404152f128a3539f5e7f9a6f1ebd6' };
 const cldr = { repository: 'unicode-org/cldr-json', revision: '91c267402229a59e3ef2774544f001bf959e8809' };
 const cache = path.join(tmpdir(), 'fouc-chat-emoji-sources');
 const output = path.join(root, 'public', 'emoji');
@@ -117,27 +115,19 @@ function unicodeNames(text) {
 
 async function main() {
   await mkdir(cache, { recursive: true });
-  const [fluentTree, twemojiTree] = await Promise.all([tree(fluent), tree(twemoji)]);
-  const defaults = fluentTree.filter(entry => /\/3D\/.*\.png$/i.test(entry.path) && (entry.path.split('/').length === 4 || entry.path.includes('/Default/3D/')));
-  const metadata = fluentTree.filter(entry => /\/metadata\.json$/.test(entry.path));
+  const twemojiTree = await tree(twemoji);
   const vector = twemojiTree.filter(entry => /^assets\/svg\/.*\.svg$/.test(entry.path));
-  const inventory = { fluentDefault: defaults.length, fluentSourceBytes: defaults.reduce((sum, entry) => sum + entry.size, 0), twemojiSource: vector.length };
+  const inventory = { twemoji: vector.length, sourceBytes: vector.reduce((sum, entry) => sum + entry.size, 0) };
   if (process.argv.includes('--inventory')) { console.log(JSON.stringify(inventory, null, 2)); return; }
-  await Promise.all([
-    prepareArchive(fluent, ['assets/*/metadata.json', 'assets/*/3D/*.png', 'LICENSE']),
-    prepareArchive(twemoji, ['assets/svg/*.svg', 'LICENSE-GRAPHICS']),
-  ]);
-  const require = createRequire(realpathSync(path.join(root, 'node_modules', 'next', 'package.json')));
-  const sharp = require('sharp');
-  sharp.cache({ memory: 32 }); sharp.concurrency(2);
-  await Promise.all(['fluent', 'twemoji'].map(folder => mkdir(path.join(output, folder), { recursive: true })));
+  await prepareArchive(twemoji, ['assets/svg/*.svg', 'LICENSE-GRAPHICS']);
+  await mkdir(path.join(output, 'twemoji'), { recursive: true });
   const unicodeUrl = 'https://unicode.org/Public/17.0.0/emoji/emoji-test.txt';
-  const [unicode, zhSource, zhDerived, enSource, licenseFluent, licenseTwemoji, licenseUnicode] = await Promise.all([
+  const [unicode, zhSource, zhDerived, enSource, licenseTwemoji, licenseUnicode] = await Promise.all([
     source(unicodeUrl),
     source(raw(cldr, 'cldr-json/cldr-annotations-full/annotations/zh/annotations.json')),
     source(raw(cldr, 'cldr-json/cldr-annotations-derived-full/annotationsDerived/zh/annotations.json')),
     source(raw(cldr, 'cldr-json/cldr-annotations-full/annotations/en/annotations.json')),
-    source(raw(fluent, 'LICENSE')), source(raw(twemoji, 'LICENSE-GRAPHICS')), source(raw(cldr, 'LICENSE')),
+    source(raw(twemoji, 'LICENSE-GRAPHICS')), source(raw(cldr, 'LICENSE')),
   ]);
   const names = unicodeNames(unicode.toString('utf8'));
   const annotations = bytes => {
@@ -146,20 +136,13 @@ async function main() {
   };
   const chinese = new Map([...annotations(zhSource), ...annotations(zhDerived)].map(([emoji, annotation]) => [keyOf(emoji), annotation]));
   const english = new Map(annotations(enSource).map(([emoji, annotation]) => [keyOf(emoji), annotation]));
-  const defaultFiles = new Map(defaults.map(entry => [entry.path.split('/')[1], entry]));
-  const manifests = await parallel(metadata, async entry => {
-    const value = JSON.parse((await source(raw(fluent, entry.path))).toString('utf8'));
-    const file = defaultFiles.get(entry.path.split('/')[1]);
-    if (!file || !value.glyph) throw new Error(`Missing default artwork for ${entry.path}`);
-    return { emoji: value.glyph, name: value.cldr, group: value.group, keywords: [...(value.keywords ?? []), ...(value.mappedToEmoticons ?? [])], file };
-  }, 'Fluent metadata');
-  const artworks = new Map(manifests.map(entry => [keyOf(entry.emoji), { ...entry, style: 'fluent', filename: `fluent/${keyOf(entry.emoji)}.webp` }]));
+  const artworks = new Map();
   for (const file of vector) {
     const code = path.basename(file.path, '.svg');
     const key = keyOf(decode(code));
     if (artworks.has(key)) continue;
     const label = names.get(key);
-    artworks.set(key, { emoji: label?.emoji ?? decode(code), name: label?.name ?? code, group: label?.group ?? 'Component', keywords: [], file, style: 'twemoji', filename: `twemoji/${key}.svg` });
+    artworks.set(key, { emoji: label?.emoji ?? decode(code), name: label?.name ?? code, group: label?.group ?? 'Component', file, filename: `twemoji/${key}.svg` });
   }
   const assetMap = {};
   const catalog = [];
@@ -169,7 +152,7 @@ async function main() {
     const zh = chinese.get(key);
     const en = english.get(key);
     catalog.push({ emoji: entry.emoji, name: entry.name, zh: zh?.tts?.[0] ?? entry.name, group: entry.group,
-      keywords: [...new Set([...entry.keywords, ...(zh?.default ?? []), ...(en?.default ?? [])])].join(' ') });
+      keywords: [...new Set([...(zh?.default ?? []), ...(en?.default ?? [])])].join(' ') });
   }
   // Unicode ordering gives faces, gestures, animals and objects a familiar discovery order.
   const order = new Map([...names.keys()].map((key, index) => [key, index]));
@@ -177,25 +160,21 @@ async function main() {
   await parallel([...artworks.values()], async entry => {
     const target = path.join(output, entry.filename);
     try { if ((await stat(target)).size > 0) return; } catch (error) { if (error.code !== 'ENOENT') throw error; }
-    const bytes = await source(raw(entry.style === 'fluent' ? fluent : twemoji, entry.file.path));
-    if (entry.style === 'fluent') await sharp(bytes).resize(96, 96, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 84, alphaQuality: 95, effort: 5 }).toFile(target);
-    else {
-      const svg = bytes.toString('utf8');
-      if (!svg.startsWith('<svg') || /<script|\bon\w+\s*=|(?:href|src)\s*=\s*["'](?:https?:|\/\/)/i.test(svg)) throw new Error(`Unexpected external or executable SVG content: ${entry.file.path}`);
-      await writeFile(target, bytes);
-    }
+    const bytes = await source(raw(twemoji, entry.file.path));
+    const svg = bytes.toString('utf8');
+    if (!svg.startsWith('<svg') || /<script|\bon\w+\s*=|(?:href|src)\s*=\s*["'](?:https?:|\/\/)/i.test(svg)) throw new Error(`Unexpected external or executable SVG content: ${entry.file.path}`);
+    await writeFile(target, bytes);
   }, 'Local artwork');
   const sizes = await Promise.all([...artworks.values()].map(entry => stat(path.join(output, entry.filename))));
-  const attribution = { sources: { fluent, twemoji, cldr, unicode: unicodeUrl }, sizes: { fluent: [...artworks.values()].filter(entry => entry.style === 'fluent').length,
-    twemoji: [...artworks.values()].filter(entry => entry.style === 'twemoji').length, catalog: catalog.length, bytes: sizes.reduce((sum, item) => sum + item.size, 0) }, conversion: { size: 96, format: 'webp', quality: 84 } };
+  const attribution = { sources: { twemoji, cldr, unicode: unicodeUrl }, sizes: { twemoji: artworks.size, catalog: catalog.length,
+    bytes: sizes.reduce((sum, item) => sum + item.size, 0) }, artwork: { format: 'svg', modified: false } };
   await Promise.all([
     writeFile(path.join(component, 'emoji-assets.json'), JSON.stringify(assetMap) + '\n'),
     writeFile(path.join(component, 'emoji-catalog.json'), JSON.stringify(catalog) + '\n'),
-    writeFile(path.join(output, 'fluent-LICENSE.txt'), licenseFluent),
     writeFile(path.join(output, 'twemoji-LICENSE-GRAPHICS.txt'), licenseTwemoji),
     writeFile(path.join(output, 'unicode-LICENSE.txt'), licenseUnicode),
     writeFile(path.join(output, 'sources.json'), JSON.stringify(attribution, null, 2) + '\n'),
-    writeFile(path.join(output, 'ATTRIBUTION.txt'), 'Chat emoji artwork\n\nMicrosoft Fluent Emoji 3D artwork, Copyright Microsoft Corporation, is used under the MIT license. The default artwork is resized and encoded as WebP. Source: https://github.com/microsoft/fluentui-emoji\n\nMissing Unicode 17 and skin-tone variants use Twemoji graphics by Twitter, Inc. and other contributors under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Source: https://github.com/jdecked/twemoji. The original SVG artwork is retained.\n\nEmoji names, grouping and Chinese/English search annotations use Unicode Emoji 17 and Unicode CLDR data under the accompanying Unicode license. Source: https://github.com/unicode-org/cldr-json\n\nExact revisions and conversion settings are recorded in sources.json. Rebuild with `node scripts/build-chat-emoji-assets.mjs`; no CDN is contacted by the application at runtime.\n'),
+    writeFile(path.join(output, 'ATTRIBUTION.txt'), 'Chat emoji artwork\n\nAll emoji artwork uses Twemoji 17.0.2 graphics by Twitter, Inc. and other contributors under Creative Commons Attribution 4.0 International (CC BY 4.0): https://creativecommons.org/licenses/by/4.0/\nSource: https://github.com/jdecked/twemoji/tree/v17.0.2\nThe original SVG artwork is distributed without modification.\n\nEmoji names, grouping and Chinese/English search annotations use Unicode Emoji 17 and Unicode CLDR data under the accompanying Unicode license. Source: https://github.com/unicode-org/cldr-json\n\nExact revisions are recorded in sources.json. Rebuild with `node scripts/build-chat-emoji-assets.mjs`; no CDN is contacted by the application at runtime.\n'),
   ]);
   console.log(JSON.stringify(attribution, null, 2));
 }

@@ -42,7 +42,8 @@ async function search(value: string) {
 test('the picker shows local image artwork, searches Chinese and English, closes after selection and remembers recent use', async () => {
   await open();
   expect(options().length).toBeGreaterThan(100);
-  expect(options()[0].querySelector('img')?.getAttribute('src')).toStartWith('/emoji/fluent/');
+  expect(options()[0].querySelector('img')?.getAttribute('src')).toStartWith('/emoji/twemoji/');
+  expect(options()[0].querySelector('img')?.getAttribute('width')).toBe('24');
   expect(options()[0].textContent).toBe('');
   await search('点赞');
   const thumb = options().find(option => option.querySelector('img')?.getAttribute('alt') === '👍')!;
@@ -56,7 +57,7 @@ test('the picker shows local image artwork, searches Chinese and English, closes
   expect(options()[0].querySelector('img')?.getAttribute('alt')).toBe('👍');
   await search('rocket');
   expect(options().some(option => option.querySelector('img')?.getAttribute('alt') === '🚀')).toBe(true);
-  expect(document.querySelector<HTMLAnchorElement>('a[href="/emoji/ATTRIBUTION.txt"]')?.textContent).toBe('Fluent Emoji · Twemoji');
+  expect(document.querySelector<HTMLAnchorElement>('a[href="/emoji/ATTRIBUTION.txt"]')?.textContent).toBe('Twemoji');
 });
 
 test('keyboard navigation follows the eight-column grid and Escape restores the trigger', async () => {

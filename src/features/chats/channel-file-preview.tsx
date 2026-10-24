@@ -100,7 +100,7 @@ function FilePreviewSession({ attachment, projectId, channelId, onClose }: {
   const failureHelp = state.status === 'failed' ? state.error === 'forbidden' ? 'forbiddenHelp' : state.error === 'missing' ? 'missingHelp' : state.error === 'render' ? 'renderFailedHelp' : 'failedHelp' : 'failedHelp';
 
   return <ChannelPanelModal title={name} onClose={onClose} className={`${styles.previewDialog} ${kind === 'markdown' || kind === 'text' ? styles.readingDialog : ''} ${compact ? styles.compact : ''}`}
-    headerIcon={<span className={styles.fileMark}><ChannelFileIcon attachment={attachment} size={27} /></span>}
+    headerIcon={<span className={styles.fileMark}><ChannelFileIcon attachment={attachment} size={24} /></span>}
     metadata={<span className={styles.metadata}><span>{format}</span><span aria-hidden>·</span><span>{formatFileSize(attachment.size, locale)}</span>{dimensions && <><span aria-hidden>·</span><span>{dimensions.width} × {dimensions.height}</span></>}</span>}>
     <div className={styles.readingArea} aria-label={t('preview')} data-kind={kind}>
       {state.status === 'loading' ? <div className={styles.loading} role="status" aria-label={t('loading')}><div className={styles.loadingSheet}>{[0, 1, 2, 3, 4, 5].map(line => <span key={line} />)}</div><p>{t('loading')}</p></div>

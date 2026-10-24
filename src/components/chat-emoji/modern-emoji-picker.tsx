@@ -66,7 +66,7 @@ export function ModernEmojiPicker({ onSelect, disabled, label, className, mode =
       if (shown) close();
       else { const saved = readRecent(); setQuery(''); setActive(null); setRecent(saved); setGroup('Smileys & Emotion'); setLocalOpen(true); onOpenChange?.(true); }
     }}><Smiley size={16} aria-hidden /></button></TooltipTrigger><TooltipContent>{title}</TooltipContent></Tooltip>
-    {shown && anchor && <AnchoredPopover anchor={anchor} onClose={close} label={title} width={340} className={styles.surface}>
+    {shown && anchor && <AnchoredPopover anchor={anchor} onClose={close} label={title} width={304} className={styles.surface}>
       <div className={styles.picker} data-emoji-picker="">
         <div className={styles.searchWrap}><MagnifyingGlass size={15} aria-hidden /><input className={styles.search} type="search" data-autofocus autoComplete="off"
           value={query} onChange={event => { setQuery(event.target.value); setActive(null); }} onKeyDown={navigate} aria-label={t('search')} placeholder={t('search')} /></div>
@@ -78,12 +78,12 @@ export function ModernEmojiPicker({ onSelect, disabled, label, className, mode =
           <div ref={options} className={styles.grid} role="group" aria-label={t('choose')} onKeyDown={navigate}>
             {entries.map((entry, index) => <button key={entry.emoji} type="button" data-emoji-option="" className={`fouc-action ${styles.option}`} data-surface="plain" aria-label={name(entry)}
               tabIndex={active === entry.emoji || active === null && index === 0 ? 0 : -1} onMouseEnter={() => setActive(entry.emoji)} onFocus={() => setActive(entry.emoji)} onClick={() => choose(entry.emoji)}>
-              <EmojiGlyph emoji={entry.emoji} size={28} />
+              <EmojiGlyph emoji={entry.emoji} size={24} />
             </button>)}
           </div>
           {!entries.length && <div className={styles.empty} role="status"><strong>{t(query.trim() || group !== 'recent' ? 'noResults' : 'noRecent')}</strong><span>{t(query.trim() || group !== 'recent' ? 'noResultsHint' : 'recentHint')}</span></div>}
         </div>
-        <div className={styles.preview}>{current ? <><EmojiGlyph emoji={current.emoji} size={27} /><span>{name(current)}</span></> : <span className={styles.previewHint}>{t('choose')}</span>}<a className={styles.attribution} href="/emoji/ATTRIBUTION.txt" target="_blank" rel="noreferrer" title={t('license')}>Fluent Emoji · Twemoji</a></div>
+        <div className={styles.preview}>{current ? <><EmojiGlyph emoji={current.emoji} size={22} /><span>{name(current)}</span></> : <span className={styles.previewHint}>{t('choose')}</span>}<a className={styles.attribution} href="/emoji/ATTRIBUTION.txt" target="_blank" rel="noreferrer" title={t('license')}>Twemoji</a></div>
       </div>
     </AnchoredPopover>}
   </>;

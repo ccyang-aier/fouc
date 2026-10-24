@@ -79,7 +79,7 @@ export function ChannelFormDialog({ channel, projectMembers, busy, onClose, onSu
         </div></details>
         {channel ? <fieldset className={styles.permissionFields}><legend>{t('permissions')}</legend>
           {(['invite', 'post'] as const).map(key => <label key={key} className={styles.permissionRow}><span>{t(key === 'invite' ? 'invitePermission' : 'postPermission')}</span><select aria-label={t(key === 'invite' ? 'invitePermission' : 'postPermission')} value={permissions[key]} onChange={event => setPermissions(current => ({ ...current, [key]: event.target.value as 'members' | 'admins' }))}><option value="members">{t('everyone')}</option><option value="admins">{t('admins')}</option></select></label>)}
-        </fieldset> : projectMembers.length > 0 && <div className={styles.field}><span>{t('addInitial')}</span><ChannelPeoplePicker people={projectMembers} selected={memberIds} onChange={setMemberIds} /></div>}
+        </fieldset> : projectMembers.length > 0 && <details className={styles.optionDetails}><summary><CaretRight size={12} /><span>{t('addInitial')}</span>{memberIds.length > 0 && <small>{t('selected', { count: memberIds.length })}</small>}</summary><div><ChannelPeoplePicker people={projectMembers} selected={memberIds} onChange={setMemberIds} /></div></details>}
       </div>
       <footer><Button type="button" variant="outline" size="sm" disabled={busy} onClick={onClose}>{t('cancel')}</Button><Button type="submit" size="sm" loading={busy} disabled={!name.trim()}>{t(channel ? 'save' : 'create')}</Button></footer>
     </form>
@@ -117,7 +117,6 @@ export function ChannelAgentDialog({ members, installations, providers, actorUse
   return <ChannelPanelModal title={t('agentTitle')} onClose={onClose} busy={busy}>
     <form onSubmit={event => { event.preventDefault(); if (!busy && installation?.status === 'ready' && name.trim()) void run(() => onAdd(installation, name.trim())); }}>
       <div className={styles.dialogBody}>
-        <p className={styles.hint}>{t('agentDescription')}</p>
         <div className={styles.search}><MagnifyingGlass size={16} /><input data-autofocus aria-label={t('searchAgent')} placeholder={t('searchAgent')} value={search} onChange={event => setSearch(event.target.value)} /></div>
         <div className={styles.agentOptions}>
           {matching.map(item => {
@@ -167,7 +166,7 @@ export function ChannelTopicDialog({ busy, onClose, onSubmit }: { busy: boolean;
     <form onSubmit={event => { event.preventDefault(); if (!busy && title.trim() && body.trim()) void run(() => onSubmit(title.trim(), body.trim())); }}>
       <div className={styles.dialogBody}>
         <label className={styles.field}>{t('title')}<input data-autofocus value={title} onChange={event => setTitle(event.target.value)} maxLength={200} placeholder={t('titlePlaceholder')} required /></label>
-        <label className={styles.field}>{t('body')}<textarea rows={6} value={body} onChange={event => setBody(event.target.value)} maxLength={20000} placeholder={t('bodyPlaceholder')} required /></label>
+        <label className={styles.field}>{t('body')}<textarea rows={4} value={body} onChange={event => setBody(event.target.value)} maxLength={20000} placeholder={t('bodyPlaceholder')} required /></label>
       </div>
       <footer><Button type="button" variant="outline" size="sm" disabled={busy} onClick={onClose}>{t('cancel')}</Button><Button type="submit" size="sm" loading={busy} disabled={!title.trim() || !body.trim()}>{t('publishTopic')}</Button></footer>
     </form>

@@ -94,6 +94,7 @@ export const messages = defineMessages({
   agentBusy: ['已有 Agent 正在回复，请等待完成或先停止回复。', 'An agent is already responding. Wait for it to finish or stop the response first.'],
   serviceUnavailable: ['暂时无法连接聊天服务，请稍后重试。', 'The chat service could not be reached. Please try again.'],
   switchChannel: ['切换频道', 'Switch channel'],
+  channelActions: ['频道操作', 'Channel actions'],
   uploaded: ['已上传', 'Uploaded'],
   agentError_model_unavailable: ['当前模型不可用，请选择 Agent 提供的模型后重试。', 'The current model is unavailable. Choose a model offered by the agent and try again.'],
   chooseAgentModel: ['选择可用模型', 'Choose an available model'], errorDetails: ['错误详情', 'Error details'],

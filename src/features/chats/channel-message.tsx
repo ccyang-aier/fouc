@@ -44,7 +44,7 @@ export function ChannelMessage({ message, snapshot, onReply, onReact, onEdit, on
   }
   async function copy() { try { await navigator.clipboard.writeText(message.body); notify('success', t('messageCopied')); } catch { notify('error', t('failed')); } }
   return <article id={`channel-${compact ? 'thread-' : ''}message-${message.id}`} className={styles.message} data-threaded={!compact && replies.length > 0 || undefined} data-highlight={highlight || undefined} aria-label={`${author.name}: ${message.title ?? message.body.slice(0, 80)}`}>
-    <ChannelAvatar member={author} size={compact ? 28 : 36} />
+    <ChannelAvatar member={author} size={compact ? 28 : 32} />
     <div className={styles.messageBody}>
       {message.pinned && <div className={styles.pinnedLabel}><PushPin size={11} />{t('pinned')}</div>}
       <div className={styles.messageHeader}><strong>{author.name}</strong>{author.kind === 'agent' && <span className={styles.agentBadge}>Agent</span>}<time dateTime={message.createdAt} title={new Date(message.createdAt).toLocaleString(locale)}>{new Date(message.createdAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', hour12: false })}</time>{message.editedAt && <small>· {t('edited')}</small>}</div>

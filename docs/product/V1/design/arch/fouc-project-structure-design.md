@@ -68,7 +68,9 @@ Web 和桌面都能调用统一业务服务。普通 Web 用户不需要安装�
 
 ### 2.3 前端状态归属与当前实施边界
 
-shell 始终组合一套主导航、系统栏与当前工作面；features/project 拥有顶部项目切换和当前项目范围，features/home/chat 拥有按身份、来源和项目隔离的会话预览。工作台入口迁移既有 Dashboard 首页；features/tasks 管理真实服务端项目的多看板、Kanban、日历排期、分组表格、任务与成员授权，features/project/members 当前呈现本机成员目录与自由标签预览，团队结构为未开发空态；真实项目成员及角色接口由 modules/projects 持有，资产主页面仍为空状态；聊天呈现当前项目历史，Agents 复用真实设备管理。旧项目目录、内置项目导航、其它旧工作台分区与自动化模块清理删除。任务用例由业务服务 modules/tasks 持有，公开契约经 @fouc/shared/tasks 导出，接口位于 /api/projects/:projectId/task-boards 和 /api/projects/:projectId/task-members；五张任务资源表使用项目组合外键和看板 ACL 强制 RLS。知识库目录使用 /api/knowledge-bases?projectId=…，开放项目配置使用 /api/knowledge-bases/:knowledgeBaseId/projects，项目 CRUD 使用 /api/projects，成员目录与管理使用 /api/projects/:projectId/members；知识库文件夹、页面与协作继续保持原资源授权。
+shell 始终组合一套主导航、系统栏与当前工作面；features/project 拥有顶部项目切换和当前项目范围，features/home/chat 拥有按身份、来源和项目隔离的会话预览。工作台入口迁移既有 Dashboard 首页；features/tasks 管理真实服务端项目的多看板、Kanban、日历排期、分组表格、任务与成员授权，features/project/members 当前呈现本机成员目录与自由标签预览，团队结构为未开发空态；真实项目成员及角色接口由 modules/projects 持有，资产主页面仍为空状态；聊天由 features/chats 管理真实服务端项目频道、消息、成员与自有 Agent、话题、投票和频道资产，首页会话预览仍由 features/home/chat 独立维护；Agents 复用真实设备管理。旧项目目录、内置项目导航、其它旧工作台分区与自动化模块清理删除。任务用例由业务服务 modules/tasks 持有，公开契约经 @fouc/shared/tasks 导出，接口位于 /api/projects/:projectId/task-boards 和 /api/projects/:projectId/task-members；五张任务资源表使用项目组合外键和看板 ACL 强制 RLS。知识库目录使用 /api/knowledge-bases?projectId=…，开放项目配置使用 /api/knowledge-bases/:knowledgeBaseId/projects，项目 CRUD 使用 /api/projects，成员目录与管理使用 /api/projects/:projectId/members；知识库文件夹、页面与协作继续保持原资源授权。
+
+频道用例归业务服务 modules/chats，公开契约经 @fouc/shared/chats 导出，接口位于 /api/projects/:projectId/channels。chat_channel、chat_channel_member、chat_message 三张资源表通过项目组合外键、真实会话身份和频道成员策略强制 RLS；私有消息附件复用 S3 存储，资产目录投影同一消息附件，不引入第二份文件或知识库归属。前端只经设备公开 API 主动发起自己的 Agent 会话，再以频道 Agent 所有者身份回写实际输出，不让业务服务导入设备内部实现。消息轮询、历史分页、撤权缓存失效与写响应围栏归 features/chats；本机收藏、免打扰、已读和草稿均按完整身份项目范围隔离。
 
 本机 UI 恢复记录通过 `lib/project-ui-session` 存入 WebView／浏览器 IndexedDB，以完整项目范围为键。shell 拥有页签、顺序和激活页；页面功能通过明确命名的状态项保存草稿、筛选与浏览位置，聊天预览由 features/home/chat 维护。恢复记录不授予资源访问权限，不保存第二份知识库正文，不转换为真实设备 Agent 会话；File／Date 使用结构化克隆保存，关闭页签只清理其界面状态，刷新及项目返回复用相应记录。
 

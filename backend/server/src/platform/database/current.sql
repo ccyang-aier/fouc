@@ -207,6 +207,68 @@ CREATE TABLE "resources"."board_task" (
 	CONSTRAINT "board_task_schedule_object" CHECK ("resources"."board_task"."schedule" IS NULL OR (jsonb_typeof("resources"."board_task"."schedule") = 'object' AND "resources"."board_task"."schedule" ?& ARRAY['startsAt', 'endsAt', 'url']))
 );
 
+CREATE TABLE "resources"."chat_channel" (
+	"project_id" uuid NOT NULL,
+	"id" uuid NOT NULL,
+	"name" varchar(80) NOT NULL,
+	"description" text DEFAULT '' NOT NULL,
+	"color" varchar(8) DEFAULT 'violet' NOT NULL,
+	"visibility" varchar(8) DEFAULT 'private' NOT NULL,
+	"owner_id" uuid NOT NULL,
+	"permissions" jsonb DEFAULT '{"invite":"members","post":"members"}'::jsonb NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "chat_channel_project_id_id_pk" PRIMARY KEY("project_id","id"),
+	CONSTRAINT "chat_channel_name_valid" CHECK (length(btrim("resources"."chat_channel"."name")) > 0),
+	CONSTRAINT "chat_channel_visibility_valid" CHECK ("resources"."chat_channel"."visibility" IN ('private', 'project')),
+	CONSTRAINT "chat_channel_color_valid" CHECK ("resources"."chat_channel"."color" IN ('violet', 'blue', 'green', 'orange', 'rose', 'slate')),
+	CONSTRAINT "chat_channel_permissions_valid" CHECK ("resources"."chat_channel"."permissions"->>'invite' IN ('members', 'admins') AND "resources"."chat_channel"."permissions"->>'post' IN ('members', 'admins'))
+);
+
+CREATE TABLE "resources"."chat_channel_member" (
+	"project_id" uuid NOT NULL,
+	"channel_id" uuid NOT NULL,
+	"id" uuid NOT NULL,
+	"user_id" uuid NOT NULL,
+	"name" varchar(120) NOT NULL,
+	"image" text,
+	"kind" varchar(8) DEFAULT 'user' NOT NULL,
+	"role" varchar(8) DEFAULT 'member' NOT NULL,
+	"installation_id" varchar(200),
+	"active" boolean DEFAULT true NOT NULL,
+	"joined_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "chat_channel_member_project_id_channel_id_id_pk" PRIMARY KEY("project_id","channel_id","id"),
+	CONSTRAINT "chat_member_kind_valid" CHECK (("resources"."chat_channel_member"."kind" = 'user' AND "resources"."chat_channel_member"."installation_id" IS NULL) OR ("resources"."chat_channel_member"."kind" = 'agent' AND "resources"."chat_channel_member"."installation_id" IS NOT NULL AND "resources"."chat_channel_member"."role" = 'member')),
+	CONSTRAINT "chat_member_role_valid" CHECK ("resources"."chat_channel_member"."role" IN ('owner', 'admin', 'member'))
+);
+
+CREATE TABLE "resources"."chat_message" (
+	"project_id" uuid NOT NULL,
+	"channel_id" uuid NOT NULL,
+	"id" uuid NOT NULL,
+	"author_id" uuid NOT NULL,
+	"author_user_id" uuid NOT NULL,
+	"author_name" varchar(120) NOT NULL,
+	"author_image" text,
+	"author_kind" varchar(8) DEFAULT 'user' NOT NULL,
+	"kind" varchar(8) DEFAULT 'text' NOT NULL,
+	"body" text DEFAULT '' NOT NULL,
+	"title" varchar(200),
+	"thread_id" uuid,
+	"pinned" boolean DEFAULT false NOT NULL,
+	"poll" jsonb,
+	"reactions" jsonb DEFAULT '[]'::jsonb NOT NULL,
+	"attachments" jsonb DEFAULT '[]'::jsonb NOT NULL,
+	"execution" jsonb,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"edited_at" timestamp with time zone,
+	CONSTRAINT "chat_message_project_id_channel_id_id_pk" PRIMARY KEY("project_id","channel_id","id"),
+	CONSTRAINT "chat_message_kind_valid" CHECK ("resources"."chat_message"."kind" IN ('text', 'topic', 'poll', 'summary')),
+	CONSTRAINT "chat_message_author_kind_valid" CHECK ("resources"."chat_message"."author_kind" IN ('user', 'agent')),
+	CONSTRAINT "chat_message_attachments_array" CHECK (jsonb_typeof("resources"."chat_message"."attachments") = 'array' AND jsonb_array_length("resources"."chat_message"."attachments") <= 8),
+	CONSTRAINT "chat_message_reactions_array" CHECK (jsonb_typeof("resources"."chat_message"."reactions") = 'array')
+);
+
 CREATE TABLE "resources"."comment" (
 	"knowledge_base_id" uuid NOT NULL,
 	"id" uuid NOT NULL,
@@ -580,6 +642,11 @@ ALTER TABLE "resources"."block_index" ADD CONSTRAINT "block_index_page_fk" FOREI
 ALTER TABLE "resources"."board_task" ADD CONSTRAINT "board_task_created_by_user_id_fk" FOREIGN KEY ("created_by") REFERENCES "auth"."user"("id") ON DELETE no action ON UPDATE no action;
 ALTER TABLE "resources"."board_task" ADD CONSTRAINT "board_task_column_fk" FOREIGN KEY ("project_id","board_id","column_id") REFERENCES "resources"."task_column"("project_id","board_id","id") ON DELETE no action ON UPDATE no action;
 ALTER TABLE "resources"."board_task" ADD CONSTRAINT "board_task_board_fk" FOREIGN KEY ("project_id","board_id") REFERENCES "resources"."task_board"("project_id","id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "resources"."chat_channel" ADD CONSTRAINT "chat_channel_project_id_project_id_fk" FOREIGN KEY ("project_id") REFERENCES "resources"."project"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "resources"."chat_channel" ADD CONSTRAINT "chat_channel_owner_id_user_id_fk" FOREIGN KEY ("owner_id") REFERENCES "auth"."user"("id") ON DELETE no action ON UPDATE no action;
+ALTER TABLE "resources"."chat_channel_member" ADD CONSTRAINT "chat_member_channel_fk" FOREIGN KEY ("project_id","channel_id") REFERENCES "resources"."chat_channel"("project_id","id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "resources"."chat_channel_member" ADD CONSTRAINT "chat_member_project_member_fk" FOREIGN KEY ("project_id","user_id") REFERENCES "resources"."project_member"("project_id","user_id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "resources"."chat_message" ADD CONSTRAINT "chat_message_channel_fk" FOREIGN KEY ("project_id","channel_id") REFERENCES "resources"."chat_channel"("project_id","id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "resources"."comment" ADD CONSTRAINT "comment_author_id_user_id_fk" FOREIGN KEY ("author_id") REFERENCES "auth"."user"("id") ON DELETE no action ON UPDATE no action;
 ALTER TABLE "resources"."comment" ADD CONSTRAINT "comment_thread_fk" FOREIGN KEY ("knowledge_base_id","thread_id") REFERENCES "resources"."comment_thread"("knowledge_base_id","id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "resources"."comment" ADD CONSTRAINT "comment_reply_target_fk" FOREIGN KEY ("knowledge_base_id","reply_to_comment_id") REFERENCES "resources"."comment"("knowledge_base_id","id") ON DELETE no action ON UPDATE no action;
@@ -643,6 +710,11 @@ CREATE INDEX "block_index_principals_gin_idx" ON "resources"."block_index" USING
 CREATE INDEX "block_index_embedding_model_idx" ON "resources"."block_index" USING btree ("knowledge_base_id","embed_model","embed_dimensions");
 CREATE INDEX "block_index_bm25_idx" ON "resources"."block_index" USING paradedb ("id",("content_md"::pdb.jieba)) WITH (key_field='id');
 CREATE INDEX "board_task_column_order_idx" ON "resources"."board_task" USING btree ("project_id","board_id","column_id","position");
+CREATE INDEX "chat_channel_project_updated_idx" ON "resources"."chat_channel" USING btree ("project_id","updated_at");
+CREATE INDEX "chat_member_user_idx" ON "resources"."chat_channel_member" USING btree ("project_id","channel_id","user_id");
+CREATE UNIQUE INDEX "chat_member_human_unique" ON "resources"."chat_channel_member" USING btree ("project_id","channel_id","user_id") WHERE "resources"."chat_channel_member"."kind" = 'user';
+CREATE UNIQUE INDEX "chat_member_agent_unique" ON "resources"."chat_channel_member" USING btree ("project_id","channel_id","user_id","installation_id") WHERE "resources"."chat_channel_member"."kind" = 'agent';
+CREATE INDEX "chat_message_created_idx" ON "resources"."chat_message" USING btree ("project_id","channel_id","created_at");
 CREATE INDEX "comment_thread_time_idx" ON "resources"."comment" USING btree ("knowledge_base_id","thread_id","created_at");
 CREATE INDEX "comment_author_idx" ON "resources"."comment" USING btree ("author_id");
 CREATE INDEX "comment_thread_page_idx" ON "resources"."comment_thread" USING btree ("knowledge_base_id","page_id","status");

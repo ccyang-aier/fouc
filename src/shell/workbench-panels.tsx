@@ -9,7 +9,8 @@ import { KnowledgePage } from '@/features/knowledge/knowledge-page';
 import { ProjectDashboard } from '@/features/project/dashboard/project-dashboard';
 import { TaskBoardsPage } from '@/features/tasks/task-boards-page';
 import { ProjectMembersPage } from '@/features/project/members/members-page';
-import { ProjectChatsPage, ProjectEmptyPage, ProjectSelectionEmpty } from '@/features/project/project-workspace-pages';
+import { ProjectEmptyPage, ProjectSelectionEmpty } from '@/features/project/project-workspace-pages';
+import { ProjectChatsPage } from '@/features/chats/project-chats-page';
 import { useProjectResources } from '@/features/project/project-resources';
 import { AgentSettings } from '@/features/settings/agent-settings';
 import { PageVisibility } from '@/lib/page-visibility';
@@ -40,7 +41,7 @@ export function WorkbenchPanels({ tabs, active, history, onNavigate, onOpenChat,
           : tab.view === 'tasks' ? <TaskBoardsPage />
           : tab.view === 'members' ? <ProjectMembersPage />
           : tab.view === 'assets' ? <ProjectEmptyPage page={tab.view} />
-          : tab.view === 'chats' ? <ProjectChatsPage onNew={() => onNavigate('home')} onOpen={onOpenChat} />
+          : tab.view === 'chats' ? <ProjectChatsPage />
           : tab.view === 'agents' ? <section className="h-full overflow-auto" aria-label={t('智能体')}><AgentSettings /></section>
           : tab.view === 'community' ? <CommunityCanvas />
           : tab.view === 'connectors' ? <ConnectorsCanvas onOpenProject={id => { if (projects.some(project => project.id === id)) selectProject(id); onNavigate('workbench'); }} />

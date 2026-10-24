@@ -4,6 +4,7 @@ import { resourcePoliciesForTable } from './resources/rls';
 import { assertFoucApplicationRole } from './initialize-role';
 import type { FoucSqlConnection } from './initialize-role';
 import { allocateTaskNumberBody, taskBoardPermissionBody, updateTaskBoardViewsBody } from './resources/task-rls';
+import { chatChannelPermissionBody } from './resources/chat-rls';
 
 export const foucDatabaseSchemas = ['resources', 'auth', 'catalog'] as const;
 const requiredExtensions = ['ltree', 'pg_search', 'vector'];
@@ -78,19 +79,20 @@ export async function inspectFoucDatabase(admin: FoucSqlConnection, application:
   `, [[...foucDatabaseSchemas]]);
 
   const key = (schema: string, name: string) => `${schema}.${name}`;
-  const taskFunctions = await admin.query<{ name: string; source: string; definer: boolean; volatility: string; config: string[]; result: string; args: string; bypass: boolean }>(`
+  const resourceFunctions = await admin.query<{ name: string; source: string; definer: boolean; volatility: string; config: string[]; result: string; args: string; bypass: boolean }>(`
     SELECT p.proname AS name, p.prosrc AS source, p.prosecdef AS definer, p.provolatile AS volatility, p.proconfig AS config,
       pg_get_function_result(p.oid) AS result, pg_get_function_identity_arguments(p.oid) AS args,
       r.rolsuper OR r.rolbypassrls AS bypass
     FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace JOIN pg_roles r ON r.oid=p.proowner
-    WHERE n.nspname='resources' AND p.proname IN ('task_board_permission', 'allocate_task_number', 'update_task_board_views')
+    WHERE n.nspname='resources' AND p.proname IN ('task_board_permission', 'allocate_task_number', 'update_task_board_views', 'chat_channel_permission')
   `);
   for (const expected of [
     { name: 'task_board_permission', body: taskBoardPermissionBody, volatility: 's', result: 'text', args: 'target_project uuid, target_board uuid', label: 'Task-board permission' },
     { name: 'allocate_task_number', body: allocateTaskNumberBody, volatility: 'v', result: 'integer', args: 'target_project uuid, target_board uuid', label: 'Task-number allocation' },
     { name: 'update_task_board_views', body: updateTaskBoardViewsBody, volatility: 'v', result: 'boolean', args: 'target_project uuid, target_board uuid, next_views jsonb', label: 'Task-board view update' },
+    { name: 'chat_channel_permission', body: chatChannelPermissionBody, volatility: 's', result: 'text', args: 'target_project uuid, target_channel uuid', label: 'Chat-channel permission' },
   ]) {
-    const matches = taskFunctions.rows.filter(row => row.name === expected.name);
+    const matches = resourceFunctions.rows.filter(row => row.name === expected.name);
     const definition = matches[0];
     if (matches.length !== 1 || !definition || definition.source.trim() !== expected.body.trim()
       || !definition.definer || !definition.bypass || definition.volatility !== expected.volatility || definition.result !== expected.result

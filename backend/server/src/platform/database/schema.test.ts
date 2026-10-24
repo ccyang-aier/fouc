@@ -5,6 +5,7 @@ import { getTableConfig } from 'drizzle-orm/pg-core';
 import { aiTaskSchema, assetStatusSchema, commentThreadStatusSchema, modelTiers, pageKindSchema, permissionLevels } from '@fouc/shared/knowledge/contracts';
 import { memberRoleSchema } from '@fouc/shared/resources';
 import { taskTableNames } from './resources/task-rls';
+import { chatTableNames } from './resources/chat-rls';
 import { generateDatabaseSchemaSql, databaseSchemaSqlPath } from '../../../scripts/database-schema';
 import {
   aiTaskKind,
@@ -30,10 +31,15 @@ import {
   permissionLevel,
   project,
   projectMember,
+  chatChannel,
+  chatChannelMember,
+  chatMessage,
   teamspace,
   catalogModel,
   modelCatalogTables,
 } from './schema';
+
+const projectChildTableNames: readonly string[] = [...taskTableNames, ...chatTableNames];
 
 describe('knowledgeBase-owned current Drizzle schema', () => {
   test('public model metadata has an independently owned catalog without product resource scope', () => {
@@ -57,7 +63,7 @@ describe('knowledgeBase-owned current Drizzle schema', () => {
   });
 
   test('knowledge-base children carry the real library key and consistent composite relations', () => {
-    for (const table of resourceTables.filter((item) => !new Set<object>([project, projectMember, knowledgeBase, knowledgeBaseProject]).has(item) && !(taskTableNames as readonly string[]).includes(getTableConfig(item).name))) {
+    for (const table of resourceTables.filter((item) => !new Set<object>([project, projectMember, knowledgeBase, knowledgeBaseProject]).has(item) && !projectChildTableNames.includes(getTableConfig(item).name))) {
       const config = getTableConfig(table);
       expect(config.columns.find((column) => column.name === 'knowledge_base_id')?.notNull, config.name).toBe(true);
       for (const foreignKey of config.foreignKeys) {
@@ -67,6 +73,20 @@ describe('knowledgeBase-owned current Drizzle schema', () => {
         expect(scopeIndex, foreignKey.getName()).toBeGreaterThanOrEqual(0);
         expect(reference.foreignColumns[scopeIndex]?.name).toBe('knowledge_base_id');
       }
+    }
+  });
+
+  test('chat channels own project-scoped messages and participants without knowledge-base ownership', () => {
+    for (const table of [chatChannel, chatChannelMember, chatMessage]) {
+      const config = getTableConfig(table);
+      expect(config.columns.find(column => column.name === 'project_id')?.notNull).toBe(true);
+      expect(config.columns.some(column => column.name === 'knowledge_base_id')).toBe(false);
+      expect(config.primaryKeys[0].columns[0].name).toBe('project_id');
+    }
+    for (const table of [chatChannelMember, chatMessage]) {
+      const relation = getTableConfig(table).foreignKeys.find(key => key.reference().foreignTable === chatChannel);
+      expect(relation?.reference().columns.map(column => column.name)).toEqual(['project_id', 'channel_id']);
+      expect(relation?.onDelete).toBe('cascade');
     }
   });
 

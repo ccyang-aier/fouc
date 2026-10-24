@@ -5,6 +5,7 @@ export * from './knowledge';
 export * from './knowledge-projects';
 export * from './projects';
 export * from './tasks';
+export * from './chats';
 export * from './pages';
 export * from './content';
 export * from './operations';

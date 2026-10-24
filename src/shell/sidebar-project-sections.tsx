@@ -1,44 +1,57 @@
 'use client';
 
-import { ChatCircleDots, DotsThree, Hash, Plus, SortAscending, ChatsCircle } from '@phosphor-icons/react';
+import { ChatCircleDots, DotsThree, Hash, PencilSimple, Plus, PushPin, PushPinSlash, SortAscending, ChatsCircle, Trash } from '@phosphor-icons/react';
 import { useState, type ReactNode } from 'react';
+import type { Channel } from '@fouc/shared/chats';
 import { useAppAlert } from '@/components/app-alert-provider';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { chatConversationTitle, deleteChatConversation, pinChatConversation, renameChatConversation, useChatHistory, type ChatHistoryEntry } from '@/features/home/chat/chat-history';
 import { useProjectResources } from '@/features/project/project-resources';
+import { useChannelDirectory } from '@/features/chats/channel-data';
+import { useChannelPreferences } from '@/features/chats/channel-preferences';
+import { requestChannelOpen } from '@/features/chats/channel-navigation';
 import { useTranslation } from '@/lib/i18n';
 import { messages } from './i18n/navigation-sidebar.messages';
 import { SidebarSection } from './sidebar-section';
 import { SidebarEntryDialog, type SidebarEntryAction } from './sidebar-entry-dialog';
 import { SidebarEntryRow } from './sidebar-entry-row';
-import { saveSidebarChannels, useSidebarChannels, type SidebarChannel } from './sidebar-channels';
 import styles from './sidebar-sections.module.css';
 
-type EntryAction = (SidebarEntryAction & { kind: 'create'; resource: 'channel' }) | (SidebarEntryAction & { kind: 'rename' | 'delete'; id: string });
+type EntryAction = SidebarEntryAction & { kind: 'rename' | 'delete'; resource: 'chat'; id: string };
+
+function ChannelSidebarRow({ channel, scopeKey, principal, pinned, onPin }: {
+  channel: Channel; scopeKey: string; principal: string; pinned: boolean; onPin: () => void;
+}) {
+  const { t } = useTranslation(messages);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const PinIcon = pinned ? PushPinSlash : PushPin;
+  const owner = channel.ownerId === principal;
+  return <div className={`sidebar-nav-row ${styles.row}`} data-menu-open={menuOpen}>
+    <button type="button" className={styles.entry} title={channel.name} onClick={() => requestChannelOpen(scopeKey, channel.id)}><Hash size={15} className="sidebar-nav-icon shrink-0" aria-hidden /><span>{channel.name}</span></button>
+    <div className={styles.rowActions}>
+      <Tooltip><TooltipTrigger asChild><button type="button" className={`fouc-action ${styles.action}`} data-variant="nested" aria-label={t(pinned ? '取消置顶名称' : '置顶名称', { name: channel.name })} aria-pressed={pinned} onClick={onPin}><PinIcon size={14} weight="duotone" aria-hidden /></button></TooltipTrigger><TooltipContent side="top">{t(pinned ? '取消置顶' : '置顶')}</TooltipContent></Tooltip>
+      {owner && <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}><DropdownMenuTrigger className={styles.action} data-variant="nested" aria-label={t('条目更多操作', { name: channel.name })}><DotsThree size={17} weight="bold" aria-hidden /></DropdownMenuTrigger>
+        {menuOpen && <DropdownMenuContent side="right" align="start" density="compact"><DropdownMenuGroup><DropdownMenuItem onSelect={() => requestChannelOpen(scopeKey, channel.id, false, 'settings')}><PencilSimple />{t('重命名')}</DropdownMenuItem><DropdownMenuItem variant="destructive" onSelect={() => requestChannelOpen(scopeKey, channel.id, false, 'delete')}><Trash />{t('删除')}</DropdownMenuItem></DropdownMenuGroup></DropdownMenuContent>}
+      </DropdownMenu>}
+    </div>
+  </div>;
+}
 
 export function SidebarProjectSections({ onNewChat, onAllChats, onOpenChat }: { onNewChat: () => void; onAllChats: () => void; onOpenChat: (entry: ChatHistoryEntry) => void }) {
   const { t, locale } = useTranslation(messages);
-  const { scopeKey } = useProjectResources();
+  const { scopeKey, principal } = useProjectResources();
   const { notify } = useAppAlert();
   const history = useChatHistory();
-  const channels = useSidebarChannels(scopeKey);
+  const directory = useChannelDirectory();
+  const preferences = useChannelPreferences(scopeKey);
+  const [sortByName, setSortByName] = useState(false);
   const [editing, setEditing] = useState<EntryAction | null>(null);
-  // Mount menus only when opened so their portal host follows native dialogs.
   const [channelMenuOpen, setChannelMenuOpen] = useState(false);
   const [recentMenuOpen, setRecentMenuOpen] = useState(false);
-  function saveChannels(next: SidebarChannel[]) {
-    if (!scopeKey) return false;
-    try { saveSidebarChannels(scopeKey, next); return true; }
-    catch { notify('error', t('频道保存失败')); return false; }
-  }
+  const channels = sortByName ? (directory.data?.items ?? []).toSorted((a, b) => a.name.localeCompare(b.name, locale)) : directory.data?.items ?? [];
   function confirm(name: string) {
     if (!scopeKey || !editing) return false;
-    if (editing.resource === 'channel') {
-      if (editing.kind === 'delete') return saveChannels(channels.filter(item => item.id !== editing.id));
-      if (editing.kind === 'rename') return saveChannels(channels.map(item => item.id === editing.id ? { ...item, name } : item));
-      return saveChannels([...channels, { id: crypto.randomUUID(), name }]);
-    }
     if (editing.kind === 'delete') deleteChatConversation(scopeKey, editing.id);
     else renameChatConversation(scopeKey, editing.id, name);
     return true;
@@ -46,40 +59,39 @@ export function SidebarProjectSections({ onNewChat, onAllChats, onOpenChat }: { 
   function action(label: string, onClick: () => void, child: ReactNode) {
     return <Tooltip><TooltipTrigger asChild><button type="button" className={`fouc-action ${styles.action}`} aria-label={label} onClick={onClick} disabled={!scopeKey}>{child}</button></TooltipTrigger><TooltipContent side="top">{label}</TooltipContent></Tooltip>;
   }
-  function newChannel() { setEditing({ kind: 'create', resource: 'channel', name: '' }); }
-  function toggleChannelPin(channel: SidebarChannel) {
-    if (saveChannels(channels.map(item => item.id === channel.id ? { ...item, pinned: !item.pinned } : item))) {
-      notify('success', t(channel.pinned ? '已取消置顶名称' : '已置顶名称', { name: channel.name }));
-    }
+  function newChannel() { if (scopeKey) requestChannelOpen(scopeKey, null, true); }
+  function toggleChannelPin(channel: Channel) {
+    try {
+      const pinned = preferences.favorites.includes(channel.id);
+      preferences.toggle('favorites', channel.id);
+      notify('success', t(pinned ? '已取消置顶名称' : '已置顶名称', { name: channel.name }));
+    } catch { notify('error', t('频道保存失败')); }
   }
   function toggleChatPin(entry: ChatHistoryEntry) {
     if (!scopeKey) return;
     pinChatConversation(scopeKey, entry.id, !entry.pinned);
     notify('success', t(entry.pinned ? '已取消置顶名称' : '已置顶名称', { name: chatConversationTitle(entry) }));
   }
-  const pinnedChannels = channels.filter(channel => channel.pinned);
-  const unpinnedChannels = channels.filter(channel => !channel.pinned);
+  const pinnedChannels = channels.filter(channel => preferences.favorites.includes(channel.id));
+  const unpinnedChannels = channels.filter(channel => !preferences.favorites.includes(channel.id));
   const pinnedChats = history.filter(entry => entry.pinned);
   const recentChats = history.filter(entry => !entry.pinned).slice(0, 6);
-  function channelRow(channel: SidebarChannel) {
-    const rename = () => setEditing({ kind: 'rename', resource: 'channel', id: channel.id, name: channel.name });
-    return <SidebarEntryRow key={`channel:${channel.id}`} name={channel.name} label={t('编辑频道名称', { name: channel.name })} icon={<Hash size={15} className="sidebar-nav-icon shrink-0" aria-hidden />} pinned={channel.pinned} onOpen={rename} onPin={() => toggleChannelPin(channel)} onRename={rename} onDelete={() => setEditing({ kind: 'delete', resource: 'channel', id: channel.id, name: channel.name })} />;
+  function channelRow(channel: Channel) {
+    return scopeKey && <ChannelSidebarRow key={`channel:${channel.id}`} channel={channel} scopeKey={scopeKey} principal={principal} pinned={preferences.favorites.includes(channel.id)} onPin={() => toggleChannelPin(channel)} />;
   }
   function chatRow(entry: ChatHistoryEntry) {
     const name = chatConversationTitle(entry);
     return <SidebarEntryRow key={`chat:${entry.id}`} name={name} icon={<ChatCircleDots size={15} weight="duotone" className="sidebar-nav-icon shrink-0" aria-hidden />} pinned={entry.pinned} onOpen={() => onOpenChat(entry)} onPin={() => toggleChatPin(entry)} onRename={() => setEditing({ kind: 'rename', resource: 'chat', id: entry.id, name })} onDelete={() => setEditing({ kind: 'delete', resource: 'chat', id: entry.id, name })} />;
   }
   return <>
-    {Boolean(pinnedChannels.length + pinnedChats.length) && <SidebarSection title={t('置顶分区')}>
-      <div className={styles.list}>{pinnedChannels.map(channelRow)}{pinnedChats.map(chatRow)}</div>
-    </SidebarSection>}
+    {Boolean(pinnedChannels.length + pinnedChats.length) && <SidebarSection title={t('置顶分区')}><div className={styles.list}>{pinnedChannels.map(channelRow)}{pinnedChats.map(chatRow)}</div></SidebarSection>}
     <SidebarSection title={t('频道')} actions={<>
       <DropdownMenu open={channelMenuOpen} onOpenChange={setChannelMenuOpen}><DropdownMenuTrigger className={styles.action} aria-label={t('频道更多操作')}><DotsThree size={17} weight="bold" /></DropdownMenuTrigger>{channelMenuOpen && <DropdownMenuContent side="right" align="start" density="compact"><DropdownMenuGroup>
-        <DropdownMenuItem disabled={!scopeKey} onSelect={newChannel}><Plus />{t('新建频道')}</DropdownMenuItem><DropdownMenuSeparator /><DropdownMenuItem disabled={channels.length < 2} onSelect={() => saveChannels([...channels].sort((a, b) => a.name.localeCompare(b.name, locale)))}><SortAscending />{t('按名称排序')}</DropdownMenuItem>
+        <DropdownMenuItem disabled={!scopeKey} onSelect={newChannel}><Plus />{t('新建频道')}</DropdownMenuItem><DropdownMenuItem disabled={!scopeKey} onSelect={onAllChats}><ChatsCircle />{t('查看全部对话')}</DropdownMenuItem><DropdownMenuSeparator /><DropdownMenuItem disabled={channels.length < 2} onSelect={() => setSortByName(true)}><SortAscending />{t('按名称排序')}</DropdownMenuItem>
       </DropdownMenuGroup></DropdownMenuContent>}</DropdownMenu>
       {action(t('新建频道'), newChannel, <Plus size={15} />)}
     </>}>
-      {unpinnedChannels.length ? <div className={styles.list}>{unpinnedChannels.map(channelRow)}</div> : <p className={styles.empty}>{t(channels.length ? '暂无其他频道' : '暂无频道')}</p>}
+      {unpinnedChannels.length ? <div className={styles.list}>{unpinnedChannels.map(channelRow)}</div> : directory.isError ? <button type="button" className={`fouc-action ${styles.empty}`} onClick={() => void directory.refetch()}>{t('重新加载')}</button> : <p className={styles.empty}>{t(channels.length ? '暂无其他频道' : '暂无频道')}</p>}
     </SidebarSection>
     <SidebarSection title={t('最近')} actions={<>
       <DropdownMenu open={recentMenuOpen} onOpenChange={setRecentMenuOpen}><DropdownMenuTrigger className={styles.action} aria-label={t('最近更多操作')}><DotsThree size={17} weight="bold" /></DropdownMenuTrigger>{recentMenuOpen && <DropdownMenuContent side="right" align="start" density="compact"><DropdownMenuGroup><DropdownMenuItem disabled={!scopeKey} onSelect={onAllChats}><ChatsCircle weight="duotone" />{t('查看全部对话')}</DropdownMenuItem></DropdownMenuGroup></DropdownMenuContent>}</DropdownMenu>
@@ -87,6 +99,6 @@ export function SidebarProjectSections({ onNewChat, onAllChats, onOpenChat }: { 
     </>}>
       {recentChats.length ? <div className={styles.list}>{recentChats.map(chatRow)}</div> : <p className={styles.empty}>{t(history.length ? '暂无其他对话' : '暂无最近对话')}</p>}
     </SidebarSection>
-    {editing && <SidebarEntryDialog action={editing} nameExists={editing.resource === 'channel' ? name => channels.some(item => (editing.kind === 'create' || item.id !== editing.id) && item.name.toLocaleLowerCase() === name.toLocaleLowerCase()) : undefined} onConfirm={confirm} onClose={() => setEditing(null)} />}
+    {editing && <SidebarEntryDialog action={editing} onConfirm={confirm} onClose={() => setEditing(null)} />}
   </>;
 }

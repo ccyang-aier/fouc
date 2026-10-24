@@ -3,6 +3,7 @@ import type { PgTable } from 'drizzle-orm/pg-core';
 import type { PoolClient } from 'pg';
 import { resourceTables } from './schema';
 import { allocateTaskNumberSql, taskBoardPermissionSql, taskPoliciesForTable, taskTableNames, updateTaskBoardViewsSql } from './task-rls';
+import { chatChannelPermissionSql, chatPoliciesForTable, chatTableNames } from './chat-rls';
 
 const identifier = (value: string) => `"${value.replaceAll('"', '""')}"`;
 const currentKnowledgeBase = `(SELECT NULLIF(current_setting('app.knowledge_base_id', true), '')::uuid)`;
@@ -15,7 +16,7 @@ const verifiedIdentityUser = `(SELECT s.user_id FROM auth.session s
     AND s.expires_at > clock_timestamp() AND u.email_verified IS TRUE)`;
 
 export interface ResourceRlsPolicy {
-  name: 'knowledge_base_scope' | 'project_scope' | 'own_identity' | 'reference_read' | 'backlink_target' | 'task_board_read' | 'task_board_create' | 'task_board_update' | 'task_board_delete';
+  name: 'knowledge_base_scope' | 'project_scope' | 'own_identity' | 'reference_read' | 'backlink_target' | 'task_board_read' | 'task_board_create' | 'task_board_update' | 'task_board_delete' | 'chat_read' | 'chat_create' | 'chat_update' | 'chat_delete';
   command: 'ALL' | 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE';
   using?: string;
   check?: string;
@@ -24,6 +25,7 @@ export interface ResourceRlsPolicy {
 /** Knowledge-base data has a real resource scope; project access uses its own membership. */
 export function resourcePoliciesForTable(table: PgTable): ResourceRlsPolicy[] {
   const config = getTableConfig(table);
+  if ((chatTableNames as readonly string[]).includes(config.name)) return chatPoliciesForTable(config.name, verifiedIdentityUser);
   if ((taskTableNames as readonly string[]).includes(config.name)) return taskPoliciesForTable(config.name, verifiedIdentityUser);
   if (config.name === 'project' || config.name === 'project_member') {
     const projectId = `(SELECT NULLIF(current_setting('app.project_id', true), '')::uuid)`;
@@ -77,5 +79,6 @@ export async function installResourceRls(client: Pick<PoolClient, 'query'>): Pro
   await client.query(taskBoardPermissionSql);
   await client.query(allocateTaskNumberSql);
   await client.query(updateTaskBoardViewsSql);
+  await client.query(chatChannelPermissionSql);
   await client.query(resourceRlsSql());
 }

@@ -10,6 +10,7 @@ import { messages } from './i18n/navigation-sidebar.messages';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { chatConversationTitle, useChatHistory, type ChatHistoryEntry } from '@/features/home/chat/chat-history';
 import { useProjectResources } from '@/features/project/project-resources';
+import { CHANNEL_NAVIGATION } from '@/features/chats/channel-navigation';
 import { SettingsDialog } from '@/features/settings/settings-dialog';
 import { closeSettings, setSettingsSection, useSettingsSection } from '@/lib/settings-navigation';
 import { useMenuMotion } from '@/lib/use-menu-motion';
@@ -66,6 +67,11 @@ function WorkbenchChrome() {
     if (!scopeKey) return;
     tabs.open('home', entry.id);
   }
+  useEffect(() => {
+    const openChannel = () => tabs.open('chats');
+    window.addEventListener(CHANNEL_NAVIGATION, openChannel);
+    return () => window.removeEventListener(CHANNEL_NAVIGATION, openChannel);
+  }, [tabs]);
   return <TooltipProvider>
     <div className="h-dvh w-full p-[var(--win-frame-inset)]">
       <div ref={frameRef} className={`${styles.frame} flex h-full w-full min-w-[660px] min-h-[540px] flex-col overflow-hidden text-[var(--ink)] shadow-[var(--win-shadow)]`}>

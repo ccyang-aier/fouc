@@ -24,7 +24,7 @@ export function createTaskBoardRoutes(auth: FoucAuth, service: TaskBoardService)
   const base = '/api/projects';
   const boards = `${base}/:projectId/task-boards`;
   const board = `${boards}/:boardId`;
-  const app = createResourceApi(auth, base, { multipart: { path: /^\/api\/projects\/[^/]+\/task-boards\/[^/]+\/tasks\/[^/]+\/comments\/?$/, maxBytes: TASK_COMMENT_IMAGE_LIMIT * TASK_COMMENT_IMAGE_MAX_BYTES + 128 * 1_024 } });
+  const app = createResourceApi(auth, base, { path: /^\/api\/projects\/[^/]+\/(?:task-members|task-boards(?:\/.*)?)\/?$/, multipart: { path: /^\/api\/projects\/[^/]+\/task-boards\/[^/]+\/tasks\/[^/]+\/comments\/?$/, maxBytes: TASK_COMMENT_IMAGE_LIMIT * TASK_COMMENT_IMAGE_MAX_BYTES + 128 * 1_024 } });
   app.get(`${base}/:projectId/task-members`, async context => context.json(await service.projectMembers(context.get('identity'), context.req.param())));
   app.get(boards, async context => context.json(await service.list(context.get('identity'), context.req.param())));
   app.post(boards, async context => context.json(await service.create(context.get('identity'), await bodyWithPath(context, context.req.param())), 201));

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import type { ChannelAttachment, ChannelMember, ChannelSnapshot } from '@fouc/shared/chats';
-import { ArrowUpRight, ChatCircleDots, DotsThree, DownloadSimple, File, FileCode, FilePdf, FileText, FolderOpen, ImageSquare, MagnifyingGlass, Robot, ShieldCheck, UserMinus, UserPlus, UsersThree } from '@phosphor-icons/react';
+import { ArrowUpRight, ChatCircleDots, DotsThree, DownloadSimple, FolderOpen, MagnifyingGlass, Robot, ShieldCheck, UserMinus, UserPlus, UsersThree } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ViewSwitcher, type ViewMode } from '@/components/ui/view-switcher';
@@ -12,6 +12,8 @@ import cardStyles from '@/components/ui/resource-card.module.css';
 import { panelMessages } from './channel-panels.messages';
 import styles from './channel-panels.module.css';
 import chatStyles from './channels.module.css';
+import { ChannelFileIcon } from './channel-file-icon';
+import { formatFileSize } from './channel-ui';
 
 type AssetType = 'all' | 'documents' | 'images' | 'other';
 function assetType(asset: ChannelAttachment): Exclude<AssetType, 'all'> {
@@ -19,12 +21,7 @@ function assetType(asset: ChannelAttachment): Exclude<AssetType, 'all'> {
   return /(?:pdf|word|document|text|sheet|presentation|json|csv|markdown)/i.test(asset.mime) || /\.(?:docx?|xlsx?|pptx?|pdf|md|txt|csv|json)$/i.test(asset.name) ? 'documents' : 'other';
 }
 function FileIcon({ asset }: { asset: ChannelAttachment }) {
-  const Icon = assetType(asset) === 'images' ? ImageSquare : /pdf/i.test(asset.mime) ? FilePdf : /(?:json|javascript|html|css)/i.test(asset.mime) ? FileCode : assetType(asset) === 'documents' ? FileText : File;
-  return <span className={styles.fileIcon} data-type={assetType(asset)}><Icon size={25} weight="regular" aria-hidden /></span>;
-}
-function fileSize(size: number, locale: string) {
-  const unit = size >= 1024 * 1024 ? 'MB' : 'KB';
-  return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(size / (unit === 'MB' ? 1024 * 1024 : 1024))} ${unit}`;
+  return <span className={styles.fileIcon} data-type={assetType(asset)}><ChannelFileIcon attachment={asset} size={25} /></span>;
 }
 
 export function ChannelAssets({ snapshot, assets: suppliedAssets, onOpen, onDownload, onJump }: {
@@ -46,10 +43,10 @@ export function ChannelAssets({ snapshot, assets: suppliedAssets, onOpen, onDown
     </div><div className={styles.toolbarRight}><div className={styles.search}><MagnifyingGlass size={15} aria-hidden /><input value={search} onChange={event => setSearch(event.target.value)} placeholder={t('searchAssets')} aria-label={t('searchAssets')} /></div><ViewSwitcher value={mode} onValueChange={setMode} /></div></div>
     {!matching.length ? <div className={styles.panelEmpty}><FolderOpen size={36} weight="regular" /><h3>{t(filtered ? 'noResults' : 'noAssets')}</h3>{!filtered && <p>{t('noAssetsHelp')}</p>}{filtered && <Button type="button" variant="outline" size="sm" onClick={() => { setSearch(''); setType('all'); }}>{t('resetSearch')}</Button>}</div>
       : mode === 'grid' ? <ul className={styles.assetsGrid}>{matching.map(({ attachment, message }) => <li key={attachment.id} className={`${cardStyles.card} ${styles.assetCard}`}>
-        <button type="button" className={`fouc-action ${styles.assetMain}`} data-surface="plain" onClick={() => onOpen(attachment, attachment.messageId)} aria-label={t('preview', { name: attachment.name })}><FileIcon asset={attachment} /><strong title={attachment.name}>{attachment.name}</strong><span>{fileSize(attachment.size, locale)}<span>·</span>{attachment.name.split('.').at(-1)?.toUpperCase()}</span></button>
+        <button type="button" className={`fouc-action ${styles.assetMain}`} data-surface="plain" onClick={() => onOpen(attachment, attachment.messageId)} aria-label={t('preview', { name: attachment.name })}><FileIcon asset={attachment} /><strong title={attachment.name}>{attachment.name}</strong><span>{formatFileSize(attachment.size, locale)}<span>·</span>{attachment.name.split('.').at(-1)?.toUpperCase()}</span></button>
         <div className={styles.assetFooter}>{message && <UserAvatar name={message.authorName} image={message.authorImage} className={styles.tinyAvatar} />}<span>{message?.authorName ?? t('channelFile')}</span><time dateTime={attachment.createdAt}>{date(attachment.createdAt)}</time><DropdownMenu><DropdownMenuTrigger className={styles.iconButton} aria-label={attachment.name}><DotsThree size={18} /></DropdownMenuTrigger><DropdownMenuContent className={chatStyles.menu} align="end" density="compact"><DropdownMenuGroup><DropdownMenuItem disabled={!onDownload} onSelect={() => onDownload?.(attachment)}><DownloadSimple />{t('downloadAction')}</DropdownMenuItem><DropdownMenuItem onSelect={() => onJump(attachment.messageId)}><ChatCircleDots />{t('origin')}</DropdownMenuItem></DropdownMenuGroup></DropdownMenuContent></DropdownMenu></div>
       </li>)}</ul> : <div className={styles.tableScroll}><table className={styles.assetTable}><thead><tr><th>{t('assetName')}</th><th>{t('sharedBy')}</th><th>{t('sharedAt')}</th><th>{t('size')}</th><th><span className="sr-only">{t('downloadAction')}</span></th></tr></thead><tbody>{matching.map(({ attachment, message }) => <tr key={attachment.id}>
-        <td><button type="button" className={`fouc-action ${styles.assetName}`} aria-label={t('preview', { name: attachment.name })} onClick={() => onOpen(attachment, attachment.messageId)}><FileIcon asset={attachment} /><span>{attachment.name}</span></button></td><td><span className={styles.tablePerson}>{message && <UserAvatar name={message.authorName} image={message.authorImage} className={styles.tinyAvatar} />}{message?.authorName ?? t('channelFile')}</span></td><td><time dateTime={attachment.createdAt}>{date(attachment.createdAt)}</time></td><td>{fileSize(attachment.size, locale)}</td><td><Button type="button" variant="ghost" size="icon-sm" data-surface="plain" aria-label={t('origin')} onClick={() => onJump(attachment.messageId)}><ArrowUpRight size={16} /></Button><Button type="button" variant="ghost" size="icon-sm" data-surface="plain" disabled={!onDownload} aria-label={t('download', { name: attachment.name })} onClick={() => onDownload?.(attachment)}><DownloadSimple size={16} /></Button></td>
+        <td><button type="button" className={`fouc-action ${styles.assetName}`} aria-label={t('preview', { name: attachment.name })} onClick={() => onOpen(attachment, attachment.messageId)}><FileIcon asset={attachment} /><span>{attachment.name}</span></button></td><td><span className={styles.tablePerson}>{message && <UserAvatar name={message.authorName} image={message.authorImage} className={styles.tinyAvatar} />}{message?.authorName ?? t('channelFile')}</span></td><td><time dateTime={attachment.createdAt}>{date(attachment.createdAt)}</time></td><td>{formatFileSize(attachment.size, locale)}</td><td><Button type="button" variant="ghost" size="icon-sm" data-surface="plain" aria-label={t('origin')} onClick={() => onJump(attachment.messageId)}><ArrowUpRight size={16} /></Button><Button type="button" variant="ghost" size="icon-sm" data-surface="plain" disabled={!onDownload} aria-label={t('download', { name: attachment.name })} onClick={() => onDownload?.(attachment)}><DownloadSimple size={16} /></Button></td>
       </tr>)}</tbody></table></div>}
   </section>;
 }

@@ -1,6 +1,7 @@
 import { defineMessages } from '@/lib/i18n';
 
 export const panelMessages = defineMessages({
+  duplicateOptions: ['选项内容不能重复', 'Options must be different'],
   channelOptions: ['频道选项', 'Channel options'],
   close: ['关闭', 'Close'], cancel: ['取消', 'Cancel'], save: ['保存更改', 'Save changes'],
   create: ['创建频道', 'Create channel'], settings: ['频道设置', 'Channel settings'],

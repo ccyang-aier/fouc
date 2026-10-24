@@ -9,8 +9,9 @@ import { cn } from '@/lib/utils';
 import { panelMessages } from './channel-panels.messages';
 import styles from './channel-panels.module.css';
 
-export function ChannelPanelModal({ title, children, onClose, busy = false, alert = false, className }: {
+export function ChannelPanelModal({ title, children, onClose, busy = false, alert = false, className, headerIcon, metadata }: {
   title: string; children: ReactNode; onClose: () => void; busy?: boolean; alert?: boolean; className?: string;
+  headerIcon?: ReactNode; metadata?: ReactNode;
 }) {
   const { t } = useTranslation(panelMessages);
   const ref = useRef<HTMLDialogElement>(null);
@@ -38,7 +39,7 @@ export function ChannelPanelModal({ title, children, onClose, busy = false, aler
       const rect = event.currentTarget.getBoundingClientRect();
       if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) onClose();
     }}>
-    <header className={styles.dialogHeader}><h2 id={id}>{title}</h2><Button type="button" variant="ghost" size="icon-sm" data-surface="plain" disabled={busy} aria-label={t('close')} onClick={onClose}><X size={17} /></Button></header>
+    <header className={styles.dialogHeader}>{headerIcon}{metadata ? <div><h2 id={id}>{title}</h2>{metadata}</div> : <h2 id={id}>{title}</h2>}<Button type="button" variant="ghost" size="icon-sm" data-surface="plain" disabled={busy} aria-label={t('close')} onClick={onClose}><X size={17} /></Button></header>
     {children}
   </dialog>;
 }

@@ -114,14 +114,16 @@ export function ChannelPollDialog({ busy, onClose, onSubmit }: { busy: boolean; 
   const run = useDialogSubmit();
   const [question, setQuestion] = useState('');
   const [options, setOptions] = useState([{ id: 'one', text: '' }, { id: 'two', text: '' }]);
-  const valid = question.trim() && options.every(option => option.text.trim()) && new Set(options.map(option => option.text.trim().toLocaleLowerCase())).size === options.length;
+  const populated = options.map(option => option.text.trim().toLocaleLowerCase()).filter(Boolean);
+  const duplicated = new Set(populated).size !== populated.length;
+  const valid = question.trim() && populated.length === options.length && !duplicated;
   return <ChannelPanelModal title={t('pollTitle')} onClose={onClose} busy={busy}>
     <form onSubmit={event => { event.preventDefault(); if (!busy && valid) void run(() => onSubmit(question.trim(), options.map(option => option.text.trim()))); }}>
       <div className={styles.dialogBody}>
-        <label className={styles.field}>{t('question')}<input data-autofocus value={question} onChange={event => setQuestion(event.target.value)} placeholder={t('questionPlaceholder')} maxLength={300} required /></label>
-        <fieldset className={styles.pollOptions}><legend>{t('options')}</legend>{options.map((option, index) => <div className={styles.pollOption} key={option.id}><input aria-label={t('option', { index: index + 1 })} placeholder={t('option', { index: index + 1 })} value={option.text} maxLength={200} required onChange={event => setOptions(current => current.map(item => item.id === option.id ? { ...item, text: event.target.value } : item))} />{options.length > 2 && <Button type="button" variant="ghost" size="icon-sm" data-surface="plain" aria-label={t('removeOption', { index: index + 1 })} onClick={() => setOptions(current => current.filter(item => item.id !== option.id))}><X size={15} /></Button>}</div>)}</fieldset>
-        {options.length < 10 && <Button type="button" variant="ghost" size="sm" data-surface="plain" className={styles.addOption} onClick={() => setOptions(current => [...current, { id: crypto.randomUUID(), text: '' }])}><Plus size={15} />{t('addOption')}</Button>}
-        <p className={styles.hint}>{t('pollHint')}</p>
+        <label className={styles.field}>{t('question')}<input data-autofocus value={question} readOnly={busy} onChange={event => setQuestion(event.target.value)} placeholder={t('questionPlaceholder')} maxLength={300} required /></label>
+        <fieldset className={styles.pollOptions}><legend>{t('options')}</legend>{options.map((option, index) => <div className={styles.pollOption} key={option.id}><input aria-label={t('option', { index: index + 1 })} placeholder={t('option', { index: index + 1 })} value={option.text} readOnly={busy} maxLength={200} required onChange={event => setOptions(current => current.map(item => item.id === option.id ? { ...item, text: event.target.value } : item))} />{options.length > 2 && <Button type="button" variant="ghost" size="icon-sm" data-surface="plain" disabled={busy} aria-label={t('removeOption', { index: index + 1 })} onClick={() => setOptions(current => current.filter(item => item.id !== option.id))}><X size={15} /></Button>}</div>)}</fieldset>
+        {options.length < 10 && <Button type="button" variant="ghost" size="sm" data-surface="plain" className={styles.addOption} disabled={busy} onClick={() => setOptions(current => [...current, { id: crypto.randomUUID(), text: '' }])}><Plus size={15} />{t('addOption')}</Button>}
+        <p className={duplicated ? styles.fieldError : styles.hint} role={duplicated ? 'alert' : undefined}>{t(duplicated ? 'duplicateOptions' : 'pollHint')}</p>
       </div>
       <footer><Button type="button" variant="outline" size="sm" disabled={busy} onClick={onClose}>{t('cancel')}</Button><Button type="submit" size="sm" loading={busy} disabled={!valid}>{t('publishPoll')}</Button></footer>
     </form>

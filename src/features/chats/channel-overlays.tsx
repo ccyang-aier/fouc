@@ -1,16 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import Image from 'next/image';
-import { ArrowDown, ArrowClockwise, SignOut } from '@phosphor-icons/react';
-import type { ChannelAttachment, CreateChannelInput } from '@fouc/shared/chats';
-import ReactMarkdown from 'react-markdown';
+import { useState } from 'react';
+import { ArrowClockwise, SignOut } from '@phosphor-icons/react';
+import type { CreateChannelInput } from '@fouc/shared/chats';
 import { Button } from '@/components/ui/button';
 import { ChannelAgentDialog, ChannelConfirmDialog, ChannelFormDialog, ChannelInviteDialog, ChannelPollDialog, ChannelTopicDialog } from './channel-dialogs';
 import { ChannelPanelModal } from './channel-panel-modal';
 import { channelClient } from './channel-client';
 import type { ChannelWorkbench } from './use-channel-workbench';
 import styles from './channels.module.css';
+
+export { ChannelFilePreview } from './channel-file-preview';
 
 export function ChannelOverlays({ workbench: w }: { workbench: ChannelWorkbench }) {
   const { t, modal, channel, snapshot } = w;
@@ -46,34 +46,5 @@ function ChannelModelRetry({ workbench: w }: { workbench: ChannelWorkbench }) {
   return <ChannelPanelModal title={w.t('chooseAgentModel')} onClose={w.closeModelRetry}>
     <div className={styles.modelRetry}><p>{w.t('agentError_model_unavailable')}</p><label>{retry.member.name}<select value={modelId} aria-label={w.t('chooseAgentModel')} onChange={event => setModelId(event.target.value)}>{options.map(model => <option key={model.id} value={model.id}>{model.name}</option>)}</select></label>{retry.detail && <details><summary>{w.t('errorDetails')}</summary><pre>{retry.detail}</pre></details>}</div>
     <footer><Button size="sm" variant="outline" onClick={w.closeModelRetry}>{w.t('cancel')}</Button><Button size="sm" disabled={!modelId} onClick={() => w.retryAgent(modelId)}>{w.t('retry')}</Button></footer>
-  </ChannelPanelModal>;
-}
-
-export function ChannelFilePreview({ attachment, workbench: w, onClose }: { attachment: ChannelAttachment; workbench: ChannelWorkbench; onClose: () => void }) {
-  const { t, channel } = w;
-  const { id, messageId, mime, name, size } = attachment;
-  const projectId = channel?.projectId;
-  const channelId = channel?.id;
-  const [resource, setResource] = useState<{ url: string; text: string | null } | null>(null);
-  const [error, setError] = useState(false);
-  useEffect(() => {
-    if (!projectId || !channelId) return;
-    let active = true;
-    let url: string | undefined;
-    void channelClient.attachment(projectId, channelId, { id, messageId }).then(async blob => {
-      const textual = /^(text\/)|json|javascript|xml|yaml/.test(mime) || /\.(md|txt|csv|json|yaml|yml|ts|js|py)$/i.test(name);
-      const text = textual && size <= 512_000 ? await blob.text() : null;
-      if (!active) return;
-      url = URL.createObjectURL(blob); setResource({ url, text });
-    }).catch(() => { if (active) setError(true); });
-    return () => { active = false; if (url) URL.revokeObjectURL(url); };
-  }, [id, messageId, mime, name, size, projectId, channelId]);
-  function download() {
-    if (!resource) return;
-    const anchor = document.createElement('a'); anchor.href = resource.url; anchor.download = attachment.name; anchor.click();
-  }
-  return <ChannelPanelModal title={attachment.name} onClose={onClose} className={styles.previewDialog}>
-    <div className={styles.previewBody}>{error ? <p>{t('failed')}</p> : !resource ? <div className={styles.skeleton} aria-label={t('loading')} /> : /^image\/(png|jpeg|gif|webp|avif)$/.test(attachment.mime) ? <Image src={resource.url} alt={attachment.name} width={900} height={640} style={{ width: 'auto', height: 'auto' }} unoptimized /> : resource.text !== null ? /\.md$/i.test(attachment.name) ? <div className={styles.messageText}><ReactMarkdown>{resource.text}</ReactMarkdown></div> : <pre>{resource.text}</pre> : attachment.mime === 'application/pdf' ? <iframe title={attachment.name} src={resource.url} /> : <p>{t('previewUnavailable')}</p>}</div>
-    <footer><Button type="button" size="sm" variant="outline" disabled={!resource} onClick={download}><ArrowDown size={14} />{t('download')}</Button></footer>
   </ChannelPanelModal>;
 }

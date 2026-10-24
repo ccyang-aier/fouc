@@ -11,6 +11,7 @@ import { useAppAlert } from '@/components/app-alert-provider';
 import { useTranslation } from '@/lib/i18n';
 import { ChannelAvatar, ChannelTool } from './channel-ui';
 import { ChannelAttachmentCard } from './channel-attachment';
+import { ChannelPollCard } from './channel-poll';
 import { channelEmoji } from './channel-composer';
 import { messages } from './channels.messages';
 import styles from './channels.module.css';
@@ -19,7 +20,7 @@ export function ChannelMessage({ message, snapshot, onReply, onReact, onEdit, on
   message: Message; snapshot: ChannelSnapshot; highlight?: boolean; compact?: boolean;
   onReply: (message: Message) => void; onReact: (message: Message, emoji: string) => void;
   onEdit: (message: Message, body: string) => Promise<boolean>; onDelete: (message: Message) => void;
-  onPin: (message: Message) => void; onVote: (message: Message, optionId: string) => void;
+  onPin: (message: Message) => void; onVote: (message: Message, optionId: string) => Promise<boolean>;
   onClosePoll: (message: Message) => void; onAttachment: (attachment: ChannelAttachment) => void;
   onAgent: (message: Message) => void;
 }) {
@@ -36,8 +37,6 @@ export function ChannelMessage({ message, snapshot, onReply, onReact, onEdit, on
   const replies = snapshot.messages.filter(item => item.threadId === message.id);
   const replyMembers = [...new Set(replies.map(item => item.authorId))].map(id => snapshot.members.find(member => member.id === id)).filter(member => member !== undefined).slice(0, 3);
   const hasOwnAgent = snapshot.members.some(member => member.active && member.kind === 'agent' && member.agentOwnerId === actor?.userId);
-  const voted = message.poll?.options.some(option => option.voterIds.includes(snapshot.actorId));
-  const totalVotes = message.poll?.options.reduce((total, option) => total + option.voterIds.length, 0) ?? 0;
   async function save() {
     if (!edit?.trim()) return;
     setSaving(true);
@@ -53,19 +52,13 @@ export function ChannelMessage({ message, snapshot, onReply, onReact, onEdit, on
       {message.title && <h3 className={styles.messageTitle}>{message.kind === 'summary' ? <Sparkle size={16} /> : <ChatCircleText size={16} />}{message.title}</h3>}
       {edit !== null ? <div className={styles.messageEdit}><textarea autoFocus aria-label={t('content')} value={edit} onChange={event => setEdit(event.target.value)} maxLength={20000} onKeyDown={event => { if (event.key === 'Escape') setEdit(null); }} /><div><Button variant="ghost" size="sm" onClick={() => setEdit(null)}>{t('cancel')}</Button><Button size="sm" loading={saving} disabled={!edit.trim()} onClick={() => void save()}>{t('save')}</Button></div></div>
         : message.body && <div className={styles.messageText}><ReactMarkdown remarkPlugins={[remarkGfm]} components={{ a: props => <a {...props} target="_blank" rel="noopener noreferrer" />, img: ({ alt }) => <span>{alt}</span> }}>{message.body}</ReactMarkdown></div>}
-      {message.poll && <div className={styles.poll}><h4>{message.poll.question}</h4>{message.poll.options.map(option => {
-        const percentage = totalVotes ? Math.round(option.voterIds.length / totalVotes * 100) : 0;
-        const selected = option.voterIds.includes(snapshot.actorId);
-        return <button type="button" key={option.id} className={`fouc-action ${styles.pollOption}`} aria-pressed={selected} disabled={message.poll?.closed || !canPost} onClick={() => onVote(message, option.id)}>
-          {(voted || message.poll?.closed) && <i style={{ width: `${percentage}%` }} />}{selected ? <Check size={13} /> : <span style={{ flex: '0 0 13px' }} />}<span>{option.text}</span>{(voted || message.poll?.closed) && <small>{percentage}%</small>}
-        </button>;
-      })}<div className={styles.pollFooter}><span>{t('votes', { count: totalVotes })}</span><span>{message.poll.closed ? t('closed') : t('poll')}</span></div>{!message.poll.closed && <p className={styles.pollHint}>{t('voteHint')}</p>}</div>}
+      {message.poll && <ChannelPollCard poll={message.poll} actorId={snapshot.actorId} members={snapshot.members} canVote={canPost} onVote={optionId => onVote(message, optionId)} />}
       {message.attachments.length > 0 && <div className={styles.messageAttachments}>{message.attachments.map(attachment => <ChannelAttachmentCard key={attachment.id} attachment={attachment} onOpen={() => onAttachment(attachment)} />)}</div>}
-      {message.reactions.some(reaction => reaction.userIds.length > 0) && <div className={styles.reactions}>{message.reactions.filter(reaction => reaction.userIds.length > 0).map(reaction => <button type="button" className={`fouc-action ${styles.reaction}`} key={reaction.emoji} aria-label={`${reaction.emoji} ${reaction.userIds.map(id => snapshot.members.find(member => member.id === id)?.name ?? '').join(', ')}`} aria-pressed={reaction.userIds.includes(snapshot.actorId)} onClick={() => onReact(message, reaction.emoji)}>{reaction.emoji}<small>{reaction.userIds.length}</small></button>)}</div>}
+      {message.reactions.some(reaction => reaction.userIds.length > 0) && <div className={styles.reactions}>{message.reactions.filter(reaction => reaction.userIds.length > 0).map(reaction => <button type="button" className={`fouc-action ${styles.reaction}`} key={reaction.emoji} aria-label={`${reaction.emoji} ${reaction.userIds.map(id => snapshot.members.find(member => member.id === id)?.name ?? '').join(', ')}`} aria-pressed={reaction.userIds.includes(snapshot.actorId)} disabled={!canPost} onClick={() => onReact(message, reaction.emoji)}>{reaction.emoji}<small>{reaction.userIds.length}</small></button>)}</div>}
       {!compact && replies.length > 0 && <button type="button" className={`fouc-action ${styles.replyButton}`} onClick={() => onReply(message)}><span className={styles.replyAvatars}>{replyMembers.map(member => <ChannelAvatar key={member.id} member={member} size={24} />)}</span><span>{t('replyCount', { count: replies.length })}</span><ArrowSquareOut size={12} aria-hidden /></button>}
     </div>
     <div className={styles.messageTools}>
-      <DropdownMenu open={reactionOpen} onOpenChange={setReactionOpen}><DropdownMenuTrigger className={styles.tool} aria-label={t('react')}><Smiley size={16} /></DropdownMenuTrigger><DropdownMenuContent className={styles.menu} side="top" align="end"><div className={styles.emojiGrid}>{channelEmoji.map(emoji => <button type="button" className="fouc-action" key={emoji} aria-label={emoji} onClick={() => { onReact(message, emoji); setReactionOpen(false); }}>{emoji}</button>)}</div></DropdownMenuContent></DropdownMenu>
+      <DropdownMenu open={reactionOpen} onOpenChange={setReactionOpen}><DropdownMenuTrigger className={styles.tool} disabled={!canPost} aria-label={t('react')}><Smiley size={16} /></DropdownMenuTrigger><DropdownMenuContent className={styles.menu} side="top" align="end"><div className={styles.emojiGrid}>{channelEmoji.map(emoji => <button type="button" className="fouc-action" key={emoji} aria-label={emoji} onClick={() => { onReact(message, emoji); setReactionOpen(false); }}>{emoji}</button>)}</div></DropdownMenuContent></DropdownMenu>
       {!compact && <ChannelTool label={t('reply')} onClick={() => onReply(message)}><ChatCircleText size={16} /></ChannelTool>}
       <DropdownMenu><DropdownMenuTrigger className={styles.tool} aria-label={t('more')}><DotsThree size={19} /></DropdownMenuTrigger><DropdownMenuContent className={styles.menu} side="top" align="end" density="compact">
         <DropdownMenuItem onSelect={() => void copy()}><Copy />{t('copy')}</DropdownMenuItem>

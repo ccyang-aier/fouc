@@ -21,7 +21,7 @@ export function useMessageActions(w: ChannelWorkbench, onAttachment: (attachment
     onEdit: (message: Message, body: string) => channel ? mutate(() => channelClient.editMessage(channel.projectId, channel.id, message.id, { body })) : Promise.resolve(false),
     onDelete: (message: Message) => w.setModal({ deleteMessage: message }),
     onPin: (message: Message) => { if (channel) void mutate(() => channelClient.editMessage(channel.projectId, channel.id, message.id, { pinned: !message.pinned })); },
-    onVote: (message: Message, optionId: string) => { if (channel) void mutate(() => channelClient.vote(channel.projectId, channel.id, message.id, optionId)); },
+    onVote: (message: Message, optionId: string) => channel ? mutate(() => channelClient.vote(channel.projectId, channel.id, message.id, optionId)) : Promise.resolve(false),
     onClosePoll: (message: Message) => { if (channel) void mutate(() => channelClient.editMessage(channel.projectId, channel.id, message.id, { closed: true })); },
     onAgent: (message: Message) => {
       const agent = w.ownAgents[0];

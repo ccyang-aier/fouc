@@ -17,17 +17,17 @@ export function ChannelHeader({ workbench: w }: { workbench: ChannelWorkbench })
   function toggleFavorite() { if (!channel) return; w.preferences.toggle('favorites', channel.id); w.notify('success', t(favorite ? 'favoriteRemoved' : 'favoriteSaved')); }
   return <>
     <header className={styles.header}>
-      <span className={styles.chatLabel}><ChatCircleDots size={17} />{t('chats')}</span><span className={styles.headerDivider} />
-      <ChannelSwitcher workbench={w} />
+      <span className={styles.chatLabel}><ChatCircleDots size={17} />{t('channels')}</span>
+      {channel && <><span className={styles.headerSlash} aria-hidden>/</span><ChannelSwitcher workbench={w} /></>}
       {channel?.visibility === 'private' && <LockSimple className={styles.channelState} size={11} aria-label={t('private')} />}
       {channel && w.preferences.muted.includes(channel.id) && <BellSimpleSlash className={styles.channelState} size={12} aria-label={t('muted')} />}
-      {channel?.description && <span className={styles.headerDescription}>{channel.description}</span>}
+      {channel && <><span className={styles.headerSlash} aria-hidden>/</span><span className={styles.headerContext}>{t(w.tab)}</span></>}
       <div className={styles.headerActions}>
         <ChannelTool label={t('new')} disabled={!w.canUse} onClick={() => w.setModal('create')}><Plus size={16} /></ChannelTool>
         {channel && <>
         <button type="button" className={`fouc-action ${styles.avatars}`} aria-label={t('members')} onClick={() => w.setTab('members')}>{active.slice(0, 3).map(member => <ChannelAvatar key={member.id} member={member} size={25} />)}<small>{active.length}</small></button>
         {canInvite && <ChannelTool label={t('addMembers')} onClick={() => w.setModal('invite')}><UserPlus size={17} /></ChannelTool>}
-        <ChannelTool label={t('favorite')} aria-pressed={favorite} onClick={toggleFavorite}><Star size={17} weight={favorite ? 'fill' : 'regular'} /></ChannelTool>
+        <ChannelTool label={t(favorite ? 'unfavorite' : 'favorite')} aria-pressed={favorite} onClick={toggleFavorite}><Star size={17} weight={favorite ? 'fill' : 'regular'} /></ChannelTool>
         <ChannelTool label={t('searchMessages')} aria-pressed={w.panel === 'search'} onClick={() => { w.setTab('conversation'); w.setPanel(w.panel === 'search' ? null : 'search'); }}><MagnifyingGlass size={17} /></ChannelTool>
         <DropdownMenu><DropdownMenuTrigger className={styles.tool} aria-label={t('more')}><DotsThree size={21} /></DropdownMenuTrigger><DropdownMenuContent className={styles.menu} align="end" density="compact">
           <DropdownMenuItem onSelect={toggleFavorite}><Star />{t(favorite ? 'unfavorite' : 'favorite')}</DropdownMenuItem>

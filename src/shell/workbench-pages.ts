@@ -8,7 +8,7 @@ export const workbenchPages = {
   tasks: { label: '任务', icon: ListChecks },
   members: { label: '成员', icon: UsersThree },
   assets: { label: '资产', icon: Archive },
-  chats: { label: '聊天', icon: ChatsCircle },
+  chats: { label: '频道', icon: ChatsCircle },
   agents: { label: '智能体', icon: Robot },
   community: { label: '社区', icon: Planet },
   connectors: { label: '连接器', icon: PlugsConnected },

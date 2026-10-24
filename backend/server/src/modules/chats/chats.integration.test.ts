@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test';
-import type { ChannelSnapshot } from '@fouc/shared/chats';
+import { channelColorSchema, type ChannelSnapshot } from '@fouc/shared/chats';
+import { inspectFoucDatabase } from '../../platform/database/initialize-status';
 import { createAuthTestServer, responseCookie, testPassword, type AuthTestServer } from '../../platform/identity/auth-test-server';
 import type { S3ObjectStorage } from '../../platform/storage/s3';
 import { createProjectRoutes } from '../projects/http';
@@ -157,4 +158,50 @@ test('concurrent first reads of a project-visible channel create a single partic
   const snapshot = await responses[1]!.json() as ChannelSnapshot;
   expect(snapshot.members.filter(participant => participant.userId === member.userId && participant.kind === 'user')).toHaveLength(1);
   expect((await request(outsider, `/${channel.channel.id}`)).status).toBe(404);
+});
+test('channel icons and random default colors persist while appearance updates require channel management', async () => {
+  const generated = await create('Random channel', [member.userId]);
+  expect(generated.channel.icon).toBe('hash');
+  expect(channelColorSchema.safeParse(generated.channel.color).success).toBe(true);
+  expect(generated.channel.color).not.toBe('slate');
+  const fetched = await (await request(owner, `/${generated.channel.id}`)).json() as ChannelSnapshot;
+  expect(fetched.channel.color).toBe(generated.channel.color);
+  const created = await request(owner, '', 'POST', { name: 'Custom appearance', icon: 'circles-four', color: 'green' });
+  expect(created.status).toBe(201);
+  const selected = await created.json() as ChannelSnapshot;
+  expect(selected.channel).toMatchObject({ icon: 'circles-four', color: 'green' });
+  expect((await request(member, `/${generated.channel.id}`, 'PATCH', { icon: 'rocket' })).status).toBe(403);
+  const updated = await (await request(owner, `/${selected.channel.id}`, 'PATCH', { icon: 'lightbulb', color: 'rose' })).json() as ChannelSnapshot;
+  expect(updated.channel).toMatchObject({ icon: 'lightbulb', color: 'rose' });
+  expect((await request(owner, '', 'POST', { name: 'Invalid icon', icon: 'not-an-icon' })).status).toBe(400);
+  expect((await request(owner, `/${selected.channel.id}`, 'PATCH', { icon: '<svg>' })).status).toBe(400);
+  const neutral = await request(owner, '', 'POST', { name: 'Explicit neutral color', color: 'slate' });
+  expect(neutral.status).toBe(201);
+  expect((await neutral.json() as ChannelSnapshot).channel.color).toBe('slate');
+  const listed = await (await request(owner, '')).json() as { items: ChannelSnapshot['channel'][] };
+  expect(listed.items.find(item => item.id === selected.channel.id)).toMatchObject({ icon: 'lightbulb', color: 'rose' });
+});
+test('channel reactions support emoji graphemes and reject text, multiple emojis and markup', async () => {
+  const channel = await create('Emoji reactions', [member.userId]); const base = `/${channel.channel.id}`;
+  const sent = await (await request(owner, `${base}/messages`, 'POST', { body: 'Emoji support' })).json() as ChannelSnapshot;
+  const messageId = sent.messages[0]!.id;
+  for (const emoji of ['👩🏽‍💻', '🇨🇳', '🏳️‍🌈', '1️⃣']) {
+    const reacted = await request(member, `${base}/messages/${messageId}/reactions`, 'POST', { emoji });
+    expect(reacted.status).toBe(200);
+    const snapshot = await reacted.json() as ChannelSnapshot;
+    expect(snapshot.messages[0]!.reactions.find(reaction => reaction.emoji === emoji)?.userIds).toEqual([snapshot.actorId]);
+    expect((await request(member, `${base}/messages/${messageId}/reactions`, 'POST', { emoji })).status).toBe(200);
+  }
+  for (const emoji of ['plain text', '😀😀', '<b>😀</b>', '🏽', '👩‍🚀‍💻']) expect((await request(member, `${base}/messages/${messageId}/reactions`, 'POST', { emoji })).status).toBe(400);
+  expect((await request(outsider, `${base}/messages/${messageId}/reactions`, 'POST', { emoji: '👩🏽‍💻' })).status).toBe(404);
+});
+test('database status detects channel appearance default drift', async () => {
+  const client = await server.database.admin.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query("ALTER TABLE resources.chat_channel ALTER COLUMN icon SET DEFAULT 'rocket', ALTER COLUMN color SET DEFAULT 'violet'");
+    const status = await inspectFoucDatabase(client, server.database.pool);
+    expect(status.issues).toContain('Channel icon default differs from current definition');
+    expect(status.issues).toContain('Channel color must be assigned by the service without a fixed database default');
+  } finally { await client.query('ROLLBACK'); client.release(); }
 });

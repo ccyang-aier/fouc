@@ -40,7 +40,7 @@ export async function channelViews(db: ResourceTransaction, rows: ChannelRow[]):
     const activity = messages.rows.find(item => item.channel_id === row.id);
     const updatedAt = activity?.updated && new Date(activity.updated).getTime() > row.updatedAt.getTime() ? new Date(activity.updated) : row.updatedAt;
     return { id: row.id, projectId: row.projectId, name: row.name, description: row.description,
-      color: row.color as Channel['color'], visibility: row.visibility as Channel['visibility'], ownerId: row.ownerId,
+      icon: row.icon, color: row.color as Channel['color'], visibility: row.visibility as Channel['visibility'], ownerId: row.ownerId,
       permissions: row.permissions, createdAt: row.createdAt.toISOString(), updatedAt: updatedAt.toISOString(),
       memberCount: members.rows.find(item => item.channel_id === row.id)?.count ?? 0,
       messageCount: activity?.count ?? 0, lastMessage: last.rows.find(item => item.channel_id === row.id)?.preview ?? null };

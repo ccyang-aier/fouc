@@ -8,11 +8,14 @@ export const channelScopeSchema = z.strictObject({ projectId: id, channelId: id 
 export const channelPermissionSchema = z.enum(['members', 'admins']);
 export const channelRoleSchema = z.enum(['owner', 'admin', 'member']);
 export const channelColorSchema = z.enum(['violet', 'blue', 'green', 'orange', 'rose', 'slate']);
+export const CHANNEL_ICON_NAMES = ['hash', 'circles-four', 'chat', 'sparkle', 'code', 'palette', 'rocket', 'globe', 'book', 'coffee', 'heart', 'leaf', 'megaphone', 'briefcase', 'users', 'lightbulb'] as const;
+export const channelIconSchema = z.enum(CHANNEL_ICON_NAMES);
+export type ChannelIconName = z.infer<typeof channelIconSchema>;
 export type ChannelRole = z.infer<typeof channelRoleSchema>;
 export type ChannelPermissions = { invite: 'members' | 'admins'; post: 'members' | 'admins' };
 export type Channel = {
   id: string; projectId: string; name: string; description: string;
-  color: z.infer<typeof channelColorSchema>; visibility: 'private' | 'project';
+  icon: ChannelIconName; color: z.infer<typeof channelColorSchema>; visibility: 'private' | 'project';
   ownerId: string; permissions: ChannelPermissions; memberCount: number;
   messageCount: number; lastMessage: string | null; createdAt: string; updatedAt: string;
 };
@@ -43,13 +46,13 @@ export type ChannelSnapshot = {
 export type ChannelMessagePage = { items: ChannelMessage[]; hasMore: boolean };
 export const createChannelInputSchema = z.strictObject({
   projectId: id, name: z.string().trim().min(1).max(80), description: z.string().trim().max(1000).default(''),
-  color: channelColorSchema.default('violet'), visibility: z.enum(['private', 'project']).default('private'),
+  icon: channelIconSchema.default('hash'), color: channelColorSchema.optional(), visibility: z.enum(['private', 'project']).default('private'),
   memberIds: z.array(id).max(200).default([]),
 });
 export type CreateChannelInput = Omit<z.input<typeof createChannelInputSchema>, 'projectId'>;
 export const updateChannelInputSchema = channelScopeSchema.extend({
   name: z.string().trim().min(1).max(80).optional(), description: z.string().trim().max(1000).optional(),
-  color: channelColorSchema.optional(), visibility: z.enum(['private', 'project']).optional(),
+  icon: channelIconSchema.optional(), color: channelColorSchema.optional(), visibility: z.enum(['private', 'project']).optional(),
   permissions: z.strictObject({ invite: channelPermissionSchema, post: channelPermissionSchema }).optional(),
 });
 export type UpdateChannelInput = Omit<z.infer<typeof updateChannelInputSchema>, 'projectId' | 'channelId'>;
@@ -66,7 +69,18 @@ export const addChannelMembersSchema = channelScopeSchema.extend({ userIds: z.ar
 export const channelMemberScopeSchema = channelScopeSchema.extend({ memberId: id });
 export const setChannelMemberRoleSchema = channelMemberScopeSchema.extend({ role: z.enum(['admin', 'member']) });
 export const addChannelAgentSchema = channelScopeSchema.extend({ installationId: z.string().trim().min(1).max(200), name: z.string().trim().min(1).max(100), image: z.string().max(1000).nullable().optional() });
-export const toggleChannelReactionSchema = channelMessageScopeSchema.extend({ emoji: z.enum(['👍', '❤️', '🎉', '👀', '✅', '🚀', '💡', '🙏', '😂']) });
+const emojiSegmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+// RGI includes valid ZWJ, skin-tone, flag, tag and keycap sequences. The second
+// branch also permits a single assigned pictograph in its text presentation.
+const emojiSequence = new RegExp('^(?:\\p{RGI_Emoji}|[\\p{Extended_Pictographic}&&\\p{Emoji}]\\uFE0F?)$', 'v');
+const bareSkinTone = /^\p{Emoji_Modifier}$/u;
+export function isChannelEmoji(value: unknown): value is string {
+  if (typeof value !== 'string' || !value || value.length > 64 || bareSkinTone.test(value)) return false;
+  const segments = emojiSegmenter.segment(value)[Symbol.iterator]();
+  return !segments.next().done && Boolean(segments.next().done) && emojiSequence.test(value);
+}
+export const channelEmojiSchema = z.string().max(64).refine(isChannelEmoji, 'A single emoji is required.');
+export const toggleChannelReactionSchema = channelMessageScopeSchema.extend({ emoji: channelEmojiSchema });
 export const voteChannelPollSchema = channelMessageScopeSchema.extend({ optionId: id });
 export const channelAttachmentScopeSchema = channelMessageScopeSchema.extend({ attachmentId: id });
 export const channelAgentMessageSchema = channelMemberScopeSchema.extend({ body: z.string().trim().min(1).max(20000), threadId: id.optional(), execution: z.strictObject({ sessionId: z.string().min(1).max(200), runId: z.string().min(1).max(200) }).optional() });

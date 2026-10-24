@@ -27,7 +27,7 @@ function message(index: number): ChannelMessage {
 }
 
 function snapshot(): ChannelSnapshot {
-  return { channel: { id: 'channel', projectId: resource.selectedProject.id, name: 'Real channel', description: '', color: 'violet', visibility: 'private',
+  return { channel: { id: 'channel', projectId: resource.selectedProject.id, name: 'Real channel', description: '', icon: 'hash', color: 'violet', visibility: 'private',
     ownerId: 'owner', permissions: { invite: 'members', post: 'members' }, memberCount: 1, messageCount: messages.length,
     lastMessage: messages.at(-1)?.body ?? null, createdAt: messages[0].createdAt, updatedAt: messages.at(-1)!.createdAt },
     actorId: 'person', actorRole: 'owner', members: [], messages: messages.slice(-2), hasMoreMessages: messages.length > 2 };

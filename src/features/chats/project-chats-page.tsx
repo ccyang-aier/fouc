@@ -16,6 +16,7 @@ import { ChannelEmpty } from './channel-ui';
 import { channelClient } from './channel-client';
 import { useChannelWorkbench } from './use-channel-workbench';
 import { useChannelAssets } from './channel-data';
+import { channelActiveView } from './channel-navigation';
 import './channel-fonts.css';
 import styles from './channels.module.css';
 
@@ -42,6 +43,10 @@ function ChannelWorkbenchPage() {
   const [highlight, setHighlight] = useState<string | null>(null);
   const page = useRef<HTMLElement>(null);
   const visible = usePageVisible();
+  useEffect(() => {
+    if (!visible || !w.project.scopeKey || !channel?.id) return;
+    return channelActiveView.publish(w.project.scopeKey, channel.id);
+  }, [visible, w.project.scopeKey, channel?.id]);
   const assets = useChannelAssets(w.tab === 'assets' ? channel?.id ?? null : null);
   function openAttachment(attachment: ChannelAttachment) { if (channel) setPreview({ attachment, channelId: channel.id }); }
   const actions = useMessageActions(w, openAttachment);
@@ -73,7 +78,7 @@ function ChannelWorkbenchPage() {
     window.addEventListener('keydown', shortcut);
     return () => window.removeEventListener('keydown', shortcut);
   }, [visible, w]);
-  return <section ref={page} className={styles.page} aria-label={t('chats')}>
+  return <section ref={page} className={styles.page} aria-label={t('channels')}>
     <div className={styles.content}>
       <ChannelHeader workbench={w} />
       {!w.canUse ? <ChannelEmpty title={t('serverProject')} description={t(w.project.principal === 'guest' ? 'signInDescription' : 'serverProjectDescription')}>{w.project.principal === 'guest' && <Button size="sm" onClick={w.identity.openSignIn}>{t('signIn')}</Button>}</ChannelEmpty>

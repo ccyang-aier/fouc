@@ -1,18 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import { ArrowSquareOut, ChatCircleText, Check, Copy, DotsThree, PencilSimple, PushPin, Robot, Smiley, Sparkle, Trash } from '@phosphor-icons/react';
+import { ArrowSquareOut, ChatCircleText, Check, Copy, DotsThree, PencilSimple, PushPin, Robot, Sparkle, Trash } from '@phosphor-icons/react';
 import type { ChannelAttachment, ChannelMessage as Message, ChannelSnapshot } from '@fouc/shared/chats';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAppAlert } from '@/components/app-alert-provider';
 import { useTranslation } from '@/lib/i18n';
+import { EmojiGlyph, ModernEmojiPicker } from '@/components/chat-emoji';
 import { ChannelAvatar, ChannelTool } from './channel-ui';
 import { ChannelAttachmentCard } from './channel-attachment';
 import { ChannelPollCard } from './channel-poll';
-import { channelEmoji } from './channel-composer';
+import { ChannelMessageMarkdown } from './channel-message-markdown';
+import { ChannelTextInput } from './channel-text-input';
 import { messages } from './channels.messages';
 import styles from './channels.module.css';
 
@@ -28,7 +28,6 @@ export function ChannelMessage({ message, snapshot, onReply, onReact, onEdit, on
   const { notify } = useAppAlert();
   const [edit, setEdit] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [reactionOpen, setReactionOpen] = useState(false);
   const author = snapshot.members.find(member => member.id === message.authorId) ?? { name: message.authorName, image: message.authorImage, kind: message.authorKind };
   const actor = snapshot.members.find(member => member.id === snapshot.actorId);
   const own = message.authorId === snapshot.actorId;
@@ -50,15 +49,15 @@ export function ChannelMessage({ message, snapshot, onReply, onReact, onEdit, on
       {message.pinned && <div className={styles.pinnedLabel}><PushPin size={11} />{t('pinned')}</div>}
       <div className={styles.messageHeader}><strong>{author.name}</strong>{author.kind === 'agent' && <span className={styles.agentBadge}>Agent</span>}<time dateTime={message.createdAt} title={new Date(message.createdAt).toLocaleString(locale)}>{new Date(message.createdAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', hour12: false })}</time>{message.editedAt && <small>· {t('edited')}</small>}</div>
       {message.title && <h3 className={styles.messageTitle}>{message.kind === 'summary' ? <Sparkle size={16} /> : <ChatCircleText size={16} />}{message.title}</h3>}
-      {edit !== null ? <div className={styles.messageEdit}><textarea autoFocus aria-label={t('content')} value={edit} onChange={event => setEdit(event.target.value)} maxLength={20000} onKeyDown={event => { if (event.key === 'Escape') setEdit(null); }} /><div><Button variant="ghost" size="sm" onClick={() => setEdit(null)}>{t('cancel')}</Button><Button size="sm" loading={saving} disabled={!edit.trim()} onClick={() => void save()}>{t('save')}</Button></div></div>
-        : message.body && <div className={styles.messageText}><ReactMarkdown remarkPlugins={[remarkGfm]} components={{ a: props => <a {...props} target="_blank" rel="noopener noreferrer" />, img: ({ alt }) => <span>{alt}</span> }}>{message.body}</ReactMarkdown></div>}
+      {edit !== null ? <div className={styles.messageEdit}><ChannelTextInput autoFocus label={t('content')} placeholder={t('content')} value={edit} members={snapshot.members} readOnly={saving} onChange={value => setEdit(value)} onSelectionChange={() => {}} onKeyDown={event => { if (event.key === 'Escape' && !saving) setEdit(null); }} onFiles={() => {}} /><div className={styles.messageEditActions}><Button variant="ghost" size="sm" disabled={saving} onClick={() => setEdit(null)}>{t('cancel')}</Button><Button size="sm" loading={saving} disabled={!edit.trim()} onClick={() => void save()}>{t('save')}</Button></div></div>
+        : message.body && <div className={styles.messageText}><ChannelMessageMarkdown body={message.body} members={snapshot.members} /></div>}
       {message.poll && <ChannelPollCard poll={message.poll} actorId={snapshot.actorId} members={snapshot.members} canVote={canPost} onVote={optionId => onVote(message, optionId)} />}
       {message.attachments.length > 0 && <div className={styles.messageAttachments}>{message.attachments.map(attachment => <ChannelAttachmentCard key={attachment.id} attachment={attachment} onOpen={() => onAttachment(attachment)} />)}</div>}
-      {message.reactions.some(reaction => reaction.userIds.length > 0) && <div className={styles.reactions}>{message.reactions.filter(reaction => reaction.userIds.length > 0).map(reaction => <button type="button" className={`fouc-action ${styles.reaction}`} key={reaction.emoji} aria-label={`${reaction.emoji} ${reaction.userIds.map(id => snapshot.members.find(member => member.id === id)?.name ?? '').join(', ')}`} aria-pressed={reaction.userIds.includes(snapshot.actorId)} disabled={!canPost} onClick={() => onReact(message, reaction.emoji)}>{reaction.emoji}<small>{reaction.userIds.length}</small></button>)}</div>}
+      {message.reactions.some(reaction => reaction.userIds.length > 0) && <div className={styles.reactions}>{message.reactions.filter(reaction => reaction.userIds.length > 0).map(reaction => <button type="button" className={`fouc-action ${styles.reaction}`} key={reaction.emoji} aria-label={`${reaction.emoji} ${reaction.userIds.map(id => snapshot.members.find(member => member.id === id)?.name ?? '').join(', ')}`} aria-pressed={reaction.userIds.includes(snapshot.actorId)} disabled={!canPost} onClick={() => onReact(message, reaction.emoji)}><EmojiGlyph emoji={reaction.emoji} size={18} /><small>{reaction.userIds.length}</small></button>)}</div>}
       {!compact && replies.length > 0 && <button type="button" className={`fouc-action ${styles.replyButton}`} onClick={() => onReply(message)}><span className={styles.replyAvatars}>{replyMembers.map(member => <ChannelAvatar key={member.id} member={member} size={24} />)}</span><span>{t('replyCount', { count: replies.length })}</span><ArrowSquareOut size={12} aria-hidden /></button>}
     </div>
     <div className={styles.messageTools}>
-      <DropdownMenu open={reactionOpen} onOpenChange={setReactionOpen}><DropdownMenuTrigger className={styles.tool} disabled={!canPost} aria-label={t('react')}><Smiley size={16} /></DropdownMenuTrigger><DropdownMenuContent className={styles.menu} side="top" align="end"><div className={styles.emojiGrid}>{channelEmoji.map(emoji => <button type="button" className="fouc-action" key={emoji} aria-label={emoji} onClick={() => { onReact(message, emoji); setReactionOpen(false); }}>{emoji}</button>)}</div></DropdownMenuContent></DropdownMenu>
+      <ModernEmojiPicker className={styles.tool} mode="reaction" disabled={!canPost} label={t('react')} onSelect={emoji => onReact(message, emoji)} />
       {!compact && <ChannelTool label={t('reply')} onClick={() => onReply(message)}><ChatCircleText size={16} /></ChannelTool>}
       <DropdownMenu><DropdownMenuTrigger className={styles.tool} aria-label={t('more')}><DotsThree size={19} /></DropdownMenuTrigger><DropdownMenuContent className={styles.menu} side="top" align="end" density="compact">
         <DropdownMenuItem onSelect={() => void copy()}><Copy />{t('copy')}</DropdownMenuItem>

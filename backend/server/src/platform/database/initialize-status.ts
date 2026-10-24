@@ -53,10 +53,12 @@ export async function inspectFoucDatabase(admin: FoucSqlConnection, application:
     WHERE n.nspname = ANY($1::text[]) AND c.relkind = 'r'
   `, [[...foucDatabaseSchemas]]);
   status.tables = relations.rows.length;
-  const columns = await admin.query<{ schema: string; table: string; name: string; type: string; notNull: boolean; identity: string }>(`
+  const columns = await admin.query<{ schema: string; table: string; name: string; type: string; notNull: boolean; identity: string; defaultValue: string | null }>(`
     SELECT n.nspname AS schema, c.relname AS table, a.attname AS name,
-      format_type(a.atttypid, a.atttypmod) AS type, a.attnotnull AS "notNull", a.attidentity AS identity
+      format_type(a.atttypid, a.atttypmod) AS type, a.attnotnull AS "notNull", a.attidentity AS identity,
+      pg_get_expr(d.adbin, d.adrelid) AS "defaultValue"
     FROM pg_attribute a JOIN pg_class c ON c.oid = a.attrelid JOIN pg_namespace n ON n.oid = c.relnamespace
+    LEFT JOIN pg_attrdef d ON d.adrelid = a.attrelid AND d.adnum = a.attnum
     WHERE n.nspname = ANY($1::text[]) AND c.relkind = 'r' AND a.attnum > 0 AND NOT a.attisdropped
   `, [[...foucDatabaseSchemas]]);
   const constraints = await admin.query<{ schema: string; table: string; name: string; validated: boolean }>(`
@@ -124,6 +126,10 @@ export async function inspectFoucDatabase(admin: FoucSqlConnection, application:
     }
     const tableColumns = columns.rows.filter((row) => key(row.schema, row.table) === target);
     if (tableColumns.length !== config.columns.length) issues.push(`Column count differs: ${target}`);
+    if (target === 'resources.chat_channel') {
+      if (tableColumns.find(column => column.name === 'icon')?.defaultValue !== "'hash'::character varying") issues.push('Channel icon default differs from current definition');
+      if (tableColumns.find(column => column.name === 'color')?.defaultValue !== null) issues.push('Channel color must be assigned by the service without a fixed database default');
+    }
     for (const column of config.columns) {
       const actual = tableColumns.find((item) => item.name === column.name);
       if (!actual || normalizeType(actual.type) !== normalizeType(column.getSQLType()) || actual.notNull !== column.notNull || actual.identity !== (column.generatedIdentity?.type === 'always' ? 'a' : column.generatedIdentity ? 'd' : '')) {

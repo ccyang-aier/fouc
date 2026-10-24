@@ -1,6 +1,6 @@
 import { defineMessages } from '@/lib/i18n';
 export const messages = defineMessages({
-  chats: ['聊天', 'Chat'], new: ['发起聊天', 'New chat'], searchChannels: ['搜索频道', 'Search channels'],
+  chats: ['聊天', 'Chat'], new: ['新建频道', 'New channel'], searchChannels: ['搜索频道', 'Search channels'],
   all: ['全部', 'All'], unread: ['未读', 'Unread'], favorites: ['收藏', 'Favorites'], channels: ['频道', 'Channels'],
   favoriteChannels: ['收藏频道', 'Favorites'], projectChannels: ['项目频道', 'Project channels'],
   noChannels: ['让协作，从聊天开始', 'Great work starts with a conversation'],

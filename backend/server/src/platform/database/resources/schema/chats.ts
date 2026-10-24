@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { boolean, check, foreignKey, index, jsonb, primaryKey, text, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
-import type { ChannelAttachment, ChannelPermissions, ChannelPoll, ChannelRole, ChannelMessage } from '@fouc/shared/chats';
+import { CHANNEL_ICON_NAMES, type ChannelAttachment, type ChannelIconName, type ChannelPermissions, type ChannelPoll, type ChannelRole, type ChannelMessage } from '@fouc/shared/chats';
 import { resourcesNamespace } from './namespaces';
 import { instant } from './types';
 import { project, projectMember } from './projects';
@@ -10,7 +10,8 @@ export type StoredChannelAttachment = ChannelAttachment & { objectKey: string };
 export const chatChannel = resourcesNamespace.table('chat_channel', {
   projectId: uuid('project_id').notNull().references(() => project.id, { onDelete: 'cascade' }),
   id: uuid('id').notNull(), name: varchar('name', { length: 80 }).notNull(), description: text('description').notNull().default(''),
-  color: varchar('color', { length: 8 }).notNull().default('violet'), visibility: varchar('visibility', { length: 8 }).notNull().default('private'),
+  icon: varchar('icon', { length: 16 }).$type<ChannelIconName>().notNull().default('hash'),
+  color: varchar('color', { length: 8 }).notNull(), visibility: varchar('visibility', { length: 8 }).notNull().default('private'),
   ownerId: uuid('owner_id').notNull().references(() => authUser.id),
   permissions: jsonb('permissions').$type<ChannelPermissions>().notNull().default({ invite: 'members', post: 'members' }),
   createdAt: instant('created_at').notNull().defaultNow(), updatedAt: instant('updated_at').notNull().defaultNow(),
@@ -19,6 +20,7 @@ export const chatChannel = resourcesNamespace.table('chat_channel', {
   check('chat_channel_name_valid', sql`length(btrim(${table.name})) > 0`),
   check('chat_channel_visibility_valid', sql`${table.visibility} IN ('private', 'project')`),
   check('chat_channel_color_valid', sql`${table.color} IN ('violet', 'blue', 'green', 'orange', 'rose', 'slate')`),
+  check('chat_channel_icon_valid', sql`${table.icon} IN (${sql.raw(CHANNEL_ICON_NAMES.map(name => `'${name}'`).join(', '))})`),
   check('chat_channel_permissions_valid', sql`${table.permissions}->>'invite' IN ('members', 'admins') AND ${table.permissions}->>'post' IN ('members', 'admins')`),
   index('chat_channel_project_updated_idx').on(table.projectId, table.updatedAt),
 ]);

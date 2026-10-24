@@ -24,9 +24,12 @@ beforeAll(async () => {
   for (const name of ['document', 'navigator', 'HTMLElement', 'HTMLButtonElement', 'Element', 'Node', 'Event', 'MouseEvent', 'CustomEvent', 'MutationObserver', 'getComputedStyle', 'localStorage', 'DocumentFragment']) globals[name] = (browser as unknown as Record<string, unknown>)[name];
   globals.window = browser;
   globals.IS_REACT_ACT_ENVIRONMENT = true;
+  const Icon = () => null;
+  mock.module('@phosphor-icons/react', () => ({ ChatCircleDots: Icon, DotsThree: Icon, PencilSimple: Icon, Plus: Icon, PushPin: Icon, PushPinSlash: Icon, SortAscending: Icon, ChatsCircle: Icon, Trash: Icon, CaretRight: Icon, Check: Icon, MagnifyingGlass: Icon, X: Icon }));
   mock.module('@/features/identity/identity-provider', () => ({ useIdentity: () => ({ session: { status: 'authenticated', user: { id: principal } } }) }));
   mock.module('@/features/project/project-resources', () => ({ useProjectResources: () => ({ scopeKey, principal }) }));
   mock.module('@/features/chats/channel-data', () => ({ useChannelDirectory: () => ({ data: { items: directories.get(scopeKey) ?? [] }, isError: false, refetch: async () => {} }) }));
+  mock.module('@/features/chats/channel-ui', () => ({ ChannelIcon: ({ channel }: { channel: Channel }) => <span data-channel-icon={channel.icon} /> }));
   mock.module('@/components/app-alert-provider', () => ({ useAppAlert: () => ({ notify: (tone: string, title: string) => { notifications.push({ tone, title }); return 1; } }) }));
   const { SidebarProjectSections } = await import('./sidebar-project-sections');
   const { TooltipProvider } = await import('@/components/ui/tooltip');
@@ -36,7 +39,7 @@ beforeAll(async () => {
   host = document.createElement('div');
   document.body.append(host);
   root = createRoot(host);
-});
+}, 20_000);
 
 beforeEach(async () => {
   await act(async () => root.render(null));
@@ -55,7 +58,7 @@ async function seed(channels: Channel[], entries: ChatHistoryEntry[] = [], favor
   await render();
 }
 function channel(id: string, name: string, ownerId = 'alice'): Channel {
-  return { id, name, ownerId, projectId: 'project', description: '', color: 'violet', visibility: 'private', permissions: { invite: 'members', post: 'members' }, memberCount: 1, messageCount: 0, lastMessage: null, createdAt: '2026-10-24T00:00:00Z', updatedAt: '2026-10-24T00:00:00Z' };
+  return { id, name, ownerId, projectId: 'project', description: '', icon: 'hash', color: 'violet', visibility: 'private', permissions: { invite: 'members', post: 'members' }, memberCount: 1, messageCount: 0, lastMessage: null, createdAt: '2026-10-24T00:00:00Z', updatedAt: '2026-10-24T00:00:00Z' };
 }
 function entry(id: string, title: string, pinned = false, minute = 0): ChatHistoryEntry {
   return { id, title, pinned, submissions: [], updatedAt: new Date(Date.UTC(2026, 9, 18, 8, minute)) };
@@ -143,4 +146,37 @@ test('owner channel actions route to settings and deletion confirmation in the c
   await act(async () => remove!.click());
   expect(navigation.channelNavigation.getSnapshot()).toMatchObject({ scope: scopeKey, channelId: 'owned', create: false, mode: 'delete' });
   expect(host.querySelector('dialog')).toBeNull();
+});
+
+test('visible channel activation survives consuming its navigation intent', async () => {
+  await seed([channel('active', 'Active channel'), channel('other', 'Other channel')]);
+  let release!: () => void;
+  await act(async () => { release = navigation.channelActiveView.publish(scopeKey, 'active'); });
+  const activeButton = host.querySelector<HTMLButtonElement>('button[title="Active channel"]')!;
+  expect(activeButton.getAttribute('aria-current')).toBe('page');
+  expect(activeButton.closest('[data-active]')?.getAttribute('data-active')).toBe('true');
+  await act(async () => {
+    navigation.requestChannelOpen(scopeKey, 'active');
+    navigation.channelNavigation.consume(navigation.channelNavigation.getSnapshot()!.revision);
+  });
+  expect(navigation.channelNavigation.getSnapshot()).toBeNull();
+  expect(activeButton.getAttribute('aria-current')).toBe('page');
+  await act(async () => release());
+  expect(host.querySelector('button[aria-current="page"]')).toBeNull();
+});
+
+test('hidden tab cleanup cannot erase a newer visible channel or activate a different project', async () => {
+  await seed([channel('first', 'First'), channel('second', 'Second')]);
+  let releaseFirst!: () => void, releaseSecond!: () => void;
+  await act(async () => {
+    releaseFirst = navigation.channelActiveView.publish(scopeKey, 'first');
+    releaseSecond = navigation.channelActiveView.publish(scopeKey, 'second');
+  });
+  await act(async () => releaseFirst());
+  expect(host.querySelector('button[aria-current="page"]')?.getAttribute('title')).toBe('Second');
+  await act(async () => releaseSecond());
+  let releaseOther!: () => void;
+  await act(async () => { releaseOther = navigation.channelActiveView.publish(`${scopeKey}-other`, 'first'); });
+  expect(host.querySelector('button[aria-current="page"]')).toBeNull();
+  await act(async () => releaseOther());
 });

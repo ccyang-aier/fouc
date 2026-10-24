@@ -20,7 +20,7 @@ export function ChannelSwitcher({ workbench: w }: { workbench: ChannelWorkbench 
     .sort((a, b) => Number(w.preferences.favorites.includes(b.id)) - Number(w.preferences.favorites.includes(a.id)));
   return <DropdownMenu open={open} onOpenChange={value => { setOpen(value); if (!value) setSearch(''); }}>
     <DropdownMenuTrigger className={styles.channelTrigger} aria-label={t('switchChannel')}>
-      {channel ? <ChannelIcon channel={channel} size={18} /> : <Hash size={16} />}<span>{channel?.name ?? t('channels')}</span><CaretDown size={11} />
+      {channel ? <ChannelIcon channel={channel} size={21} /> : <Hash size={17} />}<span>{channel?.name ?? t('channels')}</span><CaretDown size={11} />
     </DropdownMenuTrigger>
     {open && <DropdownMenuContent align="start" density="compact" className={styles.channelMenu}>
       <DropdownMenuSearch value={search} onValueChange={setSearch} placeholder={t('searchChannels')} clearLabel={t('clearSearch')} />

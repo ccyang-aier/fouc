@@ -1,7 +1,7 @@
 'use client';
 
-import { ChatCircleDots, DotsThree, Hash, PencilSimple, Plus, PushPin, PushPinSlash, SortAscending, ChatsCircle, Trash } from '@phosphor-icons/react';
-import { useState, type ReactNode } from 'react';
+import { ChatCircleDots, DotsThree, PencilSimple, Plus, PushPin, PushPinSlash, SortAscending, ChatsCircle, Trash } from '@phosphor-icons/react';
+import { useState, useSyncExternalStore, type ReactNode } from 'react';
 import type { Channel } from '@fouc/shared/chats';
 import { useAppAlert } from '@/components/app-alert-provider';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -10,7 +10,8 @@ import { chatConversationTitle, deleteChatConversation, pinChatConversation, ren
 import { useProjectResources } from '@/features/project/project-resources';
 import { useChannelDirectory } from '@/features/chats/channel-data';
 import { useChannelPreferences } from '@/features/chats/channel-preferences';
-import { requestChannelOpen } from '@/features/chats/channel-navigation';
+import { channelActiveView, requestChannelOpen } from '@/features/chats/channel-navigation';
+import { ChannelIcon } from '@/features/chats/channel-ui';
 import { useTranslation } from '@/lib/i18n';
 import { messages } from './i18n/navigation-sidebar.messages';
 import { SidebarSection } from './sidebar-section';
@@ -20,15 +21,15 @@ import styles from './sidebar-sections.module.css';
 
 type EntryAction = SidebarEntryAction & { kind: 'rename' | 'delete'; resource: 'chat'; id: string };
 
-function ChannelSidebarRow({ channel, scopeKey, principal, pinned, onPin }: {
-  channel: Channel; scopeKey: string; principal: string; pinned: boolean; onPin: () => void;
+function ChannelSidebarRow({ channel, scopeKey, principal, pinned, active, onPin }: {
+  channel: Channel; scopeKey: string; principal: string; pinned: boolean; active: boolean; onPin: () => void;
 }) {
   const { t } = useTranslation(messages);
   const [menuOpen, setMenuOpen] = useState(false);
   const PinIcon = pinned ? PushPinSlash : PushPin;
   const owner = channel.ownerId === principal;
-  return <div className={`sidebar-nav-row ${styles.row}`} data-menu-open={menuOpen}>
-    <button type="button" className={styles.entry} title={channel.name} onClick={() => requestChannelOpen(scopeKey, channel.id)}><Hash size={15} className="sidebar-nav-icon shrink-0" aria-hidden /><span>{channel.name}</span></button>
+  return <div className={`sidebar-nav-row ${styles.row}`} data-active={active} data-menu-open={menuOpen}>
+    <button type="button" className={styles.entry} title={channel.name} aria-current={active ? 'page' : undefined} onClick={() => requestChannelOpen(scopeKey, channel.id)}><ChannelIcon channel={channel} size={16} /><span>{channel.name}</span></button>
     <div className={styles.rowActions}>
       <Tooltip><TooltipTrigger asChild><button type="button" className={`fouc-action ${styles.action}`} data-variant="nested" aria-label={t(pinned ? '取消置顶名称' : '置顶名称', { name: channel.name })} aria-pressed={pinned} onClick={onPin}><PinIcon size={14} weight="duotone" aria-hidden /></button></TooltipTrigger><TooltipContent side="top">{t(pinned ? '取消置顶' : '置顶')}</TooltipContent></Tooltip>
       {owner && <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}><DropdownMenuTrigger className={styles.action} data-variant="nested" aria-label={t('条目更多操作', { name: channel.name })}><DotsThree size={17} weight="bold" aria-hidden /></DropdownMenuTrigger>
@@ -45,6 +46,7 @@ export function SidebarProjectSections({ onNewChat, onAllChats, onOpenChat }: { 
   const history = useChatHistory();
   const directory = useChannelDirectory();
   const preferences = useChannelPreferences(scopeKey);
+  const activeView = useSyncExternalStore(channelActiveView.subscribe, channelActiveView.getSnapshot, channelActiveView.getServerSnapshot);
   const [sortByName, setSortByName] = useState(false);
   const [editing, setEditing] = useState<EntryAction | null>(null);
   const [channelMenuOpen, setChannelMenuOpen] = useState(false);
@@ -77,7 +79,7 @@ export function SidebarProjectSections({ onNewChat, onAllChats, onOpenChat }: { 
   const pinnedChats = history.filter(entry => entry.pinned);
   const recentChats = history.filter(entry => !entry.pinned).slice(0, 6);
   function channelRow(channel: Channel) {
-    return scopeKey && <ChannelSidebarRow key={`channel:${channel.id}`} channel={channel} scopeKey={scopeKey} principal={principal} pinned={preferences.favorites.includes(channel.id)} onPin={() => toggleChannelPin(channel)} />;
+    return scopeKey && <ChannelSidebarRow key={`channel:${channel.id}`} channel={channel} scopeKey={scopeKey} principal={principal} pinned={preferences.favorites.includes(channel.id)} active={activeView?.scope === scopeKey && activeView.channelId === channel.id} onPin={() => toggleChannelPin(channel)} />;
   }
   function chatRow(entry: ChatHistoryEntry) {
     const name = chatConversationTitle(entry);

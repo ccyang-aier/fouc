@@ -212,7 +212,8 @@ CREATE TABLE "resources"."chat_channel" (
 	"id" uuid NOT NULL,
 	"name" varchar(80) NOT NULL,
 	"description" text DEFAULT '' NOT NULL,
-	"color" varchar(8) DEFAULT 'violet' NOT NULL,
+	"icon" varchar(16) DEFAULT 'hash' NOT NULL,
+	"color" varchar(8) NOT NULL,
 	"visibility" varchar(8) DEFAULT 'private' NOT NULL,
 	"owner_id" uuid NOT NULL,
 	"permissions" jsonb DEFAULT '{"invite":"members","post":"members"}'::jsonb NOT NULL,
@@ -222,6 +223,7 @@ CREATE TABLE "resources"."chat_channel" (
 	CONSTRAINT "chat_channel_name_valid" CHECK (length(btrim("resources"."chat_channel"."name")) > 0),
 	CONSTRAINT "chat_channel_visibility_valid" CHECK ("resources"."chat_channel"."visibility" IN ('private', 'project')),
 	CONSTRAINT "chat_channel_color_valid" CHECK ("resources"."chat_channel"."color" IN ('violet', 'blue', 'green', 'orange', 'rose', 'slate')),
+	CONSTRAINT "chat_channel_icon_valid" CHECK ("resources"."chat_channel"."icon" IN ('hash', 'circles-four', 'chat', 'sparkle', 'code', 'palette', 'rocket', 'globe', 'book', 'coffee', 'heart', 'leaf', 'megaphone', 'briefcase', 'users', 'lightbulb')),
 	CONSTRAINT "chat_channel_permissions_valid" CHECK ("resources"."chat_channel"."permissions"->>'invite' IN ('members', 'admins') AND "resources"."chat_channel"."permissions"->>'post' IN ('members', 'admins'))
 );
 

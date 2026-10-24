@@ -1,15 +1,17 @@
 'use client';
 
-import { useState, type FormEvent, type ReactNode } from 'react';
-import type { Channel, ChannelMember, CreateChannelInput, UpdateChannelInput } from '@fouc/shared/chats';
+import { useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
+import { CHANNEL_ICON_NAMES, type Channel, type ChannelIconName, type ChannelMember, type CreateChannelInput, type UpdateChannelInput } from '@fouc/shared/chats';
 import type { ProjectMember } from '@fouc/shared/projects';
 import type { AgentInstallation, ProviderSpec } from '@fouc/shared';
-import { CaretRight, Check, Hash, LockSimple, MagnifyingGlass, Plus, Robot, Trash, X } from '@phosphor-icons/react';
+import { CaretDown, CaretRight, Check, DiceFive, LockSimple, MagnifyingGlass, Plus, Robot, Trash, X } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAppAlert } from '@/components/app-alert-provider';
 import { useTranslation } from '@/lib/i18n';
 import { ChannelPanelModal } from './channel-panel-modal';
 import { ChannelPeoplePicker } from './channel-panel-people-picker';
+import { ChannelIcon } from './channel-ui';
 import { panelMessages } from './channel-panels.messages';
 import styles from './channel-panels.module.css';
 
@@ -22,6 +24,16 @@ function useDialogSubmit() {
   };
 }
 
+function movePickerFocus(event: KeyboardEvent<HTMLDivElement>, columns: number) {
+  const step = ({ ArrowLeft: -1, ArrowRight: 1, ArrowUp: -columns, ArrowDown: columns } as Record<string, number>)[event.key];
+  if (step === undefined) return;
+  const choices = [...event.currentTarget.querySelectorAll<HTMLElement>('[role="menuitemradio"]')];
+  if (!choices.length) return;
+  const index = choices.findIndex(choice => choice === document.activeElement);
+  event.preventDefault(); event.stopPropagation();
+  choices[(Math.max(index, 0) + step + choices.length) % choices.length].focus();
+}
+
 export function ChannelFormDialog({ channel, projectMembers, busy, onClose, onSubmit }: {
   channel?: Channel; projectMembers: ProjectMember[]; busy: boolean; onClose: () => void;
   onSubmit: (input: CreateChannelInput | UpdateChannelInput) => Promise<void>;
@@ -30,23 +42,39 @@ export function ChannelFormDialog({ channel, projectMembers, busy, onClose, onSu
   const run = useDialogSubmit();
   const [name, setName] = useState(channel?.name ?? '');
   const [description, setDescription] = useState(channel?.description ?? '');
-  const [color, setColor] = useState<Channel['color']>(channel?.color ?? 'violet');
+  const [icon, setIcon] = useState<ChannelIconName>(channel?.icon ?? 'hash');
+  const [color, setColor] = useState<Channel['color'] | undefined>(channel?.color);
+  const [previewTone] = useState<Channel['color']>(() => {
+    const tones = ['blue', 'violet', 'green', 'orange', 'rose'] as const;
+    return channel?.color ?? tones[Math.floor(Math.random() * tones.length)];
+  });
+  const [iconMenuOpen, setIconMenuOpen] = useState(false);
   const [visibility, setVisibility] = useState<Channel['visibility']>(channel?.visibility ?? 'private');
   const [permissions, setPermissions] = useState(channel?.permissions ?? { invite: 'members' as const, post: 'members' as const });
   const [memberIds, setMemberIds] = useState<string[]>([]);
   function submit(event: FormEvent) {
     event.preventDefault(); if (busy || !name.trim()) return;
-    void run(() => onSubmit({ name: name.trim(), description: description.trim(), color, visibility, ...(channel ? { permissions } : { memberIds }) }));
+    void run(() => onSubmit({ name: name.trim(), description: description.trim(), icon, visibility, ...(color ? { color } : {}), ...(channel ? { permissions } : { memberIds }) }));
   }
   return <ChannelPanelModal title={t(channel ? 'settings' : 'create')} onClose={onClose} busy={busy}>
     <form onSubmit={submit}>
       <div className={styles.dialogBody}>
-        <label className={styles.field}>{t('name')}<div className={styles.nameInput}><Hash size={17} aria-hidden /><input data-autofocus value={name} onChange={event => setName(event.target.value)} required maxLength={80} placeholder={t('namePlaceholder')} /></div></label>
+        <div className={styles.channelIdentity}>
+          <DropdownMenu open={iconMenuOpen} onOpenChange={setIconMenuOpen}><DropdownMenuTrigger className={styles.iconPickerTrigger} aria-label={t('chooseIcon')} disabled={busy}>
+            <ChannelIcon channel={{ icon, color: color ?? previewTone }} size={34} /><CaretDown size={10} />
+          </DropdownMenuTrigger>{iconMenuOpen && <DropdownMenuContent className={styles.iconPickerMenu} density="compact" align="start">
+            <DropdownMenuRadioGroup className={styles.iconGrid} value={icon} aria-label={t('icon')} onKeyDown={event => movePickerFocus(event, 8)}>
+              {CHANNEL_ICON_NAMES.map(value => <DropdownMenuRadioItem key={value} value={value} className={styles.iconChoice} indicator="none" emphasizeSelection={false} aria-label={t(`icon_${value}`)} onSelect={event => { event.preventDefault(); setIcon(value); }}><ChannelIcon channel={{ icon: value, color: color ?? previewTone }} size={23} /></DropdownMenuRadioItem>)}
+            </DropdownMenuRadioGroup><DropdownMenuSeparator />
+            <DropdownMenuRadioGroup className={styles.colorGrid} value={color ?? 'random'} aria-label={t('color')} onKeyDown={event => movePickerFocus(event, 7)}>
+              {!channel && <DropdownMenuRadioItem value="random" className={styles.colorRadio} indicator="none" emphasizeSelection={false} aria-label={t('randomColor')} onSelect={event => { event.preventDefault(); setColor(undefined); }}><DiceFive size={19} /></DropdownMenuRadioItem>}
+              {(['violet', 'blue', 'green', 'orange', 'rose', 'slate'] as const).map(value => <DropdownMenuRadioItem key={value} value={value} className={styles.colorRadio} indicator="none" emphasizeSelection={false} aria-label={t(value)} onSelect={event => { event.preventDefault(); setColor(value); }}><ChannelIcon channel={{ icon, color: value }} size={21} /></DropdownMenuRadioItem>)}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>}</DropdownMenu>
+          <label className={styles.field}><span className={styles.identityLabel}>{t('name')}{!channel && !color && <small>{t('randomColor')}</small>}</span><input data-autofocus value={name} onChange={event => setName(event.target.value)} required maxLength={80} placeholder={t('namePlaceholder')} /></label>
+        </div>
         <label className={styles.field}>{t('description')}<textarea rows={2} value={description} onChange={event => setDescription(event.target.value)} maxLength={1000} placeholder={t('descriptionPlaceholder')} /></label>
         <details className={styles.optionDetails} open={Boolean(channel)}><summary><CaretRight size={12} /><span>{t('channelOptions')}</span><small>{t(visibility === 'private' ? 'private' : 'project')}</small></summary><div>
-        <fieldset className={styles.colorField}><legend>{t('color')}</legend><div className={styles.colors}>
-          {(['violet', 'blue', 'green', 'orange', 'rose', 'slate'] as const).map(value => <button key={value} type="button" className={`fouc-action ${styles.colorChoice}`} data-color={value} aria-label={t(value)} aria-pressed={color === value} onClick={() => setColor(value)}><Hash size={18} />{color === value && <Check size={10} weight="bold" className={styles.colorCheck} />}</button>)}
-        </div></fieldset>
         <label className={styles.field}>{t('visibility')}<span className={styles.selectWrap}><LockSimple size={16} /><select value={visibility} onChange={event => setVisibility(event.target.value as Channel['visibility'])}><option value="private">{t('private')}</option><option value="project">{t('project')}</option></select></span><small className={styles.fieldHint}>{t(visibility === 'private' ? 'privateHelp' : 'projectHelp')}</small></label>
         </div></details>
         {channel ? <fieldset className={styles.permissionFields}><legend>{t('permissions')}</legend>

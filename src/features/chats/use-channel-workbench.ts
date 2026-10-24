@@ -16,6 +16,7 @@ import { ChannelRequestError, channelClient } from './channel-client';
 import { useChannelDetail, useChannelDirectory, publishChannelSnapshot, refreshChannelDirectory, forgetChannel, runChannelMutation } from './channel-data';
 import { useChannelPreferences } from './channel-preferences';
 import { channelNavigation } from './channel-navigation';
+import { findChannelMentions } from './channel-mentions';
 import { ChannelAgentRunError, runChannelAgent, type ChannelAgentStatus } from './channel-agent-runner';
 import { messages } from './channels.messages';
 
@@ -125,7 +126,7 @@ export function useChannelWorkbench() {
     setSending(true);
     try {
       const next = await mutate(() => channelClient.send(channel.projectId, channel.id, input, files));
-      const mentioned = ownAgents.find(member => input.body?.includes(`@${member.name}`));
+      const mentioned = findChannelMentions(input.body ?? '', ownAgents)[0]?.member;
       if (mentioned) void askAgent(mentioned, t('agentRequest', { channel: channel.name, context: next.messages.slice(-60).map(message => `${message.authorName}: ${message.body}`).join('\n') }), input.threadId);
       return true;
     } catch (cause) { if (alive.current) notify('error', t('failed'), cause instanceof Error ? cause.message : undefined); return false; }

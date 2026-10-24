@@ -1,7 +1,8 @@
+import { randomInt } from 'node:crypto';
 import { desc, eq } from 'drizzle-orm';
 import type { Pool } from 'pg';
 import { z } from 'zod';
-import { channelScopeSchema, createChannelInputSchema, updateChannelInputSchema } from '@fouc/shared/chats';
+import { channelColorSchema, channelScopeSchema, createChannelInputSchema, updateChannelInputSchema } from '@fouc/shared/chats';
 import { entityIdSchema } from '@fouc/shared/resources';
 import { chatChannel, chatChannelMember, chatMessage } from '../../platform/database/resources/schema/chats';
 import { authUser } from '../../platform/database/identity/schema';
@@ -34,9 +35,11 @@ export function createChannelService(pool: Pool, storage?: S3ObjectStorage) {
     async create(identity: FoucIdentity, input: unknown) {
       const value = parseInput(createChannelInputSchema, input);
       const channelId = crypto.randomUUID();
+      const randomColors = channelColorSchema.options.filter(color => color !== 'slate');
+      const color = value.color ?? randomColors[randomInt(randomColors.length)]!;
       return withProjectMember(pool, identity, value.projectId, true, async ({ db }) => {
         await db.insert(chatChannel).values({ projectId: value.projectId, id: channelId, name: value.name, description: value.description,
-          color: value.color, visibility: value.visibility, ownerId: identity.userId });
+          icon: value.icon, color, visibility: value.visibility, ownerId: identity.userId });
         const [channel] = await db.select().from(chatChannel).where(channelWhere(value.projectId, channelId));
         const [user] = await db.select().from(authUser).where(eq(authUser.id, identity.userId));
         if (!user) throw new ResourceRequestError('UNAUTHENTICATED', '登录状态已过期。', 401);

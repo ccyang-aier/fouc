@@ -2,15 +2,23 @@
 
 import type { ComponentProps, ReactNode } from 'react';
 import Image from 'next/image';
-import { ChatCircleDots, Hash, Robot, User } from '@phosphor-icons/react';
-import type { Channel, ChannelMember } from '@fouc/shared/chats';
+import { BookOpen, Briefcase, ChatCircleDots, CirclesFour, Code, Coffee, Globe, Hash, Heart, Leaf, Lightbulb, Megaphone, Palette, Robot, RocketLaunch, Sparkle, User, UsersThree } from '@phosphor-icons/react';
+import type { Channel, ChannelIconName, ChannelMember } from '@fouc/shared/chats';
 import { Button } from '@/components/ui/button';
 import { UserAvatar } from '@/components/user-avatar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import styles from './channels.module.css';
 
-export function ChannelIcon({ channel, size = 30 }: { channel?: Pick<Channel, 'color'>; size?: number }) {
-  return <span className={styles.channelIcon} data-tone={channel?.color ?? 'violet'} style={{ width: size, height: size }}><Hash size={size * .57} weight="bold" aria-hidden /></span>;
+const channelGlyphs = {
+  hash: Hash, 'circles-four': CirclesFour, chat: ChatCircleDots, sparkle: Sparkle,
+  code: Code, palette: Palette, rocket: RocketLaunch, globe: Globe, book: BookOpen,
+  coffee: Coffee, heart: Heart, leaf: Leaf, megaphone: Megaphone, briefcase: Briefcase,
+  users: UsersThree, lightbulb: Lightbulb,
+} satisfies Record<ChannelIconName, typeof Hash>;
+
+export function ChannelIcon({ channel, size = 30 }: { channel?: Pick<Channel, 'color' | 'icon'>; size?: number }) {
+  const Icon = channelGlyphs[channel?.icon ?? 'hash'];
+  return <span className={styles.channelIcon} data-tone={channel?.color ?? 'slate'} style={{ width: size, height: size, borderRadius: Math.round(size * .25) }}><Icon size={size * .65} weight={channel?.icon === 'hash' ? 'bold' : 'fill'} aria-hidden /></span>;
 }
 export function ChannelAvatar({ member, size = 34 }: { member?: Pick<ChannelMember, 'name' | 'image' | 'kind'>; size?: number }) {
   return <span className={styles.avatar} data-kind={member?.kind} style={{ width: size, height: size }}>

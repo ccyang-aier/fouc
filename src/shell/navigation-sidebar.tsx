@@ -27,7 +27,7 @@ export function NavigationSidebar({ open, onCollapse, onExpand, view, onViewChan
   const { t } = useTranslation(messages);
   const { width, dragging, startResize } = useSidebarWidth(272);
   const { scopeKey } = useProjectResources();
-  const primary: WorkbenchPage[] = ['home', 'workbench', 'tasks', 'members', 'assets', 'chats', 'agents'];
+  const primary: WorkbenchPage[] = ['home', 'workbench', 'tasks', 'members', 'assets', 'agents'];
   const services: WorkbenchPage[] = ['community', 'connectors', 'knowledge'];
   function row(id: WorkbenchPage) {
     const page = workbenchPages[id];
@@ -47,6 +47,7 @@ export function NavigationSidebar({ open, onCollapse, onExpand, view, onViewChan
       <nav aria-label={t('项目导航')} className="flex flex-col gap-0.5">{primary.map(row)}</nav>
       <div role="separator" className="mx-2 my-3 border-t border-[var(--line)]" />
       {open && <SidebarProjectSections key={scopeKey ?? 'no-project'} onNewChat={() => onViewChange('home')} onAllChats={() => onViewChange('chats')} onOpenChat={onOpenChat} />}
+      {!open && <nav aria-label={t('频道')}>{row('chats')}</nav>}
     </ScrollArea>
     <footer className={cn('flex shrink-0 flex-col gap-0.5 pt-2', open ? 'px-3' : 'px-1')}>
       <nav aria-label={t('服务')} className="flex flex-col gap-0.5">{services.map(row)}</nav>

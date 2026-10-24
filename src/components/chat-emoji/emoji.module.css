@@ -1,0 +1,2 @@
+.glyph { display:inline-block; flex-shrink:0; vertical-align:-.2em; object-fit:contain; user-select:none; }
+.missing { display:inline-flex; align-items:center; justify-content:center; color:var(--muted-strong); }

@@ -60,7 +60,7 @@ test('duplicating a page copies typed UI fields independently without copying sh
   const session = new ProjectUiSession('copy:local:project');
   await session.loaded;
   session.set('page:3:draft', { text: 'source', files: [new Blob(['attachment'])], at: new Date(123) }, null);
-  session.set('page:3:knowledge:local:base:scroll:editor', { top: 280, left: 0 }, null);
+  session.set('page:3:tasks:local:base:scroll:editor', { top: 280, left: 0 }, null);
   session.set('page:2:query', 'unrelated', '');
   session.set('chat.history', ['shared'], []);
   expect(session.copyPage(3, 4)).toBe(true);
@@ -75,7 +75,7 @@ test('duplicating a page copies typed UI fields independently without copying sh
   expect(restored.text).toBe('source');
   expect(await restored.files[0].text()).toBe('attachment');
   expect(restored.at.getTime()).toBe(123);
-  expect(reopened.get('page:4:knowledge:local:base:scroll:editor', null)).toEqual({ top: 280, left: 0 });
+  expect(reopened.get('page:4:tasks:local:base:scroll:editor', null)).toEqual({ top: 280, left: 0 });
   expect(reopened.get('page:4:query', null)).toBeNull();
   expect(reopened.get('chat.history', [])).toEqual(['shared']);
 });

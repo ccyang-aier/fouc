@@ -9,7 +9,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const directory = path.join(root, '.runtime/dbx-lab');
 const envPath = path.join(directory, 'mysql.env');
 const windows = process.platform === 'win32';
-const distro = process.env.KNOWLEDGE_WSL_DISTRO ?? 'Ubuntu-22.04';
+const distro = process.env.FOUC_WSL_DISTRO ?? 'Ubuntu-22.04';
 const linuxPath = (value) =>
   windows
     ? value.replace(/^([A-Za-z]):[\\/]/, (_, drive) => `/mnt/${drive.toLowerCase()}/`).replaceAll('\\', '/')

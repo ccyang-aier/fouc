@@ -11,7 +11,7 @@ import type { ChatComposer } from './chat-composer';
 let browser: Window, host: HTMLElement, root: Root;
 let renderTabs: () => ReactNode;
 const scope = 'chat-tab-test:local:project';
-const context: ChatContext = { execution: { kind: 'auto' }, autoRules: { modelIds: null, reasoningEffort: 'medium' }, projectId: 'project', projectName: 'Project', knowledgeBaseId: null, knowledgeBaseName: null };
+const context: ChatContext = { execution: { kind: 'auto' }, autoRules: { modelIds: null, reasoningEffort: 'medium' }, projectId: 'project', projectName: 'Project' };
 const message = (text: string): ChatSubmission => ({ id: crypto.randomUUID(), text, context, createdAt: new Date(), mode: null, attachments: [] });
 
 beforeAll(async () => {

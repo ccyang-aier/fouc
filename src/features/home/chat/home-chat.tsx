@@ -48,8 +48,6 @@ export function HomeChat({
     autoRules: { modelIds: null, reasoningEffort: autoReasoning.defaultLevel },
     projectId: selectedProject?.id ?? null,
     projectName: selectedProject?.name ?? null,
-    knowledgeBaseId: null,
-    knowledgeBaseName: null,
     localEnvironment: { createWorktree: false },
     ...conversation?.submissions.at(-1)?.context,
   });

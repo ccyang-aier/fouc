@@ -18,7 +18,6 @@ const searchItems: Array<{ label: keyof typeof messages; detail: keyof typeof me
   { label: '聊天', detail: '查看项目对话', view: 'chats' },
   { label: 'Agents', detail: '管理本机 Agent', view: 'agents' },
   { label: '社区', detail: '发现 Agent 与技能', view: 'community' },
-  { label: '知识库', detail: '查看沉淀的知识', view: 'knowledge' },
   { label: '连接器', detail: '管理外部服务', view: 'connectors' },
   { label: '设置', detail: '调整 Fouc 偏好', view: 'settings' },
 ];

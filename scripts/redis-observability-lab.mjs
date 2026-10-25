@@ -4,7 +4,7 @@ const image = 'redis:7.4.8-alpine';
 const action = process.argv[2] ?? 'status';
 if (!['up', 'status'].includes(action)) throw new Error('Usage: node scripts/redis-observability-lab.mjs up|status');
 const windows = process.platform === 'win32';
-const distro = process.env.KNOWLEDGE_WSL_DISTRO ?? 'Ubuntu-22.04';
+const distro = process.env.FOUC_WSL_DISTRO ?? 'Ubuntu-22.04';
 function docker(args) {
   return execFileSync(windows ? 'wsl.exe' : 'docker', windows ? ['-d', distro, '--exec', 'docker', ...args] : args, {
     windowsHide: true, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'],

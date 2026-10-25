@@ -2,7 +2,7 @@ import { createMiddleware } from 'hono/factory';
 import type { FoucAuth } from './service';
 import { hasTrustedFoucOrigin } from './config';
 
-/** Authentication identity only. KnowledgeBase membership is checked by resource services. */
+/** Authentication identity only. Resource membership is checked by its owning service. */
 export interface FoucIdentity {
   userId: string;
   sessionId: string;

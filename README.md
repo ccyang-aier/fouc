@@ -52,7 +52,7 @@ pnpm dev:all
 
 `dev:all` 启动或复用本仓库 Web、设备运行时和业务服务，退出命令后服务常驻并自动刷新源码。业务服务配置使用 `.env.fouc.local`。前端保持在 `src/`，后端拆为 `backend/device/` 与 `backend/server/`；职责和分发边界见[项目结构设计](./docs/product/V1/design/arch/fouc-project-structure-design.md)。单独启动前端仍使用 `pnpm dev`。
 
-先运行 `node backend/server/scripts/knowledge-infra.mjs up` 启动并检查 PostgreSQL、Redis 和 MinIO；首次使用先执行该脚本的 `init` 命令。基础设施网络使用独立的 `192.168.240.0/24`，避免与 WSL NAT 网段重叠。Web 默认使用 3000 端口，可通过进程环境或 `.env.fouc.local` 中的 `FOUC_WEB_PORT` 指定其他端口，同时将对应网页 origin 加入 `FOUC_AUTH_TRUSTED_ORIGINS`。
+先运行 `node backend/server/scripts/infra.mjs up` 启动并检查 PostgreSQL 和 MinIO；首次使用先执行该脚本的 `init` 命令。基础设施网络使用独立的 `192.168.240.0/24`，避免与 WSL NAT 网段重叠。Web 默认使用 3000 端口，可通过进程环境或 `.env.fouc.local` 中的 `FOUC_WEB_PORT` 指定其他端口，同时将对应网页 origin 加入 `FOUC_AUTH_TRUSTED_ORIGINS`。
 
 查看有数据的数据库连接列表与工作台时，启动开发服务后运行：
 
@@ -77,7 +77,7 @@ pnpm desktop:dev     # 启动桌面端开发环境
 pnpm desktop:build   # 构建桌面端安装产物
 ```
 
-后端可分别使用 `pnpm device:*` 与 `pnpm server:*` 的 `dev`、`typecheck`、`test`、`build` 命令；`pnpm backend:build` 只生成桌面设备 sidecar，`pnpm server:build` 生成独立业务服务。跨包边界运行 `pnpm architecture:verify`，知识库与 DBX 任务表分别运行 `pnpm knowledge:verify`、`pnpm dbx:verify`。可选 Python 内容处理服务在 `services/media-worker/`，仅涉及媒体解析时按其 `dev.py` 初始化和启动。
+后端可分别使用 `pnpm device:*` 与 `pnpm server:*` 的 `dev`、`typecheck`、`test`、`build` 命令；`pnpm backend:build` 只生成桌面设备 sidecar，`pnpm server:build` 生成独立业务服务。跨包边界运行 `pnpm architecture:verify`，DBX 任务表运行 `pnpm dbx:verify`。
 
 ## 文档
 

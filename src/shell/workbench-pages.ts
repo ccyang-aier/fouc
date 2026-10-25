@@ -1,4 +1,4 @@
-import { Archive, BookOpenText, ChatCircleDots, ChatsCircle, ListChecks, Planet, PlugsConnected, Robot, SquaresFour, UsersThree } from '@phosphor-icons/react';
+import { Archive, ChatCircleDots, ChatsCircle, ListChecks, Planet, PlugsConnected, Robot, SquaresFour, UsersThree } from '@phosphor-icons/react';
 import type { WorkbenchView } from './workbench-view';
 
 export type WorkbenchPage = Exclude<WorkbenchView, 'settings'>;
@@ -12,5 +12,4 @@ export const workbenchPages = {
   agents: { label: '智能体', icon: Robot },
   community: { label: '社区', icon: Planet },
   connectors: { label: '连接器', icon: PlugsConnected },
-  knowledge: { label: '知识库', icon: BookOpenText },
 } as const;

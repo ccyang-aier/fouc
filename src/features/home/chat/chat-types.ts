@@ -16,8 +16,6 @@ export type ChatContext = {
   localEnvironment?: { createWorktree: boolean };
   projectId: string | null;
   projectName: string | null;
-  knowledgeBaseId: string | null;
-  knowledgeBaseName: string | null;
 };
 export type ChatAttachment = { id: string; file: File };
 export type ChatMode = 'plan' | 'debug' | 'multitask' | 'goal';

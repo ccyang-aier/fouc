@@ -102,12 +102,6 @@ export function ChatConversation({
                   <dt>{t("project")}</dt>
                   <dd>{submission.context.projectName ?? t("project")}</dd>
                 </div>
-                {submission.context.knowledgeBaseId ? (
-                  <div>
-                    <dt>{t("knowledge")}</dt>
-                    <dd>{submission.context.knowledgeBaseName}</dd>
-                  </div>
-                ) : null}
                 {submission.context.localEnvironment?.createWorktree ? <div>
                   <dt>{t('localEnvironment')}</dt><dd>{t('worktreeRequested')}</dd>
                 </div> : null}

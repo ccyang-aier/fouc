@@ -2,13 +2,13 @@
 
 ## 所有权与执行边界
 
-模型资料属于全产品公开参考目录，由 `backend/server/modules/models` 维护，访客和登录用户读取相同资料。目录没有账户、项目、知识库或工作空间分区；它不保存 API Key、用户余额、订阅权益或设备安装事实。列入目录不表示当前账户可以调用该模型。模型执行、供应商凭据与本机 Agent 探测仍分别授权，首页会话仍遵守[新对话设计](../conversations/fouc-new-conversation-design.md)的预览边界。
+模型资料属于全产品公开参考目录，由 `backend/server/modules/models` 维护，访客和登录用户读取相同资料。目录没有账户、项目或工作空间分区；它不保存 API Key、用户余额、订阅权益或设备安装事实。列入目录不表示当前账户可以调用该模型。模型执行、供应商凭据与本机 Agent 探测仍分别授权，首页会话仍遵守[新对话设计](../conversations/fouc-new-conversation-design.md)的预览边界。
 
 前端通过 `@fouc/shared/model-catalog` 的校验契约读取 `GET /api/models`，不运行时导入后端内部代码。接口公开且只读，不依赖登录 cookie；CORS 仅允许已配置的产品来源，不开放带凭据的访问。成功响应缓存 300 秒；数据库故障或存储数据不符合契约时返回可重试的 503，并禁止缓存错误响应。不提供客户端修改目录的 HTTP 接口。
 
 ## 当前数据模型
 
-`catalog.model` 是独立的全局目录表，与 `auth`、项目和知识库的 `resources` 分开。业务运行角色仅有该 schema 的 USAGE 和表的 SELECT 权限，不能写入、清空、改表或创建对象；公开资料无需套用项目/知识库 RLS。统一数据库检查同时核对结构和只读授权。
+`catalog.model` 是独立的全局目录表，与 `auth`、项目资源的 `resources` 分开。业务运行角色仅有该 schema 的 USAGE 和表的 SELECT 权限，不能写入、清空、改表或创建对象；公开资料无需套用项目 RLS。统一数据库检查同时核对结构和只读授权。
 
 | 字段 | 含义 |
 | --- | --- |

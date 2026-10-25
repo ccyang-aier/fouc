@@ -105,7 +105,7 @@ const mysqlStatements = [
 const dockerArgs = ['exec', '-i', 'fouc-datastore-lab-mysql-1', '/bin/sh', '-ec', 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" exec mysql -uroot --default-character-set=utf8mb4'];
 try {
   execFileSync(process.platform === 'win32' ? 'wsl.exe' : 'docker', process.platform === 'win32'
-    ? ['-d', process.env.KNOWLEDGE_WSL_DISTRO ?? 'Ubuntu-22.04', '--exec', 'docker', ...dockerArgs] : dockerArgs,
+    ? ['-d', process.env.FOUC_WSL_DISTRO ?? 'Ubuntu-22.04', '--exec', 'docker', ...dockerArgs] : dockerArgs,
   { input: mysqlStatements.join(';\n') + ';\n', encoding: 'utf8', windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
 } catch { throw new Error('Could not initialize the dedicated MySQL demo database.'); }
 

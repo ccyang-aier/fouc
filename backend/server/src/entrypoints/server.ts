@@ -1,53 +1,27 @@
+import { createAdaptorServer } from '@hono/node-server';
 import { readFoucOAuthOptions } from '../platform/identity/oauth-config';
-import { createFoucSocketTickets } from '../platform/identity/socket-tickets';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { AddressInfo } from 'node:net';
 import { Pool } from 'pg';
 import { Hono } from 'hono';
 import { readFoucServiceConfig } from '../platform/runtime/config';
 import type { FoucServiceConfig } from '../platform/runtime/config';
 import { createFoucAuth, createFoucAuthRoutes, createSmtpAuthEmailTransport } from '../platform/identity';
-import { createKnowledgeRequestAuthenticator } from '../modules/knowledge/access';
 import { createVerificationEmailTransport } from '../platform/identity/email';
-import { createKnowledgeOrganizationRoutes, createKnowledgeOrganizationService } from '../modules/knowledge/organization';
 import { createProjectRoutes, createProjectService } from '../modules/projects';
 import { createTaskBoardRoutes, createTaskBoardService } from '../modules/tasks';
 import { createChannelRoutes, createChannelService } from '../modules/chats';
 import { createS3ObjectStorage } from '../platform/storage/s3';
-import { createKnowledgeCatalogRoutes, createKnowledgeCatalogService } from '../modules/knowledge/organization';
-import { teamspacePermissionInvalidator } from '../modules/knowledge/permissions/fence';
-import { createKnowledgeApiRoutes, createKnowledgePatRoutes } from '../modules/knowledge/api';
-import { createKnowledgeAssetStorage } from '../modules/knowledge/assets/storage';
-import { bindKnowledgeAssetStorage } from '../modules/knowledge/assets/runtime';
-import { createKnowledgeCheckpointRoutes } from '../modules/knowledge/api/checkpoint-routes';
-import { createKnowledgeNotificationRoutes } from '../modules/knowledge/notifications';
-import { bindKnowledgeStreamingTasks, createKnowledgeStreamingTasks } from '../modules/knowledge/ai';
-import { createModelGateway } from '../modules/knowledge/ai/gateway';
-import { createPageCollaborationListener } from '../modules/knowledge/collaboration/page-collaboration-bun';
-import { createKnowledgeBaseEventRuntime } from '../modules/knowledge/collaboration/events';
-import { pageCheckpointExtension } from '../modules/knowledge/collaboration/checkpoints';
-import { createKnowledgeMcpAuthorizationRoutes } from '../modules/knowledge/mcp/oauth';
-import { createKnowledgeMcpRequestHandler } from '../modules/knowledge/mcp/server';
-import { handleKnowledgeMcpOnBun } from '../modules/knowledge/mcp/bun-adapter';
-import { createDocumentPdfRenderer } from '../modules/knowledge/export/pdf';
-import { createOfficePreviewRoutes } from '../modules/knowledge/export/office';
-import { createDocumentPdfRoutes } from '../modules/knowledge/export/http';
 import { createModelCatalogRoutes } from '../modules/models/http';
 import { createModelCatalogRepository } from '../modules/models/repository';
-
-const mcpPathPattern = /^\/api\/knowledge\/[a-zA-Z0-9-]+\/mcp\/?$/;
 
 export interface FoucServiceRuntime {
   port: number;
   close(): Promise<void>;
 }
 
-/**
- * The single-process composition behind the shared HTTP listener (Z03): one
- * Bun socket hosts the auth routes, the organization API, the per-knowledgeBase
- * tRPC boundary, the MCP endpoint and the collaboration WebSocket upgrades.
- * Dedicated-role deployments reuse the same factories with narrower roles.
- */
+/** Shared HTTP listener for identity, projects, tasks, chats. */
 export async function startFoucService(config: FoucServiceConfig, environment: NodeJS.ProcessEnv = process.env): Promise<FoucServiceRuntime> {
   const pool = new Pool({ connectionString: config.databaseUrl, max: 8 });
   pool.on('error', () => {});
@@ -55,75 +29,36 @@ export async function startFoucService(config: FoucServiceConfig, environment: N
     pool,
     config: config.auth,
     oauth: readFoucOAuthOptions(environment),
-    // Production reads SMTP from the environment; a development process
-    // without SMTP prints each verification link to its own log.
     email: environment.SMTP_HOST
       ? createSmtpAuthEmailTransport(environment)
       : createVerificationEmailTransport('noreply@fouc.dev', async (message: { to: string; subject: string; text: string }) => { console.log(`[auth] ${message.subject} → ${message.to}\n${message.text}`); }),
   });
-  const authenticator = createKnowledgeRequestAuthenticator({ auth, pool });
-  bindKnowledgeAssetStorage(config.roles.includes('api') && config.storage ? createKnowledgeAssetStorage(config.storage) : undefined);
-  const externalOrigin = new URL(config.auth.baseUrl).origin;
-  const events = createKnowledgeBaseEventRuntime({ authenticator });
-  const checkpoints = config.roles.includes('collab') ? pageCheckpointExtension({ pool }) : undefined;
-  const app = new Hono();
-  app.route('/', createModelCatalogRoutes(createModelCatalogRepository(pool), auth.options.trustedOrigins as string[]));
-  app.route('/', createOfficePreviewRoutes(auth.options.trustedOrigins as string[]));
-  const documentPdf = createDocumentPdfRenderer();
-  app.route('/', createDocumentPdfRoutes(auth.options.trustedOrigins as string[], html => documentPdf.render(html)));
-  const socketTickets = createFoucSocketTickets();
-  app.route('/', createFoucAuthRoutes(auth, (context) => context.env.clientAddress as string, socketTickets));
-  app.route('/', createKnowledgeOrganizationRoutes(auth, createKnowledgeOrganizationService(pool)));
+  const app = new Hono<{ Bindings: { clientAddress: string } }>();
+  const origins = auth.options.trustedOrigins as string[];
+  app.route('/', createModelCatalogRoutes(createModelCatalogRepository(pool), origins));
+  app.route('/', createFoucAuthRoutes(auth, context => context.env.clientAddress as string));
   app.route('/', createProjectRoutes(auth, createProjectService(pool)));
   const objectStorage = config.storage ? createS3ObjectStorage(config.storage) : undefined;
   app.route('/', createTaskBoardRoutes(auth, createTaskBoardService(pool, objectStorage)));
   app.route('/', createChannelRoutes(auth, createChannelService(pool, objectStorage)));
-  app.route('/', createKnowledgeCatalogRoutes(auth, createKnowledgeCatalogService(pool, { permissions: teamspacePermissionInvalidator })));
-  app.route('/', createKnowledgeApiRoutes({ auth, pool }));
-  app.route('/', createKnowledgePatRoutes({ auth, pool }));
-  app.route('/', createKnowledgeMcpAuthorizationRoutes({ auth, pool, externalOrigin }));
-  app.route('/', createKnowledgeCheckpointRoutes({ auth, pool, checkpoints }));
-  app.route('/', createKnowledgeNotificationRoutes({ authenticator, pool, trustedOrigins: auth.options.trustedOrigins as string[] }));
-
-  let mcp: ReturnType<typeof createKnowledgeMcpRequestHandler> | undefined;
-  const listener = createPageCollaborationListener({ authenticator, pool }, {
-    socketTickets,
-    port: config.port,
-    hostname: config.hostname,
-    events: events.channel,
-    ...(config.redisUrl ? { broadcast: { redisUrl: config.redisUrl } } : {}),
-    ...(checkpoints ? { checkpoints } : {}),
-    http: async (request, clientAddress) => {
-      if (mcp && mcpPathPattern.test(new URL(request.url).pathname)) return handleKnowledgeMcpOnBun(mcp, request);
-      return app.fetch(request, { clientAddress });
-    },
+  const listener = createAdaptorServer({
+    fetch: (request, bindings) => app.fetch(request, { clientAddress: bindings.incoming.socket.remoteAddress ?? '' }),
   });
-  if (config.roles.includes('mcp')) mcp = createKnowledgeMcpRequestHandler({ authenticator, pool, hocuspocus: listener.hocuspocus, oauth: { externalOrigin } });
-  // J04: bind the streaming AI task service to the tRPC registry. Without
-  // model credentials the gateway holds no platform binding and aiTask.*
-  // answers SERVICE_UNAVAILABLE by design.
-  if (config.roles.includes('api')) {
-    const models = config.models;
-    const gateway = createModelGateway({
-      platform: models.apiKey && models.chatBaseUrl && models.model ? {
-        providers: { zhipu: { apiKey: models.apiKey, endpoint: models.chatBaseUrl } },
-        defaults: { fast: { source: 'platform', provider: 'zhipu', model: models.model }, smart: { source: 'platform', provider: 'zhipu', model: models.model } },
-      } : { providers: {}, defaults: {} },
-      providers: models.apiKey && models.chatBaseUrl ? { zhipu: { protocol: 'openai-compatible', endpoints: [models.chatBaseUrl], tiers: ['fast', 'smart'] } } : {},
-      ollamaEndpoints: models.ollamaEndpoint ? [models.ollamaEndpoint] : [],
+  try {
+    await new Promise<void>((resolve, reject) => {
+      listener.once('error', reject);
+      listener.listen(config.port, config.hostname, () => { listener.removeListener('error', reject); resolve(); });
     });
-    bindKnowledgeStreamingTasks(createKnowledgeStreamingTasks({
-      pool,
-      gateway,
-      hocuspocus: config.roles.includes('collab') ? listener.hocuspocus : undefined,
-    }));
+  } catch (error) {
+    await pool.end();
+    throw error;
   }
-  console.log(`Fouc service ready on http://${config.hostname}:${listener.port} (roles: ${config.roles.join(',')})`);
+  const port = (listener.address() as AddressInfo).port;
+  console.log(`Fouc service ready on http://${config.hostname}:${port}`);
   return {
-    port: listener.port as number,
+    port,
     async close() {
-      await documentPdf.close();
-      await listener.close();
+      await new Promise<void>((resolve, reject) => listener.close(error => error ? reject(error) : resolve()));
       await pool.end();
     },
   };

@@ -9,9 +9,9 @@ const environment = parseEnv(readFileSync('.env.fouc.local', 'utf8'));
 const admin = new URL(environment.DATABASE_ADMIN_URL);
 const base = `http://127.0.0.1:8710/api/database/relational`;
 function postgresTool(command, args, input) {
-  const dockerArgs = ['exec', ...(input ? ['-i'] : []), 'fouc-knowledge-dev-postgres-1', command, '-U', environment.FOUC_POSTGRES_USER, ...args];
+  const dockerArgs = ['exec', ...(input ? ['-i'] : []), 'fouc-dev-postgres-1', command, '-U', environment.FOUC_POSTGRES_USER, ...args];
   return execFileSync(process.platform === 'win32' ? 'wsl.exe' : 'docker', process.platform === 'win32'
-    ? ['-d', environment.KNOWLEDGE_WSL_DISTRO ?? 'Ubuntu-22.04', '--exec', 'docker', ...dockerArgs] : dockerArgs,
+    ? ['-d', environment.FOUC_WSL_DISTRO ?? 'Ubuntu-22.04', '--exec', 'docker', ...dockerArgs] : dockerArgs,
   { input, encoding: 'utf8', windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
 }
 // A dedicated lab database keeps device connector validation independent of

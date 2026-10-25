@@ -17,18 +17,17 @@ Fouc 是一套构建于 AI Agent 之上的超级工作台，面向个人与企�
 
 ## 工程边界
 
-- 前端保持在 `src/`，不得导入后端内部实现；tRPC 客户端类型仅通过 `@fouc/server/knowledge-api` 的公开 type-only 导出使用，禁止运行时导入。
+- 前端保持在 `src/`，不得导入后端内部实现；跨宿主契约仅通过 `@fouc/shared` 的公开导出使用。
 - 两个后端包互不导入内部代码；设备包不连接账户与共享业务数据库。跨宿主协议经 `@fouc/shared` 的公开导出使用。
-- Python 内容处理仍位于 `services/media-worker/`，不进入桌面 sidecar 的运行与分发依赖。
 - `pnpm dev:all` 启动或复用本仓库的 Web、设备运行时和业务服务；服务在命令退出后保持运行并自动刷新源码。
 - `pnpm architecture:verify` 验证依赖边界与依赖声明；后端分别使用 `device:*`、`server:*` 命令检查、测试与构建。
 
 ## 产品资源模型（必须先于代码命名理解）
 
 - **项目承载统一工作台的业务隔离域**。顶部项目切换是唯一项目入口；任务、资产、成员、聊天与最近记录默认属于当前真实 `projectId`。全产品不新增工作空间实体、全局 `workspaceId` 或虚构默认项目。连接器与社区目录全项目可发现，设备连接、凭据与具体操作仍独立授权。
-- **项目与知识库是独立、多实例资源**：项目以 `projectId` 和项目成员权限管理；知识库以 `knowledgeBaseId`、成员、分组、可见性与页面 ACL 管理。项目不包含知识库，知识库也不包含项目；知识库 owner 配置开放项目集合，项目成员资格、开放范围、库成员与页面 ACL 共同限制访问，关联不隐式授予内容权限。知识库下才有文件夹（现存内部名 `teamspace`）与文档；项目引用文档不改变归属或授予权限。
-- 项目列表、顶部切换及当前作用域状态归 `features/project`；知识库目录、文件夹和文档归 `features/knowledge`；`src/shell/` 只负责组合与呈现。后端 `modules/projects`、`modules/knowledge` 拥有对应用例，业务表位于 `platform/database/resources`。设备会话和连接以真实 `sessionId`、`connectionId` 校验，不借助产品空间分区。
-- 登录态决定主体身份和具体操作权限，不决定整套知识库页面或整个产品的数据模式。访客也能使用允许的功能；本机、服务端和设备能力应按资源与操作明确选择，不因登录、退出自动迁移或替换内容。
+- 知识库能力已移出 Fouc，不再维护内置知识库菜单、页面、存储、协同或业务接口。
+- 项目列表、顶部切换及当前作用域状态归 `features/project`；`src/shell/` 只负责组合与呈现。后端 `modules/projects`、`modules/tasks`、`modules/chats` 拥有对应用例，业务表位于 `platform/database/resources`。设备会话和连接以真实 `sessionId`、`connectionId` 校验，不借助产品空间分区。
+- 登录态决定主体身份和具体操作权限，不决定整个产品的数据模式。访客也能使用允许的功能；本机、服务端和设备能力应按资源与操作明确选择，不因登录、退出自动迁移或替换内容。
 - 现有工作台首页、连接器目录与社区部分页面使用演示数据；任务菜单已接入真实服务端项目的多看板、Kanban 与看板成员授权（`features/tasks`、`modules/tasks`、`@fouc/shared/tasks`），成员主页面已接入真实项目成员目录、添加、角色调整与移除（`features/project/members`、`modules/projects`、`@fouc/shared/projects`），资产主页面仍为空状态，自动化模块已移除；渲染了某项能力不等于已有对应的服务端持久化或资源授权。先核对实际用例与数据所有者，再扩展该能力；当前实现状态见 `docs/product/V1/design/arch/fouc-project-structure-design.md` §2.3。
 
 ## 开发理念
@@ -57,10 +56,9 @@ Fouc 是一套构建于 AI Agent 之上的超级工作台，面向个人与企�
 - 资源模型、工程边界与服务端选型：[项目结构设计](docs/product/V1/design/arch/fouc-project-structure-design.md)。
 - 身份、会话和资源授权：[统一身份设计](docs/product/V1/design/identity/fouc-identity.md)。
 - 项目体验与工作对象：[项目设计](docs/product/V1/design/projects/fouc-project-space-product-ux-design.md)。
-- 知识库与协同编辑：[知识库设计](docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。
 - 连接器、DTS 与数据存储：[连接器架构](docs/product/V1/design/connectors/connector-architecture.md)、[DTS](docs/product/V1/design/connectors/dts-connector-design.md)、[数据存储](docs/product/V1/design/connectors/data-storage-module-design.md)。
 - Agent 纳管：[本机 Agent 设计](docs/product/V1/design/agents/fouc-agent-management-design.md)。
-- 长期任务进度：[知识库任务表](.spec/tasks/fouc-knowledgebase-tasks.md)、[DBX 迁移任务表](.spec/tasks/dbx-full-capability-migration.md)；仅在涉及对应任务时阅读。
+- 长期任务进度：[DBX 迁移任务表](.spec/tasks/dbx-full-capability-migration.md)；仅在涉及对应任务时阅读。
 
 ### 桌面端构建
 

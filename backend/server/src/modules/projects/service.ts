@@ -13,7 +13,7 @@ import { createProjectMemberService } from './members';
 
 const view = (row: typeof project.$inferSelect) => ({ id: row.id, name: row.name });
 
-/** Projects own their membership independently of knowledgeBases and global resources. */
+/** Projects own their membership independently of global resources. */
 export function createProjectService(pool: Pool) {
   async function mutate<T>(identity: FoucIdentity, projectId: string, operation: (db: ResourceTransaction) => Promise<T>) {
     return withProjectMember(pool, identity, projectId, true, async ({ db, membership }) => {

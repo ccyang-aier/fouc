@@ -27,7 +27,7 @@ function memoryStorage(initial: Record<string, string> = {}): AuthReturnStorage 
 describe('sanitizeAuthReturnTo', () => {
   test('accepts internal app paths with query and hash', () => {
     expect(sanitizeAuthReturnTo('/')).toBe('/');
-    expect(sanitizeAuthReturnTo('/knowledge/doc-42?tab=history')).toBe('/knowledge/doc-42?tab=history');
+    expect(sanitizeAuthReturnTo('/tasks/doc-42?tab=history')).toBe('/tasks/doc-42?tab=history');
     expect(sanitizeAuthReturnTo('/settings#appearance')).toBe('/settings#appearance');
   });
 
@@ -52,10 +52,10 @@ describe('sanitizeAuthReturnTo', () => {
   });
 
   test('respects a custom fallback unless it is an auth route', () => {
-    expect(sanitizeAuthReturnTo('https://evil', '/knowledge')).toBe('/knowledge');
+    expect(sanitizeAuthReturnTo('https://evil', '/tasks')).toBe('/tasks');
     expect(sanitizeAuthReturnTo('https://evil', '/auth')).toBe('/');
     expect(sanitizeAuthReturnTo('https://evil', '/auth/verify')).toBe('/');
-    expect(sanitizeAuthReturnTo(null, '/knowledge?x=1')).toBe('/knowledge?x=1');
+    expect(sanitizeAuthReturnTo(null, '/tasks?x=1')).toBe('/tasks?x=1');
   });
 });
 
@@ -68,9 +68,9 @@ describe('currentLocationReturnTo', () => {
 describe('storage round-trips', () => {
   test('save sanitizes; consume reads once and clears', () => {
     const storage = memoryStorage();
-    saveAuthReturnTo(storage, '/knowledge/doc-42');
-    expect(storage.dump()[authReturnToStorageKey]).toBe('/knowledge/doc-42');
-    expect(consumeAuthReturnTo(storage)).toBe('/knowledge/doc-42');
+    saveAuthReturnTo(storage, '/tasks/doc-42');
+    expect(storage.dump()[authReturnToStorageKey]).toBe('/tasks/doc-42');
+    expect(consumeAuthReturnTo(storage)).toBe('/tasks/doc-42');
     expect(storage.dump()[authReturnToStorageKey]).toBe(undefined);
 
     // An unsanitizable value is stored as the default rather than rejected.

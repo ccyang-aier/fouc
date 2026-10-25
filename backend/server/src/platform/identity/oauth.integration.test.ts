@@ -29,7 +29,7 @@ afterEach(async () => { if (server) await server.close(); if (idp) await idp.clo
 
 async function start(provider = 'company', cookie?: string, link = false) {
   const response = await server.request(link ? '/link-social' : '/sign-in/social', {
-    provider, callbackURL: `${server.webOrigin}/knowledge`, errorCallbackURL: `${server.webOrigin}/login`, disableRedirect: true,
+    provider, callbackURL: `${server.webOrigin}/home`, errorCallbackURL: `${server.webOrigin}/login`, disableRedirect: true,
   }, cookie);
   expect(response.status).toBe(200);
   const data = await response.json() as { url: string; redirect: boolean };
@@ -80,7 +80,7 @@ describe('real OAuth/OIDC HTTP identity flow', () => {
     expect(authorization.searchParams.get('state')).toHaveLength(32);
     expect(authorization.searchParams.get('redirect_uri')).toBe(`${server.origin}/api/auth/callback/company`);
     expect(response.status).toBe(302);
-    expect(response.headers.get('location')).toBe(`${server.webOrigin}/knowledge`);
+    expect(response.headers.get('location')).toBe(`${server.webOrigin}/home`);
     primaryCookie = responseCookie(response);
     const session = await readSession(primaryCookie);
     expect(session?.user.email).toBe('employee@example.test');
@@ -88,13 +88,13 @@ describe('real OAuth/OIDC HTTP identity flow', () => {
     expect(idp.exchanges.at(-1)).toEqual({ accepted: true, confidential: true, pkce: true });
     const rows = await server.database.pool.query('SELECT provider_id, account_id, user_id, access_token, refresh_token, id_token FROM auth.account WHERE user_id=$1', [primaryUserId]);
     expect(rows.rows).toEqual([{ provider_id: 'company', account_id: JSON.stringify([idp.origin, 'employee-123']), user_id: primaryUserId, access_token: null, refresh_token: null, id_token: null }]);
-    expect((await server.database.admin.query('SELECT count(*)::int AS count FROM resources.knowledge_base')).rows[0].count).toBe(0);
+    expect((await server.database.admin.query('SELECT count(*)::int AS count FROM resources.project')).rows[0].count).toBe(0);
   });
   test('returning immutable subject maps to the same user without replacing local email', async () => {
     idp.selectIdentity({ email: 'changed@example.test' });
     try {
       const { response } = await complete();
-      expect(response.headers.get('location')).toBe(`${server.webOrigin}/knowledge`);
+      expect(response.headers.get('location')).toBe(`${server.webOrigin}/home`);
       const session = await readSession(responseCookie(response));
       expect(session?.user).toMatchObject({ id: primaryUserId, email: 'employee@example.test' });
     } finally { idp.selectIdentity({ email: 'employee@example.test' }); }
@@ -104,7 +104,7 @@ describe('real OAuth/OIDC HTTP identity flow', () => {
     try {
       const { response, flow } = await complete('plain');
       expect(new URL(flow.url).searchParams.has('nonce')).toBe(false);
-      expect(response.headers.get('location')).toBe(`${server.webOrigin}/knowledge`);
+      expect(response.headers.get('location')).toBe(`${server.webOrigin}/home`);
       const session = await readSession(responseCookie(response));
       expect(session?.user.email).toBe('plain@example.test');
       expect(session?.user.id).not.toBe(primaryUserId);
@@ -135,7 +135,7 @@ describe('OIDC cryptographic and callback boundaries', () => {
     expect(errorCode(await callback(modified.toString(), flow.cookie))).toBe('state_mismatch');
     modified.searchParams.delete('state');
     expect(errorCode(await callback(modified.toString(), flow.cookie))).toBe('state_not_found');
-    expect((await callback(callbackUrl, flow.cookie)).headers.get('location')).toBe(`${server.webOrigin}/knowledge`);
+    expect((await callback(callbackUrl, flow.cookie)).headers.get('location')).toBe(`${server.webOrigin}/home`);
     expect(errorCode(await callback(callbackUrl, flow.cookie))).toBe('state_mismatch');
   });
   test('rejects callback issuer and provider mix-up before sending a code to a token endpoint', async () => {
@@ -157,7 +157,7 @@ describe('OIDC cryptographic and callback boundaries', () => {
       { additionalData: { link: { userId: primaryUserId }, serverContext: { fouc: { userId: primaryUserId } } } },
       { additionalParams: { redirect_uri: 'https://evil.example.test' } },
     ]) {
-      const response = await server.request('/sign-in/social', { provider: 'company', callbackURL: `${server.webOrigin}/knowledge`, ...changes });
+      const response = await server.request('/sign-in/social', { provider: 'company', callbackURL: `${server.webOrigin}/home`, ...changes });
       expect([400, 403]).toContain(response.status);
     }
     expect((await server.request('/sign-in/social', { provider: 'http://169.254.169.254' })).status).toBe(404);
@@ -165,7 +165,7 @@ describe('OIDC cryptographic and callback boundaries', () => {
     const callbackUrl = await authorize(flow.url);
     expect((await callback(`${callbackUrl}&state=duplicate`, flow.cookie)).status).toBe(400);
     expect((await callback(`${callbackUrl}&access_token=must-not-be-accepted`, flow.cookie)).status).toBe(400);
-    expect((await callback(callbackUrl, flow.cookie)).headers.get('location')).toBe(`${server.webOrigin}/knowledge`);
+    expect((await callback(callbackUrl, flow.cookie)).headers.get('location')).toBe(`${server.webOrigin}/home`);
   });
   test('IdP exact redirect allowlist and real PKCE reject modified authorization and token requests', async () => {
     const flow = await start();
@@ -203,7 +203,7 @@ describe('OIDC cryptographic and callback boundaries', () => {
     try {
       const responses = await Promise.all([callback(first, flow.cookie), callback(second, flow.cookie)]);
       expect(entered).toBe(2);
-      expect(responses.filter((response) => response.headers.get('location') === `${server.webOrigin}/knowledge`)).toHaveLength(1);
+      expect(responses.filter((response) => response.headers.get('location') === `${server.webOrigin}/home`)).toHaveLength(1);
       expect(responses.filter((response) => errorCode(response) === 'invalid_code')).toHaveLength(1);
       expect(idp.exchanges.length - before).toBe(1);
     } finally { clearTimeout(timeout); release(); adapter.deleteVerificationByIdentifier = remove; }
@@ -246,7 +246,7 @@ describe('global account ownership and active-session association', () => {
     idp.selectIdentity({ subject: 'linked-subject', email: 'linked@example.test' });
     try {
       expect(errorCode((await complete()).response)).toBe('account_not_linked');
-      expect((await complete('company', linkedCookie, true)).response.headers.get('location')).toBe(`${server.webOrigin}/knowledge`);
+      expect((await complete('company', linkedCookie, true)).response.headers.get('location')).toBe(`${server.webOrigin}/home`);
       const { response } = await complete();
       expect((await readSession(responseCookie(response)))?.user.id).toBe(linkedUserId);
       const accounts = await server.database.pool.query('SELECT provider_id FROM auth.account WHERE user_id=$1 ORDER BY provider_id', [linkedUserId]);
@@ -308,14 +308,14 @@ describe('recoverable provider errors and credential minimization', () => {
     expect(errorCode(response)).toBe('access_denied');
     expect(response.headers.get('location')).not.toContain('do-not-leak');
     expect(response.headers.get('location')).not.toContain('error_description');
-    expect((await complete()).response.headers.get('location')).toBe(`${server.webOrigin}/knowledge`);
+    expect((await complete()).response.headers.get('location')).toBe(`${server.webOrigin}/home`);
   });
   for (const fault of ['token_error', 'redirect', 'oversized', 'slow'] satisfies IdpFault[]) {
     test(`${fault} fails safely and recovers only with a new flow`, async () => {
       idp.setFault(fault);
       try { expect(errorCode((await complete()).response)).toBe('invalid_code'); }
       finally { idp.setFault('none'); }
-      expect((await complete()).response.headers.get('location')).toBe(`${server.webOrigin}/knowledge`);
+      expect((await complete()).response.headers.get('location')).toBe(`${server.webOrigin}/home`);
       expect(idp.forbiddenHits).toBe(0);
     });
   }
@@ -333,7 +333,7 @@ describe('recoverable provider errors and credential minimization', () => {
       expect((await readSession(primaryCookie))?.user.id).toBe(primaryUserId);
     }
     idp.setDiscoveryOverrides({});
-    expect((await complete('other-company')).response.headers.get('location')).toBe(`${server.webOrigin}/knowledge`);
+    expect((await complete('other-company')).response.headers.get('location')).toBe(`${server.webOrigin}/home`);
     expect(idp.forbiddenHits).toBe(0);
   });
   test('JWKS redirects are rejected before credential-bearing requests can follow them', async () => {
@@ -342,7 +342,7 @@ describe('recoverable provider errors and credential minimization', () => {
     finally { idp.setJwksRedirect(false); }
     expect(idp.forbiddenHits).toBe(0);
     idp.selectIdentity({ subject: 'jwks-recovered', email: 'jwks@example.test' });
-    expect((await complete('other-company')).response.headers.get('location')).toBe(`${server.webOrigin}/knowledge`);
+    expect((await complete('other-company')).response.headers.get('location')).toBe(`${server.webOrigin}/home`);
   });
   test('OAuth initiation has a real socket-IP rate limit independent of spoofed forwarding headers', async () => {
     let limited = false;

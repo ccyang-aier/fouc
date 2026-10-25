@@ -5,7 +5,6 @@ import { HomeCanvas } from '@/features/home/home-canvas';
 import type { ChatHistoryEntry } from '@/features/home/chat/chat-history';
 import { CommunityCanvas } from '@/features/community/community-canvas';
 import { ConnectorsCanvas } from '@/features/connectors/connectors-canvas';
-import { KnowledgePage } from '@/features/knowledge/knowledge-page';
 import { ProjectDashboard } from '@/features/project/dashboard/project-dashboard';
 import { TaskBoardsPage } from '@/features/tasks/task-boards-page';
 import { ProjectMembersPage } from '@/features/project/members/members-page';
@@ -32,7 +31,7 @@ export function WorkbenchPanels({ tabs, active, history, onNavigate, onOpenChat,
   // Tab order must not move live editor/iframe hosts in the document.
   return tabs.toSorted((a, b) => a.instance - b.instance).map(tab => {
     const visible = tab.key === active;
-    const projectPage = !['community', 'connectors', 'knowledge'].includes(tab.view);
+    const projectPage = !['community', 'connectors'].includes(tab.view);
     // Keep actual DOM/editors mounted: hiding must not destroy collaboration or undo.
     return <PageSessionNamespace key={`${scopeKey}:${tab.instance}:${tab.revision ?? 0}`} name={`page:${tab.instance}`}><WorkbenchPanel tab={tab} visible={visible}>
         {projectPage && (!selectedProject || !scopeKey) ? <ProjectSelectionEmpty />
@@ -45,7 +44,6 @@ export function WorkbenchPanels({ tabs, active, history, onNavigate, onOpenChat,
           : tab.view === 'agents' ? <section className="h-full overflow-auto" aria-label={t('智能体')}><AgentSettings /></section>
           : tab.view === 'community' ? <CommunityCanvas />
           : tab.view === 'connectors' ? <ConnectorsCanvas onOpenProject={id => { if (projects.some(project => project.id === id)) selectProject(id); onNavigate('workbench'); }} />
-          : tab.view === 'knowledge' ? <KnowledgePage onOpenSettings={() => onNavigate('settings')} />
           : null}
     </WorkbenchPanel></PageSessionNamespace>;
   });

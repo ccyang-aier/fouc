@@ -28,7 +28,7 @@ export function NavigationSidebar({ open, onCollapse, onExpand, view, onViewChan
   const { width, dragging, startResize } = useSidebarWidth(272);
   const { scopeKey } = useProjectResources();
   const primary: WorkbenchPage[] = ['home', 'workbench', 'tasks', 'members', 'assets', 'agents'];
-  const services: WorkbenchPage[] = ['community', 'connectors', 'knowledge'];
+  const services: WorkbenchPage[] = ['community', 'connectors'];
   function row(id: WorkbenchPage) {
     const page = workbenchPages[id];
     const item: SidebarRowItem & { id: WorkbenchPage } = { id, label: t(page.label), icon: page.icon };

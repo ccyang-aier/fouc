@@ -6,10 +6,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { setTimeout as delay } from 'node:timers/promises';
-import { prepareDocumentPdf } from '../backend/server/scripts/prepare-document-pdf.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-await prepareDocumentPdf();
 const require = createRequire(import.meta.url);
 const logDirectory = path.join(root, '.runtime', 'dev');
 const normalize = (value) => value.replaceAll('\\', '/').toLowerCase();
@@ -21,7 +19,7 @@ const bunExecutable = [
   path.join(process.env.BUN_INSTALL ?? path.join(homedir(), '.bun'), 'bin', bunName),
 ].find((file) => file && existsSync(file));
 if (!bunExecutable) throw new Error('Bun executable was not found. Install Bun or set FOUC_BUN_PATH to its executable.');
-const serverEnvironment = ['.env.fouc.local', '.env.knowledge.models.local'].filter((file) => existsSync(path.join(root, file))).map((file) => `--env-file=${file}`);
+const serverEnvironment = ['.env.fouc.local'].filter((file) => existsSync(path.join(root, file))).map((file) => `--env-file=${file}`);
 const serverLocalEnvironment = existsSync(path.join(root, '.env.fouc.local')) ? parseEnv(readFileSync(path.join(root, '.env.fouc.local'), 'utf8')) : {};
 const webPort = Number(process.env.FOUC_WEB_PORT ?? serverLocalEnvironment.FOUC_WEB_PORT ?? 3000);
 const services = [

@@ -6,23 +6,19 @@ import { allocateTaskNumberSql, taskBoardPermissionSql, taskPoliciesForTable, ta
 import { chatChannelPermissionSql, chatPoliciesForTable, chatTableNames } from './chat-rls';
 
 const identifier = (value: string) => `"${value.replaceAll('"', '""')}"`;
-const currentKnowledgeBase = `(SELECT NULLIF(current_setting('app.knowledge_base_id', true), '')::uuid)`;
-const readKnowledgeBase = `(SELECT NULLIF(current_setting('app.read_knowledge_base_id', true), '')::uuid)`;
-export const knowledgeBasePredicate = `"knowledge_base_id" = ${currentKnowledgeBase}`;
-
 const verifiedIdentityUser = `(SELECT s.user_id FROM auth.session s
   JOIN auth."user" u ON u.id = s.user_id
   WHERE s.id = NULLIF(current_setting('app.auth_session_id', true), '')::uuid
     AND s.expires_at > clock_timestamp() AND u.email_verified IS TRUE)`;
 
 export interface ResourceRlsPolicy {
-  name: 'knowledge_base_scope' | 'project_scope' | 'own_identity' | 'reference_read' | 'backlink_target' | 'task_board_read' | 'task_board_create' | 'task_board_update' | 'task_board_delete' | 'chat_read' | 'chat_create' | 'chat_update' | 'chat_delete';
+  name: 'project_scope' | 'own_identity' | 'task_board_read' | 'task_board_create' | 'task_board_update' | 'task_board_delete' | 'chat_read' | 'chat_create' | 'chat_update' | 'chat_delete';
   command: 'ALL' | 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE';
   using?: string;
   check?: string;
 }
 
-/** Knowledge-base data has a real resource scope; project access uses its own membership. */
+/** Projects, task boards and chat channels use their own resource scope and membership. */
 export function resourcePoliciesForTable(table: PgTable): ResourceRlsPolicy[] {
   const config = getTableConfig(table);
   if ((chatTableNames as readonly string[]).includes(config.name)) return chatPoliciesForTable(config.name, verifiedIdentityUser);
@@ -38,27 +34,7 @@ export function resourcePoliciesForTable(table: PgTable): ResourceRlsPolicy[] {
       { name: 'own_identity', command: 'SELECT', using: visible },
     ];
   }
-  if (config.name === 'knowledge_base_project') {
-    return [
-      { name: 'knowledge_base_scope', command: 'ALL', using: knowledgeBasePredicate, check: knowledgeBasePredicate },
-      { name: 'own_identity', command: 'SELECT', using: `EXISTS (SELECT 1 FROM resources.project_member pm WHERE pm.project_id = knowledge_base_project.project_id AND pm.user_id = ${verifiedIdentityUser}) AND EXISTS (SELECT 1 FROM resources.knowledge_base_member km WHERE km.knowledge_base_id = knowledge_base_project.knowledge_base_id AND km.user_id = ${verifiedIdentityUser})` },
-    ];
-  }
-  const predicate = config.name === 'knowledge_base' ? `"id" = ${currentKnowledgeBase}` : knowledgeBasePredicate;
-  const readPredicate = `${config.name === 'knowledge_base' ? '"id"' : '"knowledge_base_id"'} = ${readKnowledgeBase}`;
-  const policies: ResourceRlsPolicy[] = [{ name: 'knowledge_base_scope', command: 'ALL', using: predicate, check: predicate }];
-  // Cross-library reference resolution reads page metadata and its live ACL;
-  // it cannot read document bodies, assets, credentials, or grant any writes.
-  if (['page', 'page_effective_acl', 'knowledge_base_member', 'group_member'].includes(config.name)) {
-    policies.push({ name: 'reference_read', command: 'SELECT', using: readPredicate });
-  }
-  if (config.name === 'backlink') policies.push({ name: 'backlink_target', command: 'SELECT', using: `"dst_knowledge_base_id" = ${currentKnowledgeBase}` });
-  if (config.name === 'knowledge_base_member') policies.push({ name: 'own_identity', command: 'SELECT', using: `"user_id" = ${verifiedIdentityUser}` });
-  if (config.name === 'knowledge_base') policies.push({
-    name: 'own_identity', command: 'SELECT',
-    using: `EXISTS (SELECT 1 FROM resources.knowledge_base_member m WHERE m.knowledge_base_id = knowledge_base.id AND m.user_id = ${verifiedIdentityUser})`,
-  });
-  return policies;
+  throw new Error(`Missing resource policy for ${config.name}`);
 }
 
 /** DDL identifiers come only from the checked-in Drizzle table definitions. */

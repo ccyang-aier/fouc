@@ -141,7 +141,7 @@ export function ChatComposer({
       inputRef.current?.focus({ preventScroll: true });
     }} t={t} />
     <div className={styles.composerGroup} data-compact={compact}>
-      <ChatContextSelectors context={context} onChange={setContext} t={t} />
+      <ChatContextSelectors context={context} onChange={setContext} />
       <div
         className={styles.composer}
         data-invalid={invalid}

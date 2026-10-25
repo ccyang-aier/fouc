@@ -7,7 +7,6 @@ import { allocateTaskNumberBody, taskBoardPermissionBody, updateTaskBoardViewsBo
 import { chatChannelPermissionBody } from './resources/chat-rls';
 
 export const foucDatabaseSchemas = ['resources', 'auth', 'catalog'] as const;
-const requiredExtensions = ['ltree', 'pg_search', 'vector'];
 
 export interface FoucDatabaseStatus {
   state: 'empty' | 'incomplete' | 'ready';
@@ -16,7 +15,6 @@ export interface FoucDatabaseStatus {
   expectedTables: number;
   forcedResourceTables: number;
   expectedResourceTables: number;
-  extensions: string[];
   issues: string[];
 }
 
@@ -30,21 +28,19 @@ function normalizeType(value: string): string {
   return value.replaceAll('"', '').replace(/\b(?:resources|public)\./g, '').replace(/^varchar\(/, 'character varying(');
 }
 
-/** Read-only structural, RLS, extension and runtime-grant verification. */
+/** Read-only structural, RLS and runtime-grant verification. */
 export async function inspectFoucDatabase(admin: FoucSqlConnection, application: FoucSqlConnection): Promise<FoucDatabaseStatus> {
   const role = await assertFoucApplicationRole(admin, application);
   const namespaces = await admin.query<{ name: string }>('SELECT nspname AS name FROM pg_namespace WHERE nspname = ANY($1::text[]) ORDER BY nspname', [[...foucDatabaseSchemas]]);
-  const extensions = await admin.query<{ name: string }>('SELECT extname AS name FROM pg_extension WHERE extname = ANY($1::text[]) ORDER BY extname', [requiredExtensions]);
   const issues: string[] = [];
   const status: FoucDatabaseStatus = {
     state: 'empty', schemas: namespaces.rows.map((row) => row.name), tables: 0, expectedTables: allApplicationTables.length,
     forcedResourceTables: 0, expectedResourceTables: resourceTables.length,
-    extensions: extensions.rows.map((row) => row.name), issues,
+    issues,
   };
   if (!status.schemas.length) return status;
   status.state = 'incomplete';
   for (const expected of foucDatabaseSchemas) if (!status.schemas.includes(expected)) issues.push(`Missing schema: ${expected}`);
-  for (const expected of requiredExtensions) if (!status.extensions.includes(expected)) issues.push(`Missing extension: ${expected}`);
 
   const relations = await admin.query<{ schema: string; name: string; enabled: boolean; forced: boolean; owner: string }>(`
     SELECT n.nspname AS schema, c.relname AS name, c.relrowsecurity AS enabled,

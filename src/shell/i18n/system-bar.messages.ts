@@ -16,8 +16,6 @@ export const messages = defineMessages({
   '管理本机 Agent': ['管理本机 Agent', 'Manage local agents'],
   社区: ['社区', 'Community'],
   '发现 Agent 与技能': ['发现 Agent 与技能', 'Discover agents and skills'],
-  知识库: ['知识库', 'Knowledge bases'],
-  查看沉淀的知识: ['查看沉淀的知识', 'Explore saved knowledge'],
   连接器: ['连接器', 'Connectors'],
   管理外部服务: ['管理外部服务', 'Manage external services'],
   设置: ['设置', 'Settings'],

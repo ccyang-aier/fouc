@@ -43,12 +43,11 @@ beforeAll(async () => {
   globals.indexedDB = indexedDB;
   globals.IS_REACT_ACT_ENVIRONMENT = true;
   const icon = () => <svg />;
-  mock.module('@phosphor-icons/react', () => Object.fromEntries(['Archive', 'BookOpenText', 'ChatCircleDots', 'ChatsCircle', 'ListChecks', 'Planet', 'PlugsConnected', 'Robot', 'SquaresFour', 'UsersThree', 'X'].map(name => [name, icon])));
+  mock.module('@phosphor-icons/react', () => Object.fromEntries(['Archive', 'ChatCircleDots', 'ChatsCircle', 'ListChecks', 'Planet', 'PlugsConnected', 'Robot', 'SquaresFour', 'UsersThree', 'X'].map(name => [name, icon])));
   mock.module('@/features/project/project-resources', () => ({ useProjectResources: () => ({ scopeKey: scope, selectedProject: { id: 'project', name: 'Project' }, projects: [] }) }));
   mock.module('@/features/home/home-canvas', () => ({ HomeCanvas: () => <ExamplePage name="home" /> }));
   mock.module('@/features/community/community-canvas', () => ({ CommunityCanvas: () => <ExamplePage name="community" /> }));
   mock.module('@/features/connectors/connectors-canvas', () => ({ ConnectorsCanvas: () => <ExamplePage name="connectors" /> }));
-  mock.module('@/features/knowledge/knowledge-page', () => ({ KnowledgePage: () => <ExamplePage name="knowledge" /> }));
   mock.module('@/features/project/dashboard/project-dashboard', () => ({ ProjectDashboard: () => <ExamplePage name="workbench" /> }));
   mock.module('@/features/tasks/task-boards-page', () => ({ TaskBoardsPage: () => <ExamplePage name="tasks" /> }));
   mock.module('@/features/project/project-workspace-pages', () => ({ ProjectEmptyPage: () => null, ProjectSelectionEmpty: () => null }));
@@ -209,11 +208,11 @@ test('drag order and bulk closing preserve retained page DOM and drafts without 
 test('hydration opens only the requested URL when there is no selected project', async () => {
   await act(async () => root.unmount());
   scope = null;
-  browser.history.replaceState(null, '', '/?view=knowledge');
+  browser.history.replaceState(null, '', '/?view=connectors');
   host.innerHTML = renderToString(renderWorkspace());
   await act(async () => { root = hydrateRoot(host, renderWorkspace()); });
-  expect(tabs.tabs.map(tab => tab.key)).toEqual(['knowledge']);
-  expect(tabs.active).toBe('knowledge');
+  expect(tabs.tabs.map(tab => tab.key)).toEqual(['connectors']);
+  expect(tabs.active).toBe('connectors');
 });
 
 test('reloads and project returns restore the ordered tabs, active page and drafts; explicit links take priority', async () => {
@@ -242,7 +241,7 @@ test('reloads and project returns restore the ordered tabs, active page and draf
   scope = second.scope; activeSession = second;
   await act(async () => root.render(renderWorkspace()));
   expect(tabs.active).toBe('workbench');
-  await act(async () => tabs.open('knowledge'));
+  await act(async () => tabs.open('tasks'));
   scope = firstScope; activeSession = new ProjectUiSession(firstScope);
   await activeSession.loaded;
   await act(async () => root.render(renderWorkspace()));
@@ -252,14 +251,14 @@ test('reloads and project returns restore the ordered tabs, active page and draf
   scope = second.scope; activeSession = new ProjectUiSession(second.scope);
   await activeSession.loaded;
   await act(async () => root.render(renderWorkspace()));
-  expect(tabs.active).toBe('knowledge');
+  expect(tabs.active).toBe('tasks');
   await act(async () => root.render(null));
   scope = firstScope; activeSession = new ProjectUiSession(firstScope);
   await activeSession.loaded;
-  browser.history.replaceState(null, '', '/?view=knowledge');
+  browser.history.replaceState(null, '', '/?view=tasks');
   await act(async () => root.render(renderWorkspace()));
-  expect(tabs.active).toBe('knowledge');
-  expect(tabs.tabs.map(tab => tab.key)).toEqual(['connectors', 'home', 'community', 'knowledge']);
+  expect(tabs.active).toBe('tasks');
+  expect(tabs.tabs.map(tab => tab.key)).toEqual(['connectors', 'home', 'community', 'tasks']);
 });
 
 test('identity checking cannot rewrite the startup URL or expose guest pages before the account restores', async () => {

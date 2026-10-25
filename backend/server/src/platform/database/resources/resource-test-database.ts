@@ -61,85 +61,20 @@ export async function createResourceTestDatabase(options: { initialize?: boolean
 export type ResourceTestDatabase = Awaited<ReturnType<typeof createResourceTestDatabase>>;
 
 export async function seedResourceTestData(admin: Pool) {
-  // The same page/group/etc. UUIDs intentionally occur in both resources. Only the
-  // composite knowledgeBase key may distinguish them in joins and foreign keys.
-  const ids = {
-    knowledgeBase: randomUUID(), project: randomUUID(), teamspace: randomUUID(), group: randomUUID(), page: randomUUID(), database: randomUUID(), row: randomUUID(),
-    checkpoint: randomUUID(), thread: randomUUID(), comment: randomUUID(), task: randomUUID(), usage: randomUUID(),
-    notification: randomUUID(), outbox: randomUUID(), pat: randomUUID(), share: randomUUID(), credential: randomUUID(),
-  };
-  const resources = [
-    { knowledgeBaseId: randomUUID(), userId: randomUUID(), name: 'Resource Alpha' },
-    { knowledgeBaseId: randomUUID(), userId: randomUUID(), name: 'Resource Beta' },
-  ] as const;
+  const resources = ['Resource Alpha', 'Resource Beta'].map(name => ({ projectId: randomUUID(), userId: randomUUID(), name }));
   const client = await admin.connect();
   try {
     await client.query('BEGIN');
     const db = drizzle(client, { schema: tables.resourceSchema });
-    for (const resource of resources) {
-      const { knowledgeBaseId, userId, name } = resource;
-      const principal = `user:${userId}` as const;
+    for (const { projectId, userId, name } of resources) {
       await db.insert(authUser).values({ id: userId, name, email: `${userId}@resource.test` });
-      const projectId = randomUUID();
       await db.insert(tables.project).values({ id: projectId, name, createdBy: userId });
       await db.insert(tables.projectMember).values({ projectId, userId, role: 'owner' });
-      await db.insert(tables.knowledgeBase).values({ id: knowledgeBaseId, name });
-      await db.insert(tables.member).values({ knowledgeBaseId, userId, role: 'owner' });
-      await db.insert(tables.knowledgeBaseProject).values({ knowledgeBaseId, projectId });
-      await db.insert(tables.knowledgeBaseInvitation).values({
-        knowledgeBaseId, id: randomUUID(), email: 'invitee@resource.test', role: 'member', tokenHash: 'd'.repeat(64),
-        invitedBy: userId, expiresAt: new Date(Date.now() + 86_400_000),
-      });
-      await db.insert(tables.group).values({ knowledgeBaseId, id: ids.group, name: 'Editors' });
-      await db.insert(tables.groupMember).values({ knowledgeBaseId, groupId: ids.group, userId });
-
-      await db.insert(tables.teamspace).values({ knowledgeBaseId, id: ids.teamspace, name: 'Team', defaultAccess: 'view' });
-      const metadata = { knowledgeBaseId, teamspaceId: ids.teamspace, createdBy: userId };
-      await db.insert(tables.page).values([
-        { ...metadata, id: ids.page, kind: 'doc', path: ids.page.replaceAll('-', '_'), position: 'a0', title: `${name} document` },
-        { ...metadata, id: ids.database, kind: 'database', path: ids.database.replaceAll('-', '_'), position: 'a1', title: `${name} database` },
-      ]);
-      await db.insert(tables.databaseDefinition).values({ knowledgeBaseId, pageId: ids.database, teamspaceId: ids.teamspace });
-      await db.insert(tables.page).values({
-        ...metadata, id: ids.row, parentId: ids.database, databaseId: ids.database, kind: 'row', position: 'a0',
-        path: `${ids.database}.${ids.row}`.replaceAll('-', '_'), title: `${name} row`,
-      });
-      const scope = { knowledgeBaseId, pageId: ids.page };
-      const state = { state: new Uint8Array([0, 0]), stateVector: new Uint8Array([0]) };
-      await db.insert(tables.docState).values({ ...scope, ...state });
-      await db.insert(tables.docCheckpoint).values({ ...scope, ...state, id: ids.checkpoint, authors: [userId] });
-      await db.insert(tables.pageAcl).values({ ...scope, principal, level: 'full' });
-      await db.insert(tables.pageEffectiveAcl).values({ ...scope, view: [principal], comment: [principal], edit: [principal], full: [principal] });
-      await db.insert(tables.blockIndex).values({
-        ...scope, blockId: 'block-1', blockType: 'paragraph', contentMd: `${name} private block`, contentHash: 'a'.repeat(64),
-        embedding: [1, 2], embedModel: 'previous-model', embedDimensions: 2, embeddedHash: 'a'.repeat(64), principals: [principal],
-      });
-      await db.insert(tables.blockEmbeddingModel).values({ knowledgeBaseId, embedModel: 'previous-model', embedDimensions: 2 });
-      await db.insert(tables.blockEmbeddingStaging).values({
-        ...scope, blockId: 'block-1', contentHash: 'a'.repeat(64), embedding: [1, 2, 3], embedModel: 'replacement-model', embedDimensions: 3,
-      });
-      await db.insert(tables.backlink).values({ knowledgeBaseId, srcPageId: ids.page, srcBlockId: 'block-1', dstKnowledgeBaseId: knowledgeBaseId, dstPageId: ids.database });
-      await db.insert(tables.asset).values({ knowledgeBaseId, hash: 'f'.repeat(64), mime: 'text/plain', size: 4 });
-      await db.insert(tables.commentThread).values({ ...scope, id: ids.thread });
-      await db.insert(tables.comment).values({ knowledgeBaseId, id: ids.comment, threadId: ids.thread, authorId: userId, bodyMd: `${name} comment` });
-      await db.insert(tables.commentLike).values({ knowledgeBaseId, commentId: ids.comment, userId });
-      await db.insert(tables.outbox).values({
-        knowledgeBaseId, id: ids.outbox, topic: 'doc.changed',
-        payload: { ...scope, topic: 'doc.changed', actor: { kind: 'human', userId }, occurredAt: new Date().toISOString() },
-      });
-      await db.insert(tables.aiTask).values({ knowledgeBaseId, id: ids.task, initiatedBy: userId, kind: 'chat' });
-      await db.insert(tables.aiUsage).values({ knowledgeBaseId, id: ids.usage, userId, taskId: ids.task, operation: 'generate', status: 'success', tier: 'smart', provider: 'local', model: 'test', durationMs: 1 });
-      await db.insert(tables.notification).values({ ...scope, id: ids.notification, userId, kind: 'mention', payload: {} });
-      await db.insert(tables.personalAccessToken).values({ knowledgeBaseId, id: ids.pat, userId, name: 'Test', tokenHash: 'b'.repeat(64), scopes: ['read'] });
-      await db.insert(tables.shareLink).values({ ...scope, id: ids.share, tokenHash: 'c'.repeat(64), createdBy: userId });
-      await db.insert(tables.modelCredential).values({ knowledgeBaseId, id: ids.credential, userId, provider: 'openai', encryptedSecret: new Uint8Array([1, 2, 3]) });
     }
     await client.query('COMMIT');
-    return { resources, ids };
+    return { resources };
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
-  } finally {
-    client.release();
-  }
+  } finally { client.release(); }
 }

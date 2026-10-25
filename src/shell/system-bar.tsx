@@ -3,7 +3,6 @@
 import { ArrowLeft, ArrowRight, ClipboardText, Minus, Square, X } from '@phosphor-icons/react';
 import type { ReactNode } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { KnowledgeNotificationBell } from '@/features/knowledge/notifications/components/notification-bell';
 import { useTranslation } from '@/lib/i18n';
 import { performWindowAction } from '@/lib/tauri-window';
 import { GlobalSearch } from './global-search';
@@ -25,7 +24,6 @@ export function SystemBar({ onNavigate, navigation, children }: {
     {children}
     <div className={`${styles.actions} ${styles.trailing}`} data-tauri-drag-region="false">
       <GlobalSearch className={styles.button} onNavigate={onNavigate} />
-      <KnowledgeNotificationBell onOpenWorkbench={() => onNavigate('knowledge')} />
       <Tooltip><TooltipTrigger asChild><button type="button" className={`fouc-action ${styles.button}`} aria-label={t('任务')} onClick={() => onNavigate('tasks')}><ClipboardText size={17} weight="duotone" aria-hidden /></button></TooltipTrigger><TooltipContent side="bottom">{t('任务')}</TooltipContent></Tooltip>
       <span aria-hidden className={styles.separator} />
       <WindowControl label={t('最小化')} icon={Minus} onClick={() => void performWindowAction('minimize')} />

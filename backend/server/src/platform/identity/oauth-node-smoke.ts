@@ -13,7 +13,7 @@ try {
   idp.registerRedirects(server.origin);
   const finish = async (provider: string) => {
     const start = await server!.request('/sign-in/social', {
-      provider, callbackURL: `${server!.webOrigin}/knowledge`, errorCallbackURL: `${server!.webOrigin}/login`, disableRedirect: true,
+      provider, callbackURL: `${server!.webOrigin}/home`, errorCallbackURL: `${server!.webOrigin}/login`, disableRedirect: true,
     });
     assert.equal(start.status, 200);
     const { url } = await start.json() as { url: string };
@@ -23,7 +23,7 @@ try {
   };
   stage = 'OIDC PKCE/JWKS callback';
   const first = await finish('company');
-  assert.equal(first.headers.get('location'), `${server.webOrigin}/knowledge`);
+  assert.equal(first.headers.get('location'), `${server.webOrigin}/home`);
   const initial = await (await server.request('/get-session', undefined, responseCookie(first))).json() as { user: { id: string } };
   assert.ok(initial.user.id);
   assert.deepEqual(idp.exchanges.at(-1), { accepted: true, pkce: true, confidential: true });
@@ -36,7 +36,7 @@ try {
   assert.equal(returned.user.id, initial.user.id);
   stage = 'plain OAuth';
   idp.selectIdentity({ subject: 'node-oauth', email: 'node-oauth@example.test' });
-  assert.equal((await finish('plain')).headers.get('location'), `${server.webOrigin}/knowledge`);
+  assert.equal((await finish('plain')).headers.get('location'), `${server.webOrigin}/home`);
   stage = 'credential minimization';
   assert.equal((await server.database.pool.query('SELECT id FROM auth.account WHERE access_token IS NOT NULL OR refresh_token IS NOT NULL OR id_token IS NOT NULL')).rowCount, 0);
   console.log(`PASS Node ${process.version}: real PostgreSQL/HTTP OIDC + OAuth, S256, RS256/JWKS, nonce rejection, recovery, stable identity and no stored provider tokens.`);

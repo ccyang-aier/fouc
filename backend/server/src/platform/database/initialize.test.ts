@@ -7,9 +7,9 @@ describe('Fouc database deployment configuration', () => {
   test('invalid or mismatched URLs fail without returning credential values', async () => {
     const secret = 'never-echo-this-secret';
     for (const values of [
-      { DATABASE_ADMIN_URL: `http://admin:${secret}@localhost/knowledge`, DATABASE_URL: `postgres://app:${secret}@localhost/knowledge` },
+      { DATABASE_ADMIN_URL: `http://admin:${secret}@localhost/fouc`, DATABASE_URL: `postgres://app:${secret}@localhost/fouc` },
       { DATABASE_ADMIN_URL: `postgres://admin:${secret}@localhost/one`, DATABASE_URL: `postgres://app:${secret}@localhost/two` },
-      { DATABASE_ADMIN_URL: `postgres://admin:${secret}@host-a/knowledge`, DATABASE_URL: `postgres://app:${secret}@host-b/knowledge` },
+      { DATABASE_ADMIN_URL: `postgres://admin:${secret}@host-a/fouc`, DATABASE_URL: `postgres://app:${secret}@host-b/fouc` },
     ]) {
       let message = '';
       try { await readFoucDatabaseConnections(values); } catch (error) { message = foucDatabaseErrorMessage(error); }
@@ -23,7 +23,7 @@ describe('Fouc database deployment configuration', () => {
 
   test('application role validation rejects every route to administrative privileges', () => {
     const safe: FoucApplicationRole = {
-      name: 'app', database: 'knowledge', address: '127.0.0.1', port: 5432,
+      name: 'app', database: 'fouc', address: '127.0.0.1', port: 5432,
       rolsuper: false, rolbypassrls: false, rolcreatedb: false, rolcreaterole: false,
       rolreplication: false, ownsDatabase: false, privilegedMembership: false,
     };

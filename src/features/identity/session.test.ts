@@ -43,7 +43,7 @@ describe('performFoucSignOut', () => {
   test('revokes the server session and clears local auth state', async () => {
     let signOutCalls = 0;
     const api = fakeApi({ signOut: async () => { signOutCalls++; return { success: true }; } });
-    const storage = memoryStorage({ [authReturnToStorageKey]: '/knowledge', [authPendingEmailStorageKey]: 'a@b.c' });
+    const storage = memoryStorage({ [authReturnToStorageKey]: '/tasks', [authPendingEmailStorageKey]: 'a@b.c' });
     const result = await performFoucSignOut({ api, storage });
     expect(result).toEqual({ ok: true });
     expect(signOutCalls).toBe(1);
@@ -52,7 +52,7 @@ describe('performFoucSignOut', () => {
 
   test('a failed revocation reports the cause but still clears local state', async () => {
     const api = fakeApi({ signOut: () => Promise.reject(new Error('network down')) });
-    const storage = memoryStorage({ [authReturnToStorageKey]: '/knowledge' });
+    const storage = memoryStorage({ [authReturnToStorageKey]: '/tasks' });
     const result = await performFoucSignOut({ api, storage });
     expect(result.ok).toBe(false);
     expect((result as { cause: unknown }).cause instanceof Error).toBe(true);

@@ -2,7 +2,7 @@ import { sql } from 'drizzle-orm';
 import { check, date, integer, jsonb, pgSchema, varchar } from 'drizzle-orm/pg-core';
 import type { ModelCatalogEntry } from '@fouc/shared/model-catalog';
 
-/** Public reference data has no account, project, knowledge-base, or execution scope. */
+/** Public reference data has no account, project, or execution scope. */
 export const catalogNamespace = pgSchema('catalog');
 export const catalogModel = catalogNamespace.table('model', {
   id: varchar('id', { length: 120 }).primaryKey(),

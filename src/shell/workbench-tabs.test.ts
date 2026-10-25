@@ -38,17 +38,17 @@ test('the first message promotes a draft in place and distinct conversations hav
   state = openWorkbenchTab(state, tabTarget('home'));
   state = openWorkbenchTab(state, tabTarget('home', '?conversation=chat-b'));
   expect(state.tabs.map(tab => tab.key)).toEqual(['chat:chat-a', 'home', 'chat:chat-b']);
-  expect(tabTarget('knowledge', '?view=home&conversation=chat-a').conversationId).toBeUndefined();
+  expect(tabTarget('tasks', '?view=home&conversation=chat-a').conversationId).toBeUndefined();
 });
 
 test('reordering retains instances and selection, and bulk closes use the displayed order and target tab', () => {
   let state = createWorkbenchTabs('scope', tabTarget('home'));
-  for (const page of ['community', 'connectors', 'knowledge'] as const) state = openWorkbenchTab(state, tabTarget(page));
-  const [home, community, connectors, knowledge] = state.tabs;
-  state = reorderWorkbenchTabs(state, [knowledge.instance, home.instance, connectors.instance, community.instance]);
-  expect(state.tabs).toEqual([knowledge, home, connectors, community]);
-  expect(state.tabs[0]).toBe(knowledge);
-  expect(state.active).toBe('knowledge');
+  for (const page of ['community', 'connectors', 'tasks'] as const) state = openWorkbenchTab(state, tabTarget(page));
+  const [home, community, connectors, tasks] = state.tabs;
+  state = reorderWorkbenchTabs(state, [tasks.instance, home.instance, connectors.instance, community.instance]);
+  expect(state.tabs).toEqual([tasks, home, connectors, community]);
+  expect(state.tabs[0]).toBe(tasks);
+  expect(state.active).toBe('tasks');
   expect(reorderWorkbenchTabs(state, state.tabs.map(tab => tab.instance))).toBe(state);
   const others = closeWorkbenchTab(state, 'connectors', 'others');
   expect(others.tabs).toEqual([connectors]);
@@ -108,11 +108,11 @@ test('pinning keeps a stable left group through dragging and restoration; reload
 
 test('restoring validates scope and page targets while retaining order, selection and instance sequence', () => {
   let state = createWorkbenchTabs('alice:local:a', tabTarget('home'));
-  state = openWorkbenchTab(state, tabTarget('knowledge', '?view=knowledge&kb=example'));
+  state = openWorkbenchTab(state, tabTarget('tasks', '?view=tasks'));
   state = reorderWorkbenchTabs(state, [1, 0]);
   const restored = restoreWorkbenchTabs(state.scope, structuredClone(state))!;
-  expect(restored.tabs.map(tab => tab.key)).toEqual(['knowledge', 'home']);
-  expect(restored.active).toBe('knowledge');
+  expect(restored.tabs.map(tab => tab.key)).toEqual(['tasks', 'home']);
+  expect(restored.active).toBe('tasks');
   expect(restored.nextInstance).toBe(2);
   expect(restoreWorkbenchTabs('alice:server:a', state)).toBeNull();
   expect(restoreWorkbenchTabs('bob:local:a', state)).toBeNull();

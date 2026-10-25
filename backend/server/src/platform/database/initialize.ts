@@ -26,13 +26,13 @@ export async function initializeFoucDatabase(admin: Pool, application: Pool): Pr
     await client.query(`REVOKE ALL ON SCHEMA resources, auth FROM PUBLIC, ${applicationRole}`);
     await client.query(`REVOKE ALL ON ALL TABLES IN SCHEMA resources, auth FROM PUBLIC, ${applicationRole}`);
     await client.query(`REVOKE ALL ON ALL SEQUENCES IN SCHEMA resources, auth FROM PUBLIC, ${applicationRole}`);
-    await client.query(`GRANT USAGE ON SCHEMA resources, auth, paradedb, pdb TO ${applicationRole}`);
+    await client.query(`GRANT USAGE ON SCHEMA resources, auth TO ${applicationRole}`);
     await client.query(`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA resources, auth TO ${applicationRole}`);
     await client.query(`GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA resources, auth TO ${applicationRole}`);
     await grantModelCatalogReadAccess(client, role.name);
     await writeModelCatalog(client, catalog);
     const verified = await inspectFoucDatabase(client, application);
-    if (verified.state !== 'ready') throw new FoucDatabaseError('check_failed', `Knowledge initialization checks failed: ${verified.issues.join('; ')}`);
+    if (verified.state !== 'ready') throw new FoucDatabaseError('check_failed', `Fouc initialization checks failed: ${verified.issues.join('; ')}`);
     await client.query('COMMIT');
     reusable = true;
   } catch (error) {

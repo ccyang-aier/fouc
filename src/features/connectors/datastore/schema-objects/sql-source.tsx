@@ -2,8 +2,8 @@ import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './sql-source.messages';
 import { useMemo } from 'react';
 import { useAppAlert } from '@/components/app-alert-provider';
-import { Copy } from '@phosphor-icons/react/dist/csr/Copy';
-import { DownloadSimple } from '@phosphor-icons/react/dist/csr/DownloadSimple';
+import { Copy, DownloadSimple } from '@/components/icons';
+
 import { tokenizeSqlSemantic, type RelationalProvider } from '@fouc/shared';
 import styles from './schema-objects.module.css';
 const KEYWORDS = new Set(

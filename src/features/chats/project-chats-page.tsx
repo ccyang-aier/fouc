@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Plus } from '@phosphor-icons/react';
+import { Plus } from '@/components/icons';
 import type { ChannelAttachment } from '@fouc/shared/chats';
 import { Button } from '@/components/ui/button';
 import { useProjectResources } from '@/features/project/project-resources';

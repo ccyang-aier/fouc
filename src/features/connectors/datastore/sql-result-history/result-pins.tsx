@@ -2,7 +2,7 @@
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './result-pins.messages';
 import { useState, type ReactNode } from 'react';
-import { ArrowsLeftRight, IconContext, PushPin, X } from '@phosphor-icons/react';
+import { ArrowsLeftRight, PushPin, X } from '@/components/icons';
 import type { DatabaseQueryResult, RelationalProvider, SqlResultView } from '@fouc/shared';
 import { SqlQueryResult } from '../query-result';
 import { SqlDialog } from '../sql-library-dialog';
@@ -72,7 +72,7 @@ export function ResultPins({
   }
   const selectedLabel = selected?.label ?? currentLabel;
   return (
-    <IconContext.Provider value={{ weight: 'bold', size: 19 }}>
+    <>
       <div className={styles.root}>
         <SqlResultHeader
           label={selectedLabel}
@@ -93,7 +93,7 @@ export function ResultPins({
                 title={tConnector('unpinCurrentResult')}
                 onClick={() => remove(selected.id)}
               >
-                <PushPin weight="fill" />
+                <PushPin />
               </button>
             )
           }
@@ -129,7 +129,7 @@ export function ResultPins({
                 navigateWorkbenchTabs(event);
               }}
             >
-              <PushPin size={15} weight="fill" />
+              <PushPin size={15} />
               <span>
                 {sqlResultTabLabel(
                   pin.label,
@@ -145,7 +145,7 @@ export function ResultPins({
                   remove(pin.id);
                 }}
               >
-                <X size={14} weight="bold" />
+                <X size={14} />
               </button>
             </div>
           ))}
@@ -225,6 +225,6 @@ export function ResultPins({
           </SqlDialog>
         )}
       </div>
-    </IconContext.Provider>
+    </>
   );
 }

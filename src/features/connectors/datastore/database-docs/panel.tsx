@@ -5,12 +5,12 @@ import { uiText, uiFailure, type UiMessage, createUiMessages } from '../../i18n/
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './panel.messages';
 import { useMemo, useState } from 'react';
-import { BookOpenText } from '@phosphor-icons/react/dist/csr/BookOpenText';
-import { MagnifyingGlass } from '@phosphor-icons/react/dist/csr/MagnifyingGlass';
-import { ArrowsClockwise } from '@phosphor-icons/react/dist/csr/ArrowsClockwise';
-import { DownloadSimple } from '@phosphor-icons/react/dist/csr/DownloadSimple';
-import { Palette } from '@phosphor-icons/react/dist/csr/Palette';
-import { ArrowRight } from '@phosphor-icons/react/dist/csr/ArrowRight';
+import { BookOpenText, MagnifyingGlass, ArrowsClockwise, DownloadSimple, Palette, ArrowRight } from '@/components/icons';
+
+
+
+
+
 import {
   applyDatabaseDocsAnnotations,
   databaseDocsGroupColor,

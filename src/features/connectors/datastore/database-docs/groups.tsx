@@ -2,7 +2,7 @@ import { uiText, type UiMessage, uiFailure } from '../../i18n/ui-message';
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './groups.messages';
 import { useState } from 'react';
-import { X } from '@phosphor-icons/react/dist/csr/X';
+import { X } from '@/components/icons';
 import {
   databaseDocsGroupColor,
   type DatabaseDocsEdit,

@@ -7,7 +7,7 @@ import { messages as connectorMessages } from './connectors-canvas.messages';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePageSessionState, usePageScrollKey } from '@/lib/page-session-state';
 import { motion } from 'motion/react';
-import { CaretDown, CaretUp, MagnifyingGlass, PlugsConnected } from '@phosphor-icons/react';
+import { CaretDown, CaretUp, MagnifyingGlass, PlugsConnected } from '@/components/icons';
 import { useAppAlert } from '@/components/app-alert-provider';
 import { ViewSwitcher, type ViewMode } from '@/components/ui/view-switcher';
 import {
@@ -263,7 +263,7 @@ export function ConnectorsCanvas({
                     {categoryCounts.get(category) ?? 0}
                   </span>
                 </span>
-                <CaretDown className="size-3 shrink-0 text-[var(--muted)]" weight="bold" />
+                <CaretDown className="size-3 shrink-0 text-[var(--muted)]" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-[184px] min-w-0">
@@ -314,7 +314,7 @@ export function ConnectorsCanvas({
                 className="fouc-action flex h-8 w-[92px] shrink-0 items-center justify-between gap-1 rounded-[6px] border border-[var(--control-border)] bg-panel px-2.5 text-[9.5px] text-[var(--ink-soft)] outline-none transition-colors max-[760px]:hidden"
               >
                 {SORT_OPTIONS(locale).find((option) => option.id === sort)?.label}
-                <CaretDown className="size-3 text-[var(--muted)]" weight="bold" />
+                <CaretDown className="size-3 text-[var(--muted)]" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-[118px] min-w-0">
@@ -394,9 +394,9 @@ export function ConnectorsCanvas({
                 {tConnector('lastUpdated')}
                 {sort === 'recent' ? (
                   updatedSortDirection === 'desc' ? (
-                    <CaretDown className="size-2.5" weight="bold" />
+                    <CaretDown className="size-2.5" />
                   ) : (
-                    <CaretUp className="size-2.5" weight="bold" />
+                    <CaretUp className="size-2.5" />
                   )
                 ) : null}
               </button>

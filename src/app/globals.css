@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "@fortawesome/fontawesome-svg-core/styles.css" layer(components);
 @import "../components/ui/interaction-states.css";
 @import "../components/ui/resize-handle.css";
 @import "../components/ui/animated-theme-toggler.css";
@@ -124,7 +125,7 @@
   --sidebar-row-hover-border: var(--sidebar-row-border);
   --sidebar-row-shadow: none;
   --sidebar-icon: #525252;
-  --shell-tab-active-bg: color-mix(in srgb, var(--sidebar-icon) 8%, var(--wt-sidebar-standard-panel));
+  --shell-tab-active-bg: var(--panel);
   --shell-tab-active-border: color-mix(in srgb, var(--control-border) 65%, var(--wt-sidebar-standard-panel));
   --wt-sidebar-hover: rgb(255 255 255 / 0.55);
 }
@@ -433,9 +434,9 @@ input {
 .menu-surface:not(:has(.fouc-menu-item:hover)):has(.fouc-menu-item[data-highlighted]) .fouc-menu-item:is([data-current="true"], [aria-expanded="true"]):not([data-highlighted]) {
   background: transparent;
 }
-.fouc-menu-checkbox { display: grid; place-items: center; width: 14px; height: 14px; border: 1px solid var(--line-strong); border-radius: 3px; background: var(--panel); }
+.fouc-menu-checkbox { display: grid; place-items: center; width: 18px; height: 18px; border: 1px solid var(--line-strong); border-radius: 3px; background: var(--panel); }
 [data-state="checked"] > .fouc-menu-checkbox { border-color: var(--accent); background: var(--accent); color: var(--accent-foreground); }
-.fouc-menu-checkbox svg { width: 11px; height: 11px; }
+.fouc-menu-checkbox svg { width: 18px; height: 18px; }
 /* 原生 dialog、共享 ModalDialog 和显式标记的动作栏使用同一契约。
    选择器覆盖旧局部尺寸，避免懒加载 CSS 的顺序再次改变按钮高度。 */
 html :is(dialog, [role="dialog"], [role="alertdialog"]) :is(footer:has(button), .fouc-dialog-footer) {

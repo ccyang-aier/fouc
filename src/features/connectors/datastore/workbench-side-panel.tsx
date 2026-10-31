@@ -2,7 +2,7 @@
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './workbench-side-panel.messages';
 import { useEffect, useEffectEvent, useRef, type ReactNode } from 'react';
-import { PushPin, X } from '@phosphor-icons/react';
+import { PushPin, X } from '@/components/icons';
 import styles from './workbench-side-panel.module.css';
 export function WorkbenchSidePanel({
   label,
@@ -78,7 +78,7 @@ export function WorkbenchSidePanel({
             aria-pressed={pinned}
             onClick={onPin}
           >
-            <PushPin size={16} weight={pinned ? 'fill' : 'regular'} />
+            <PushPin size={16} />
           </button>
           <button
             type="button"

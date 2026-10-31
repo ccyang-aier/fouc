@@ -12,7 +12,7 @@ import {
   Microphone,
   UploadSimple,
   Waveform,
-} from "@phosphor-icons/react";
+} from '@/components/icons';
 import { Button } from "@/components/ui/button";
 import { useAppAlert } from "@/components/app-alert-provider";
 import {
@@ -258,7 +258,6 @@ export function ChatComposer({
                 >
                   <Microphone
                     size={19}
-                    weight={voice.listening ? "fill" : "regular"}
                   />
                 </Button>
               </TooltipTrigger>
@@ -287,7 +286,7 @@ export function ChatComposer({
                     key={hasMessage ? "send" : "voice"}
                   >
                     {hasMessage ? (
-                      <PaperPlaneTilt size={18} weight="fill" />
+                      <PaperPlaneTilt size={18} />
                     ) : (
                       <Waveform size={20} />
                     )}

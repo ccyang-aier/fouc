@@ -1,6 +1,6 @@
 'use client';
 
-import { BookOpenText } from '@phosphor-icons/react';
+import { BookOpenText } from '@/components/icons';
 import { useTranslation } from '@/lib/i18n';
 import { getBuiltinSkills, toggleBuiltinSkill, useBuiltinSkills } from './builtin-skills';
 import styles from './skills-settings.module.css';

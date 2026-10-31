@@ -13,7 +13,7 @@ import {
   Stack,
   Trash,
   Warning,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import type { RelationalTableStructure } from '@fouc/shared';
 import type {
   StructureEditCommitResult,

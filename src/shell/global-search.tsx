@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useId, useRef, useState } from 'react';
-import { MagnifyingGlass, X } from '@phosphor-icons/react';
+import { MagnifyingGlass, X } from '@/components/icons';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTranslation } from '@/lib/i18n';
@@ -37,7 +37,7 @@ export function GlobalSearch({ onNavigate, className }: { onNavigate: (view: Wor
   }, []);
   return <>
     <Tooltip>
-      <TooltipTrigger asChild><button type="button" className={`fouc-action ${className}`} aria-label={t('全局搜索')} aria-haspopup="dialog" aria-expanded={open} aria-keyshortcuts="Control+k Meta+k" onClick={() => setOpen(true)}><MagnifyingGlass size={18} weight="duotone" aria-hidden /></button></TooltipTrigger>
+      <TooltipTrigger asChild><button type="button" className={`fouc-action ${className}`} aria-label={t('全局搜索')} aria-haspopup="dialog" aria-expanded={open} aria-keyshortcuts="Control+k Meta+k" onClick={() => setOpen(true)}><MagnifyingGlass size={18} aria-hidden /></button></TooltipTrigger>
       <TooltipContent side="bottom">{t('全局搜索')} · Ctrl / ⌘ K</TooltipContent>
     </Tooltip>
     {open && <SearchDialog onClose={() => setOpen(false)} onNavigate={onNavigate} />}
@@ -66,7 +66,7 @@ function SearchDialog({ onClose, onNavigate }: { onClose: () => void; onNavigate
   return <dialog ref={ref} className={styles.dialog} aria-label={t('全局搜索')} onCancel={event => { event.preventDefault(); onClose(); }} onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
     <form className={styles.form} onSubmit={event => { event.preventDefault(); if (results[activeIndex]) navigate(results[activeIndex].view); }}>
       <div className={styles.field}>
-        <MagnifyingGlass size={19} weight="duotone" aria-hidden />
+        <MagnifyingGlass size={19} aria-hidden />
         <input type="search" role="combobox" aria-label={t('全局搜索')} aria-expanded="true" aria-autocomplete="list" aria-controls={listId} aria-activedescendant={results.length ? `${listId}-${activeIndex}` : undefined} placeholder={t('搜索')} value={query} onChange={event => { setQuery(event.target.value); setSelected(0); }} onKeyDown={event => {
           if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && results.length) {
             event.preventDefault();
@@ -78,7 +78,7 @@ function SearchDialog({ onClose, onNavigate }: { onClose: () => void; onNavigate
       <ScrollArea className={styles.results} viewportClassName={styles.resultList} style={{ height: Math.min(360, Math.max(72, results.length * 40 + 12)) }}>
       <div id={listId} role="listbox" aria-label={t('搜索结果')}>
         {results.map((item, index) => <button key={item.view} id={`${listId}-${index}`} type="button" role="option" tabIndex={-1} aria-selected={index === activeIndex} data-highlighted={index === activeIndex ? '' : undefined} className={`fouc-menu-item ${styles.result}`} onPointerMove={() => setSelected(index)} onMouseDown={event => event.preventDefault()} onClick={() => navigate(item.view)}>
-          <MagnifyingGlass size={15} weight="duotone" aria-hidden /><span className={styles.label}>{item.label}</span><span className={styles.detail}>{item.detail}</span>
+          <MagnifyingGlass size={15} aria-hidden /><span className={styles.label}>{item.label}</span><span className={styles.detail}>{item.detail}</span>
         </button>)}
         {!results.length && <p className={styles.empty} role="status">{t('没有匹配结果')}</p>}
       </div>

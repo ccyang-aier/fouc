@@ -1,7 +1,7 @@
 'use client';
 import { createTranslator, type Locale, useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './sql-result-summary.messages';
-import { Check, CircleNotch, Clock, Minus, Stop, WarningCircle } from '@phosphor-icons/react';
+import { Check, CircleNotch, Clock, Minus, Stop, WarningCircle } from '@/components/icons';
 import type {
   DatabaseQueryResult,
   SqlExecutionSnapshot,

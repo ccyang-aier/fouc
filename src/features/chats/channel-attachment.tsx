@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowSquareOut, CheckCircle } from '@phosphor-icons/react';
+import { ArrowSquareOut, CheckCircle } from '@/components/icons';
 import type { ChannelAttachment } from '@fouc/shared/chats';
 import { useTranslation } from '@/lib/i18n';
 import cardStyles from '@/components/ui/resource-card.module.css';
@@ -24,7 +24,7 @@ export function ChannelAttachmentCard({ attachment, onOpen }: {
         <span className={styles.fileMeta}>
           <span className={styles.fileType}>{formatFileSize(attachment.size, locale)}{extension && <span className={styles.fileFormat}>{extension}</span>}</span>
           <span className={styles.metaDot} aria-hidden>·</span>
-          <span className={styles.uploaded}><CheckCircle size={13} weight="fill" aria-hidden />{t('uploaded')}</span>
+          <span className={styles.uploaded}><CheckCircle size={13} aria-hidden />{t('uploaded')}</span>
         </span>
       </span>
       <ArrowSquareOut className={styles.fileOpen} size={16} aria-hidden />

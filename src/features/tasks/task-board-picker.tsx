@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CaretDown, Kanban, LockSimple, MagnifyingGlass, Plus, Users, X } from '@phosphor-icons/react';
+import { CaretDown, Kanban, LockSimple, MagnifyingGlass, Plus, Users, X } from '@/components/icons';
 import type { TaskBoardSummary } from '@fouc/shared/tasks';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useTranslation } from '@/lib/i18n';

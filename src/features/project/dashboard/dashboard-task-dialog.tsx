@@ -7,7 +7,7 @@ import { messages } from './i18n/dashboard-task-dialog';
 
 import { useAppAlert } from '@/components/app-alert-provider';
 import { Button } from '@/components/ui/button';
-import { Link, Star, X } from '@phosphor-icons/react';
+import { Link, Star, StarOutline, X } from '@/components/icons';
 import { useEffect, useId, useRef, useState } from 'react';
 import { CommentItem } from './dashboard-comments';
 import { dashboardLink } from './dashboard-links';
@@ -218,7 +218,7 @@ export function DashboardTaskDialog({
               aria-pressed={draft.starred}
               onClick={() => setDraft((current) => ({ ...current, starred: !current.starred }))}
             >
-              <Star size={17} weight={draft.starred ? 'fill' : 'regular'} />
+              {draft.starred ? <Star size={17} /> : <StarOutline size={17} />}
             </IconButton>
             <IconButton label={t('Copy task link')} onClick={() => void copyLink()}>
               <Link size={17} />

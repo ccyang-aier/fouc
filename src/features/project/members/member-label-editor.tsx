@@ -1,7 +1,7 @@
 'use client';
 
 import { useId, useRef, useState } from 'react';
-import { Plus, PushPin, PushPinSlash, X } from '@phosphor-icons/react';
+import { Plus, PushPin, PushPinSlash, X } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/lib/i18n';
 import { orderedLabels, type MemberLabel } from './members.data';

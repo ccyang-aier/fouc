@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
-import { ArrowSquareOut, CaretDown, Check, GearSix, Info, Plus, SealCheck, SlidersHorizontal } from '@phosphor-icons/react';
+import { ArrowSquareOut, CaretDown, Check, GearSix, Info, Plus, SealCheck, SlidersHorizontal } from '@/components/icons';
 import { DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -131,7 +131,7 @@ export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigu
         <ResourceIcon resource={resource} />
         <span className={styles.resourceName}>{resource.name}</span>
         {checked ? <span className={styles.check} data-builtin={builtin} aria-hidden="true">
-          {builtin ? <SealCheck size={16} data-static-color /> : <Check size={14} weight="bold" data-static-color />}
+          {builtin ? <SealCheck size={16} data-static-color /> : <Check size={14} data-static-color />}
         </span> : null}
         <button type="button" tabIndex={-1} className={`fouc-action ${styles.infoButton}`} aria-label={t('details', { name: resource.name })}
           onPointerDown={event => event.stopPropagation()} onPointerUp={event => event.stopPropagation()}
@@ -165,9 +165,9 @@ export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigu
         <ChatPickerSearch ref={search} value={query} aria-label={t(labels.search)}
           placeholder={t(labels.search)} onChange={event => { setQuery(event.target.value); hidePreview(); }} />
         <Button type="button" variant="ghost" className={styles.toolbarButton} aria-label={t('category')} aria-expanded={categoryOpen}
-          title={t('category')} data-active={Boolean(category)} onClick={() => { setCategoryOpen(value => !value); hidePreview(); }}><SlidersHorizontal size={16} weight="bold" /></Button>
+          title={t('category')} data-active={Boolean(category)} onClick={() => { setCategoryOpen(value => !value); hidePreview(); }}><SlidersHorizontal size={16} /></Button>
         <Button type="button" variant="ghost" className={styles.toolbarButton} aria-label={t(labels.add)}
-          title={t(labels.add)} onClick={onCreate}><Plus size={16} weight="bold" /></Button>
+          title={t(labels.add)} onClick={onCreate}><Plus size={16} /></Button>
       </div>
       {categoryOpen || category ? <div className={styles.categories} role="group" aria-label={t('category')}>
         {['', ...new Set(all.map(item => item.category))].map(value => <button key={value} type="button" className={`fouc-action ${styles.category}`}
@@ -179,7 +179,7 @@ export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigu
           <div className={`fouc-menu-item ${styles.sectionHeading}`} data-variant="group" onPointerEnter={hidePreview}>
             <button type="button" className={`fouc-action ${styles.collapse}`} data-variant="disclosure" aria-expanded={!collapsed}
               onClick={() => { setCollapsed(value => !value); hidePreview(); }}><CaretDown size={10} data-collapsed={collapsed} />{t('builtin')}</button>
-            <button type="button" className={`fouc-action ${styles.configure}`} data-variant="disclosure" aria-label={t('configure')} title={t('configure')} onClick={onConfigure}><GearSix size={15} weight="bold" /></button>
+            <button type="button" className={`fouc-action ${styles.configure}`} data-variant="disclosure" aria-label={t('configure')} title={t('configure')} onClick={onConfigure}><GearSix size={15} /></button>
           </div>
           {!collapsed ? builtinResults.map(item => renderResource(item, true)) : null}
         </section> : null}
@@ -188,7 +188,7 @@ export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigu
             <button type="button" className={`fouc-action ${styles.collapse}`} data-variant="disclosure" aria-expanded={!marketCollapsed}
               onClick={() => { setMarketCollapsed(value => !value); hidePreview(); }}><CaretDown size={10} data-collapsed={marketCollapsed} />{t('market')}</button>
             <button type="button" className={`fouc-action ${styles.configure}`} data-variant="disclosure" aria-label={t('openMarket')} title={t('openMarket')}
-              onClick={onOpenMarket}><ArrowSquareOut size={15} weight="bold" /></button>
+              onClick={onOpenMarket}><ArrowSquareOut size={15} /></button>
           </div> : null}
           {kind !== 'skills' || !marketCollapsed ? marketResults.map(item => renderResource(item)) : null}
         </section> : null}

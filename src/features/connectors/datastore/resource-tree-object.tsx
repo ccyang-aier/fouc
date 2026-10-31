@@ -12,7 +12,7 @@ import {
   Zap,
   Network,
   List,
-} from 'lucide-react';
+} from '@/components/icons';
 import type { DatabaseObjectInfo, RelationalTableStructure } from '@fouc/shared';
 import { Button } from '@/components/ui/button';
 import type { StructureTab } from './structure-metadata';

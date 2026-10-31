@@ -1,9 +1,9 @@
 'use client';
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './progress.messages';
-import { CheckCircle } from '@phosphor-icons/react/dist/csr/CheckCircle';
-import { WarningCircle } from '@phosphor-icons/react/dist/csr/WarningCircle';
-import { StopCircle } from '@phosphor-icons/react/dist/csr/StopCircle';
+import { CheckCircle, WarningCircle, StopCircle } from '@/components/icons';
+
+
 import type { DatabaseExportProgress } from '@fouc/shared/database-export';
 import styles from './database-export.module.css';
 export function exportBytes(bytes: number): string {
@@ -43,11 +43,11 @@ export function ExportProgress({ value }: { value: DatabaseExportProgress }) {
         {active ? (
           <span className={styles.spinner} />
         ) : complete ? (
-          <CheckCircle size={28} weight="duotone" />
+          <CheckCircle size={28} />
         ) : cancelled ? (
-          <StopCircle size={28} weight="duotone" />
+          <StopCircle size={28} />
         ) : (
-          <WarningCircle size={28} weight="duotone" />
+          <WarningCircle size={28} />
         )}
       </div>
       <h2>{title}</h2>

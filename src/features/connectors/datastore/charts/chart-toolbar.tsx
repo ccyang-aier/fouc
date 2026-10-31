@@ -7,7 +7,7 @@ import {
   FloppyDisk,
   GearSix,
   Table,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,

@@ -3,7 +3,7 @@ import { history, redo, undo } from '@tiptap/pm/history';
 import { Plugin } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import type { ChannelMember } from '@fouc/shared/chats';
-import { findEmoji } from '@/components/chat-emoji/emoji-data';
+import { findEmojiInText } from '@/components/icons/emoji-catalog';
 import { findChannelMentions } from './channel-mentions';
 import { CHANNEL_MESSAGE_MAX_LENGTH, channelDocumentText } from './channel-text-document';
 import styles from './channel-rich-text.module.css';
@@ -34,7 +34,7 @@ export function channelTextExtensions(getMembers: () => ChannelMember[]) {
             const decorations = mentions.map(({ start, end, member }) => Decoration.inline(start + 1, end + 1, {
               class: styles.mention, 'data-channel-mention': member.id, 'data-kind': member.kind,
             }));
-            for (const { start, end, emoji, src } of findEmoji(value)) {
+            for (const { start, end, emoji, src } of findEmojiInText(value)) {
               if (mentions.some(mention => start >= mention.start && end <= mention.end)) continue;
               decorations.push(Decoration.inline(start + 1, end + 1, {
                 class: styles.editorEmoji, 'data-channel-emoji': emoji, style: `background-image:url("${src}")`,

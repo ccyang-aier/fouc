@@ -3,10 +3,10 @@ import { uiText, type UiMessage, uiFailure, createUiMessages } from '../../i18n/
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './action.messages';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Copy } from '@phosphor-icons/react/dist/csr/Copy';
-import { LockOpen } from '@phosphor-icons/react/dist/csr/LockOpen';
-import { SpinnerGap } from '@phosphor-icons/react/dist/csr/SpinnerGap';
-import { Trash } from '@phosphor-icons/react/dist/csr/Trash';
+import { Copy, LockOpen, SpinnerGap, Trash } from '@/components/icons';
+
+
+
 import type { RelationalSession } from '@fouc/shared';
 import { SqlDialog } from '../sql-library-dialog';
 import { TableClearReviewContent } from './review';

@@ -3,9 +3,9 @@ import { uiText } from '../../i18n/ui-message';
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './designer.messages';
 import { useMemo, useState, type ReactNode } from 'react';
-import { Plus } from '@phosphor-icons/react/dist/csr/Plus';
-import { Trash } from '@phosphor-icons/react/dist/csr/Trash';
-import { Warning } from '@phosphor-icons/react/dist/csr/Warning';
+import { Plus, Trash, Warning } from '@/components/icons';
+
+
 import {
   INDEX_EDIT_LIMITS,
   indexEditDropReason,

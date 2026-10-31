@@ -5,7 +5,7 @@ import { uiText, type UiMessage, uiFailure, createUiMessages } from '../../i18n/
 import { useTranslation, createTranslator, type Locale } from '@/lib/i18n';
 import { messages as connectorMessages } from './panel.messages';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { CheckCircle, Code, Copy, Eye, LockKey, ShieldCheck, Warning } from '@phosphor-icons/react';
+import { CheckCircle, Code, Copy, Eye, LockKey, ShieldCheck, Warning } from '@/components/icons';
 import type { RelationalProvider } from '@fouc/shared';
 import type {
   SqlMutationCommitResult,

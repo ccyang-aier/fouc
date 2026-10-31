@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
-import { Brain, CaretDown, ImageSquare, Robot, VideoCamera } from "@phosphor-icons/react";
+import { Brain, CaretDown, ImageSquare, Robot, VideoCamera } from '@/components/icons';
 import type { ModelCatalogEntry } from '@fouc/shared/model-catalog';
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";

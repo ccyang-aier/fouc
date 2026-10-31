@@ -47,7 +47,6 @@ beforeAll(async () => {
   globals.requestAnimationFrame = browser.requestAnimationFrame.bind(browser);
   globals.cancelAnimationFrame = browser.cancelAnimationFrame.bind(browser);
   globals.IS_REACT_ACT_ENVIRONMENT = true;
-  mock.module('@phosphor-icons/react', () => Object.fromEntries(['CaretDown', 'CaretRight', 'Check', 'ClockCounterClockwise', 'Eye', 'MagnifyingGlass', 'PencilSimple', 'Plus', 'UserMinus', 'Users', 'X', 'CheckCircle', 'Info', 'WarningCircle', 'XCircle'].map(name => [name, () => <svg data-icon={name} aria-hidden />])));
   mock.module('@/components/user-avatar', () => ({ UserAvatar: ({ name, className }: { name: string; className?: string }) => <span data-portrait={name} className={className}>{name[0]}</span> }));
   const { QueryClient, QueryClientProvider } = await import('@tanstack/react-query');
   newQuery = () => new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -114,8 +113,8 @@ test('five real members render three portraits and +2; nested role menus stay in
   const roleMenu = host.querySelector<HTMLElement>('[data-task-members-menu]')!;
   const choices = roleMenu.querySelectorAll('[role="menuitemradio"]');
   expect(roleMenu.getAttribute('data-density')).toBe('compact');
-  expect(choices[0].querySelector('svg[data-icon="Eye"]')).not.toBeNull();
-  expect(choices[1].querySelector('svg[data-icon="PencilSimple"]')).not.toBeNull();
+  expect(choices[0].querySelector('svg[data-icon-library="fa7-solid"][data-icon="eye"]')).not.toBeNull();
+  expect(choices[1].querySelector('svg[data-icon-library="fa7-solid"][data-icon="pen"]')).not.toBeNull();
   expect(choices[0].getAttribute('aria-checked')).toBe('true');
   expect(choices[1].getAttribute('aria-checked')).toBe('false');
   expect(host.querySelector('[data-task-members-menu]')?.closest('[data-radix-popper-content-wrapper]')?.parentElement).toBe(host);
@@ -154,8 +153,8 @@ test('Invite focuses current-project search and grants viewer by default; click-
   await pointer(control('新成员权限'));
   await until(() => Boolean(host.querySelector('[data-task-members-menu]')));
   const choices = host.querySelectorAll('[data-task-members-menu] [role="menuitemradio"]');
-  expect(choices[0].querySelector('svg[data-icon="Eye"]')).not.toBeNull();
-  expect(choices[1].querySelector('svg[data-icon="PencilSimple"]')).not.toBeNull();
+  expect(choices[0].querySelector('svg[data-icon-library="fa7-solid"][data-icon="eye"]')).not.toBeNull();
+  expect(choices[1].querySelector('svg[data-icon-library="fa7-solid"][data-icon="pen"]')).not.toBeNull();
   expect(choices[0].getAttribute('aria-checked')).toBe('true');
   await escape();
   await until(() => !host.querySelector('[data-task-members-menu]'));

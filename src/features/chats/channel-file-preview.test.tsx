@@ -35,7 +35,6 @@ beforeAll(async () => {
   globals.window = browser;
   globals.IS_REACT_ACT_ENVIRONMENT = true;
   const Icon = () => null;
-  mock.module('@phosphor-icons/react', () => ({ ArrowClockwise: Icon, ArrowsOut: Icon, Copy: Icon, DownloadSimple: Icon, ImageSquare: Icon, MagnifyingGlassPlus: Icon, ShieldCheck: Icon }));
   mock.module('next/image', () => ({ default: () => null }));
   mock.module('react-markdown', () => ({ default: ({ children }: { children: ReactNode }) => <div data-markdown>{children}</div> }));
   mock.module('remark-gfm', () => ({ default: () => {} }));

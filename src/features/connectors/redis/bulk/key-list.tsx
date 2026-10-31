@@ -2,7 +2,7 @@
 import { useTranslation } from '@/lib/i18n';
 import type { RedisKeyInfo } from '@fouc/shared';
 import type { RedisBulkResult } from '@fouc/shared/redis-bulk';
-import { Key, Stack } from '@phosphor-icons/react';
+import { Key, Stack } from '@/components/icons';
 import { useState } from 'react';
 import { redisTtl } from '../redis-value-viewer';
 import { messages as unitMessages } from './../i18n/bulk-key-list';

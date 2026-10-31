@@ -23,7 +23,7 @@ import {
   TextAlignLeft,
   ArrowsInSimple,
   SquareSplitHorizontal,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import {
   inspectSqlTemplate,
   resolveSqlExecutionTarget,

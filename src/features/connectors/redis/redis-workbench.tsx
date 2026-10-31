@@ -25,7 +25,7 @@ import {
   MagnifyingGlass,
   Plus,
   TerminalWindow,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import { useEffect, useState } from 'react';
 import { createUiMessages, uiFailure, uiText, type UiMessage } from '../i18n/ui-message';
 import { RedisBulkKeyList } from './bulk/key-list';

@@ -5,11 +5,11 @@ import { uiText, type UiMessage, uiFailure } from '../../i18n/ui-message';
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './panel.messages';
 import { useMemo, useState } from 'react';
-import { Check } from '@phosphor-icons/react/dist/csr/Check';
-import { ArrowRight } from '@phosphor-icons/react/dist/csr/ArrowRight';
-import { LockOpen } from '@phosphor-icons/react/dist/csr/LockOpen';
-import { SpinnerGap } from '@phosphor-icons/react/dist/csr/SpinnerGap';
-import { WarningCircle } from '@phosphor-icons/react/dist/csr/WarningCircle';
+import { Check, ArrowRight, LockOpen, SpinnerGap, WarningCircle } from '@/components/icons';
+
+
+
+
 import type { RelationalTableStructure } from '@fouc/shared';
 import {
   defaultTestDataConfig,

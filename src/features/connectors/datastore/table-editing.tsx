@@ -11,7 +11,7 @@ import {
   FileCode,
   X,
   ArrowCounterClockwise,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import type {
   DatabaseTablePage,
   RelationalRowChange,

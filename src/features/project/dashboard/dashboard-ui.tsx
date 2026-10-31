@@ -4,7 +4,7 @@ import { useLocale } from '@/lib/i18n';
 import { translateFixed } from '../i18n/display';
 
 import { Button } from '@/components/ui/button';
-import { ClipboardText, FileText, Receipt, Scroll, StackSimple } from '@phosphor-icons/react';
+import { ClipboardText, FileText, Receipt, Scroll, StackSimple } from '@/components/icons';
 import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from 'react';
 import { dashboardPeople, type DashboardPersonId } from './dashboard-model';
 import styles from './dashboard-ui.module.css';
@@ -28,7 +28,6 @@ export function ReferenceIcon({
       className={styles.referenceIcon}
       aria-hidden="true"
       size={size}
-      weight="duotone"
     />
   );
 }

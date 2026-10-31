@@ -1,6 +1,6 @@
 'use client';
 
-import { Plus, Trash, Users } from '@phosphor-icons/react';
+import { Plus, Trash, Users } from '@/components/icons';
 import { useRef } from 'react';
 import type { BoardTask, TaskBoardMember } from '@fouc/shared/tasks';
 import { Button } from '@/components/ui/button';

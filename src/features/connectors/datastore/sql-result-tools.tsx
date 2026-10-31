@@ -2,7 +2,7 @@
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './sql-result-tools.messages';
 import { useId, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { Toolbox } from '@phosphor-icons/react';
+import { Toolbox } from '@/components/icons';
 import styles from './query-result.module.css';
 /** Native top-layer popover keeps grid commands mounted and escapes the result pane. */
 export function SqlResultTools({

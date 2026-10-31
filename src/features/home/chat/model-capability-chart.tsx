@@ -50,7 +50,7 @@ export function ModelCapabilityChart({ ratings }: { ratings: ModelCatalogEntry['
   };
 
   return <figure className={styles.figure}>
-    <svg viewBox="0 0 368 230" className={styles.chart} role="img" aria-labelledby={`${id}-title ${id}-description`}>
+    <svg data-visualization="chart" viewBox="0 0 368 230" className={styles.chart} role="img" aria-labelledby={`${id}-title ${id}-description`}>
       <title id={`${id}-title`}>{t('capabilityProfile')}</title>
       <desc id={`${id}-description`}>{[t('profileScale'), ...axes.map((_, index) => describe(index))].join(' ')}</desc>
       {[.25, .5, .75, 1].map(scale => <polygon key={scale} points={polygon(scale)} className={styles.grid} />)}

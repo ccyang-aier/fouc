@@ -6,7 +6,7 @@ import { CommunityOfficialBadge } from './community-official-badge';
 import { useTranslation } from '@/lib/i18n/react';
 import { messages } from './i18n/community-cards.messages';
 
-import { CaretDown, CaretUp, Check, DownloadSimple, Star } from '@phosphor-icons/react';
+import { CaretDown, CaretUp, Check, DownloadSimple, Star } from '@/components/icons';
 
 import { cn } from '@/lib/utils';
 
@@ -160,7 +160,7 @@ export function CommunityAssetTable({
             <span className="flex items-center gap-1 text-[10px] tabular-nums text-[var(--ink-soft)]">
               {typeof item.rating === 'number' ? (
                 <>
-                  <Star className="size-3 text-[#dfa43c]" weight="fill" />
+                  <Star className="size-3 text-[#dfa43c]" />
                   {item.rating}
                 </>
               ) : (
@@ -205,7 +205,7 @@ function SortHeader({
       )}
     >
       {label}
-      {active ? <Icon className="size-2.5" weight="bold" /> : null}
+      {active ? <Icon className="size-2.5" /> : null}
     </button>
   );
 }
@@ -320,7 +320,7 @@ export function CommunityAssetCard({
             : 'border-[var(--line-strong)] text-transparent opacity-0 group-hover:opacity-100',
         )}
       >
-        <Check className="size-2.5" weight="bold" />
+        <Check className="size-2.5" />
       </span>
 
       <div className="flex items-start gap-3 pr-5">
@@ -367,7 +367,7 @@ export function CommunityAssetCard({
       <div className="mt-3 flex items-center gap-1 border-t border-dashed border-[var(--line)] pt-2.5 text-[9.5px] tabular-nums text-[var(--muted)]">
         {typeof item.rating === 'number' ? (
           <>
-            <Star className="size-3 text-[#dfa43c]" weight="fill" />
+            <Star className="size-3 text-[#dfa43c]" />
             <span>{item.rating}</span>
           </>
         ) : null}

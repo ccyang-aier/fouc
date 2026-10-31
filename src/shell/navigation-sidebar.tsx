@@ -1,6 +1,6 @@
 'use client';
 
-import { GearSix, SidebarSimple } from '@phosphor-icons/react';
+import { GearSix, SidebarSimple } from '@/components/icons';
 import { AccountItem } from '@/features/identity/components/account-item';
 import { ProjectSwitcher } from '@/features/project/project-switcher';
 import type { ChatHistoryEntry } from '@/features/home/chat/chat-history';
@@ -39,7 +39,7 @@ export function NavigationSidebar({ open, onCollapse, onExpand, view, onViewChan
     <header className={layout.header} data-compact={!open} data-tauri-drag-region>
       {open && <div className={layout.project} data-tauri-drag-region="false"><ProjectSwitcher onSwitch={onProjectChange} /></div>}
       <Tooltip>
-        <TooltipTrigger asChild><button type="button" data-tauri-drag-region="false" className={`fouc-action ${layout.toggle}`} aria-label={t(open ? '收起主导航' : '展开主导航')} onClick={open ? onCollapse : onExpand}><SidebarSimple size={18} weight="duotone" /></button></TooltipTrigger>
+        <TooltipTrigger asChild><button type="button" data-tauri-drag-region="false" className={`fouc-action ${layout.toggle}`} aria-label={t(open ? '收起主导航' : '展开主导航')} onClick={open ? onCollapse : onExpand}><SidebarSimple size={18} /></button></TooltipTrigger>
         <TooltipContent side="bottom">{t(open ? '收起主导航' : '展开主导航')}</TooltipContent>
       </Tooltip>
     </header>
@@ -55,7 +55,7 @@ export function NavigationSidebar({ open, onCollapse, onExpand, view, onViewChan
         <div className={styles.account}><AccountItem compact={!open} /></div>
         {open && <><SidebarThemeSwitch />
         <Tooltip>
-          <TooltipTrigger asChild><button type="button" className={`fouc-action ${styles.iconButton}`} aria-label={t('设置')} aria-haspopup="dialog" onClick={() => onViewChange('settings')}><GearSix size={18} weight="duotone" aria-hidden /></button></TooltipTrigger>
+          <TooltipTrigger asChild><button type="button" className={`fouc-action ${styles.iconButton}`} aria-label={t('设置')} aria-haspopup="dialog" onClick={() => onViewChange('settings')}><GearSix size={18} aria-hidden /></button></TooltipTrigger>
           <TooltipContent side="top">{t('设置')}</TooltipContent>
         </Tooltip></>}
       </div>

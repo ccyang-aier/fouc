@@ -30,8 +30,6 @@ beforeAll(async () => {
   globals.window = browser;
   globals.IS_REACT_ACT_ENVIRONMENT = true;
   globals.requestAnimationFrame = (callback: FrameRequestCallback) => { callback(0); return 1; };
-  const icon = () => <svg aria-hidden />;
-  mock.module('@phosphor-icons/react', () => Object.fromEntries(['ArrowRight', 'CaretDown', 'CaretUp', 'DotsThree', 'Flag', 'PencilSimple', 'Plus', 'Trash', 'X'].map(name => [name, icon])));
   mock.module('@/components/avatar-group', () => ({ AvatarGroup: () => <span /> }));
   // Native checkbox and table behavior remain real; portal/focus mechanics use browser QA.
   mock.module('@/components/ui/dropdown-menu', () => ({

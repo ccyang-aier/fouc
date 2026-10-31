@@ -21,7 +21,7 @@ import {
   DotsThree,
   DownloadSimple,
   SlidersHorizontal,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import type { ECharts, EChartsCoreOption } from 'echarts/core';
 import { useEffect, useEffectEvent, useId, useRef, useState, type CSSProperties } from 'react';
 import styles from './dashboard-charts.module.css';
@@ -668,7 +668,7 @@ export function MilestoneTracker({
           <DashboardMenu>
             <DropdownMenuTrigger asChild>
               <IconButton label={t('Milestone options')}>
-                <DotsThree size={18} weight="bold" />
+                <DotsThree size={18} />
               </IconButton>
             </DropdownMenuTrigger>
             <DashboardMenuContent align="end" density="compact">

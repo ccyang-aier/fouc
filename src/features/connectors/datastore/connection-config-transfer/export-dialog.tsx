@@ -3,7 +3,7 @@ import { uiText, type UiMessage, uiFailure, createUiMessages } from '../../i18n/
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './export-dialog.messages';
 import { useEffect, useRef, useState } from 'react';
-import { CheckCircle, DownloadSimple, LockKey, ShieldCheck } from '@phosphor-icons/react';
+import { CheckCircle, DownloadSimple, LockKey, ShieldCheck } from '@/components/icons';
 import {
   CONNECTION_CONFIG_LIMITS,
   createConnectionConfigBundle,

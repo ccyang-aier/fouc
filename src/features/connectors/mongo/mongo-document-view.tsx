@@ -1,8 +1,8 @@
 'use client';
 import { useTranslation } from '@/lib/i18n';
 import { mongoDocumentFields, mongoValueText, mongoValueType } from '@fouc/shared/mongo';
-import { Copy } from '@phosphor-icons/react/dist/csr/Copy';
-import { X } from '@phosphor-icons/react/dist/csr/X';
+import { Copy, X } from '@/components/icons';
+
 import { useMemo, useState } from 'react';
 import { createUiMessages, uiText, type UiMessage } from '../i18n/ui-message';
 import { messages as unitMessages } from './i18n/mongo-document-view';

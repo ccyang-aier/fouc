@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, DotsThree, PencilSimple, Trash } from '@phosphor-icons/react';
+import { ArrowRight, DotsThree, PencilSimple, Trash } from '@/components/icons';
 import { useState } from 'react';
 import type { BoardTask, TaskBoardDetail } from '@fouc/shared/tasks';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSearch, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -19,7 +19,7 @@ export function TaskActionsMenu({ task, board, disabled, className, onOpen, onRe
   const [query, setQuery] = useState('');
   const columns = board.columns.filter(column => column.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
   return <span onClick={event => event.stopPropagation()} onKeyDown={event => event.stopPropagation()}>
-    <DropdownMenu><DropdownMenuTrigger className={className} disabled={disabled} aria-label={t('taskMenu', { title: task.title })} draggable={false}><DotsThree size={19} weight="bold" /></DropdownMenuTrigger>
+    <DropdownMenu><DropdownMenuTrigger className={className} disabled={disabled} aria-label={t('taskMenu', { title: task.title })} draggable={false}><DotsThree size={19} /></DropdownMenuTrigger>
       <DropdownMenuContent align="end" density="compact">
         <DropdownMenuItem onSelect={onOpen}><PencilSimple />{t('editTask')}</DropdownMenuItem>
         <DropdownMenuSub onOpenChange={open => { if (open) setQuery(''); }}><DropdownMenuSubTrigger><ArrowRight />{t('moveTo')}</DropdownMenuSubTrigger><DropdownMenuSubContent density="compact" className={styles.columnMenu}>

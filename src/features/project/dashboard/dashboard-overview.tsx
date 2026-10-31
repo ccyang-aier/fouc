@@ -5,7 +5,7 @@ import { fixtureField, registerProjectFixtures, translateFixed } from '../i18n/d
 import { messages } from './i18n/dashboard-overview';
 
 import { DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { DotsThree } from '@phosphor-icons/react';
+import { DotsThree } from '@/components/icons';
 import { DashboardMenu, DashboardMenuContent } from './dashboard-menu';
 import type { DashboardDocumentKind, DashboardState } from './dashboard-model';
 import { selectStats } from './dashboard-selectors';
@@ -89,7 +89,7 @@ export function DashboardOverview({
                     className={`fouc-action ${styles.flatIcon}`}
                     aria-label={t('{v0} options', { v0: fixtureField(stat, 'label', locale) })}
                   >
-                    <DotsThree size={17} weight="bold" />
+                    <DotsThree size={17} />
                   </button>
                 </DropdownMenuTrigger>
                 <DashboardMenuContent align="end">

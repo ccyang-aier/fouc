@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, ArrowRight, ClipboardText, Minus, Square, X } from '@phosphor-icons/react';
+import { ArrowLeft, ArrowRight, ClipboardText, Minus, Square, X } from '@/components/icons';
 import type { ReactNode } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTranslation } from '@/lib/i18n';
@@ -24,7 +24,7 @@ export function SystemBar({ onNavigate, navigation, children }: {
     {children}
     <div className={`${styles.actions} ${styles.trailing}`} data-tauri-drag-region="false">
       <GlobalSearch className={styles.button} onNavigate={onNavigate} />
-      <Tooltip><TooltipTrigger asChild><button type="button" className={`fouc-action ${styles.button}`} aria-label={t('任务')} onClick={() => onNavigate('tasks')}><ClipboardText size={17} weight="duotone" aria-hidden /></button></TooltipTrigger><TooltipContent side="bottom">{t('任务')}</TooltipContent></Tooltip>
+      <Tooltip><TooltipTrigger asChild><button type="button" className={`fouc-action ${styles.button}`} aria-label={t('任务')} onClick={() => onNavigate('tasks')}><ClipboardText size={17} aria-hidden /></button></TooltipTrigger><TooltipContent side="bottom">{t('任务')}</TooltipContent></Tooltip>
       <span aria-hidden className={styles.separator} />
       <WindowControl label={t('最小化')} icon={Minus} onClick={() => void performWindowAction('minimize')} />
       <WindowControl label={t('最大化或还原')} icon={Square} onClick={() => void performWindowAction('toggleMaximize')} />

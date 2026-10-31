@@ -51,11 +51,6 @@ beforeAll(async () => {
     showModal: { configurable: true, value(this: HTMLDialogElement) { this.setAttribute('open', ''); } },
     close: { configurable: true, value(this: HTMLDialogElement) { this.removeAttribute('open'); } },
   });
-  const icon = () => <svg aria-hidden />;
-  mock.module('@phosphor-icons/react', () => Object.fromEntries([
-    'CalendarBlank', 'CaretDown', 'CaretLeft', 'CaretRight', 'CheckSquare', 'Circle', 'Flag', 'Kanban', 'ListChecks',
-    'LockSimple', 'Plus', 'Tag', 'TextAlignLeft', 'Trash', 'Users', 'Warning', 'X', 'Clock', 'LinkSimple', 'ChatCircle',
-  ].map(name => [name, icon])));
   mock.module('@/components/ui/button', () => ({ Button: Control }));
   mock.module('@/components/user-avatar', () => ({ UserAvatar: () => <span /> }));
   mock.module('@/components/app-alert', () => ({ AppAlert: ({ title }: { title: string }) => <div role="alert">{title}</div> }));

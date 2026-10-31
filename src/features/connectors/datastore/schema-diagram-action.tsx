@@ -3,7 +3,7 @@ import { uiText, type UiMessage, uiFailure } from '../i18n/ui-message';
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './schema-diagram-action.messages';
 import { useEffect, useState } from 'react';
-import { Graph } from '@phosphor-icons/react';
+import { Graph } from '@/components/icons';
 import type { ErDiagramLoadResult, ErDiagramNode } from '@fouc/shared/er-diagram';
 import { backendFetch } from '@/lib/backend';
 import { SchemaDiagramPanel } from './diagram';

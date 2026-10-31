@@ -17,7 +17,7 @@ import {
   ArrowUp,
   ArrowDown,
   X,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import {
   savedSqlScore,
   sqlFolderPath,

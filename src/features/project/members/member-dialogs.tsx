@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
-import { X } from '@phosphor-icons/react';
+import { X } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-picker';
 import { usePageVisible } from '@/lib/page-visibility';

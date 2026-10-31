@@ -22,11 +22,11 @@ import {
   type TableImportPlan,
   type TableImportReview,
 } from '@fouc/shared/table-import';
-import { ArrowRight } from '@phosphor-icons/react/dist/csr/ArrowRight';
-import { Check } from '@phosphor-icons/react/dist/csr/Check';
-import { FileArrowUp } from '@phosphor-icons/react/dist/csr/FileArrowUp';
-import { SpinnerGap } from '@phosphor-icons/react/dist/csr/SpinnerGap';
-import { WarningCircle } from '@phosphor-icons/react/dist/csr/WarningCircle';
+import { ArrowRight, Check, FileArrowUp, SpinnerGap, WarningCircle } from '@/components/icons';
+
+
+
+
 import { backendFetch } from '@/lib/backend';
 import { TableImportMappingEditor } from './mapping-editor';
 import { defaultTableImportOptions, TableImportParseControls } from './parse-options';

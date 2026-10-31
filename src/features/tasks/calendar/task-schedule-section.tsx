@@ -1,6 +1,6 @@
 'use client';
 
-import { Clock, Plus, X } from '@phosphor-icons/react';
+import { Clock, Plus, X } from '@/components/icons';
 import type { TaskSchedule } from '@fouc/shared/tasks';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/lib/i18n';

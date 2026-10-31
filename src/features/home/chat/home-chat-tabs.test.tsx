@@ -22,7 +22,6 @@ beforeAll(async () => {
   mock.module('@/features/identity/identity-provider', () => ({ useIdentity: () => ({ session: { status: 'anonymous' } }) }));
   mock.module('@/features/project/project-resources', () => ({ useProjectResources: () => ({ scopeKey: scope, selectedProject: { id: 'project', name: 'Project' } }) }));
   mock.module('motion/react', () => ({ motion: { div: ({ children }: { children: ReactNode }) => <div>{children}</div> } }));
-  mock.module('@phosphor-icons/react', () => ({ ArrowLeft: () => null, ChatText: () => null }));
   mock.module('@/components/ui/scroll-area', () => ({ ScrollArea: ({ children }: { children: ReactNode }) => <div>{children}</div> }));
   mock.module('./chat-conversation', () => ({ ChatConversation: ({ submissions }: { submissions: ChatSubmission[] }) => <article>{submissions.map(item => <p key={item.id}>{item.text}</p>)}</article> }));
   mock.module('./chat-greeting', () => ({ ChatGreeting: () => null }));

@@ -42,8 +42,6 @@ beforeAll(async () => {
   globals.window = browser;
   globals.indexedDB = indexedDB;
   globals.IS_REACT_ACT_ENVIRONMENT = true;
-  const icon = () => <svg />;
-  mock.module('@phosphor-icons/react', () => Object.fromEntries(['Archive', 'ChatCircleDots', 'ChatsCircle', 'ListChecks', 'Planet', 'PlugsConnected', 'Robot', 'SquaresFour', 'UsersThree', 'X'].map(name => [name, icon])));
   mock.module('@/features/project/project-resources', () => ({ useProjectResources: () => ({ scopeKey: scope, selectedProject: { id: 'project', name: 'Project' }, projects: [] }) }));
   mock.module('@/features/home/home-canvas', () => ({ HomeCanvas: () => <ExamplePage name="home" /> }));
   mock.module('@/features/community/community-canvas', () => ({ CommunityCanvas: () => <ExamplePage name="community" /> }));

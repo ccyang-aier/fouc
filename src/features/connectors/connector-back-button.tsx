@@ -1,7 +1,7 @@
 'use client';
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './connector-back-button.messages';
-import { ArrowLeft } from '@phosphor-icons/react/dist/csr/ArrowLeft';
+import { ArrowLeft } from '@/components/icons';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 export function ConnectorBackButton({ onBack }: { onBack: () => void }) {
   const { t: tConnector } = useTranslation(connectorMessages);

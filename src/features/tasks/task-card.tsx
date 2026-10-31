@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarDots, ChatText, LinkSimple, Paperclip } from '@phosphor-icons/react';
+import { CalendarDots, ChatText, LinkSimple, Paperclip } from '@/components/icons';
 import type { BoardTask, TaskBoardDetail } from '@fouc/shared/tasks';
 import { AvatarGroup } from '@/components/avatar-group';
 import { useTranslation } from '@/lib/i18n';

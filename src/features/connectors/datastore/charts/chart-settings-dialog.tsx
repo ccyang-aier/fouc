@@ -1,7 +1,7 @@
 'use client';
 import { createTranslator, type Locale, useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './chart-settings-dialog.messages';
-import { Info } from '@phosphor-icons/react';
+import { Info } from '@/components/icons';
 import { SqlDialog } from '../sql-library-dialog';
 import type { ChartField, QueryChartConfig } from './model';
 import styles from './query-chart.module.css';

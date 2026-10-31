@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { ArrowClockwise, ArrowsOut, Copy, DownloadSimple, ImageSquare, MagnifyingGlassPlus, ShieldCheck } from '@phosphor-icons/react';
+import { ArrowClockwise, ArrowsOut, Copy, DownloadSimple, ImageSquare, MagnifyingGlassPlus, ShieldCheck } from '@/components/icons';
 import type { ChannelAttachment } from '@fouc/shared/chats';
 import { AppAlert } from '@/components/app-alert';
 import { useAppAlert } from '@/components/app-alert-provider';

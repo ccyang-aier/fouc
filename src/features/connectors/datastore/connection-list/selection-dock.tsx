@@ -1,6 +1,6 @@
 import { createTranslator, type Locale, useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './selection-dock.messages';
-import { CheckCircle, SpinnerGap, Tag, Trash, X } from '@phosphor-icons/react';
+import { CheckCircle, SpinnerGap, Tag, Trash, X } from '@/components/icons';
 import type { ConnectionBatchProgress, ConnectionBatchResult } from './batch';
 import { uiText } from '../../i18n/ui-message';
 import styles from './selection-dock.module.css';
@@ -47,7 +47,7 @@ export function ConnectionSelectionDock({
                 disabled={Boolean(progress)}
                 onClick={onTags}
               >
-                <Tag size={16} weight="bold" />
+                <Tag size={16} />
                 {tConnector('addTags')}
               </button>
               <button
@@ -56,7 +56,7 @@ export function ConnectionSelectionDock({
                 disabled={Boolean(progress)}
                 onClick={onTest}
               >
-                <CheckCircle size={16} weight="bold" />
+                <CheckCircle size={16} />
                 {tConnector('testConnections')}
               </button>
               <button
@@ -66,7 +66,7 @@ export function ConnectionSelectionDock({
                 disabled={Boolean(progress)}
                 onClick={onDelete}
               >
-                <Trash size={16} weight="bold" />
+                <Trash size={16} />
                 {tConnector('delete')}
               </button>
             </div>
@@ -78,7 +78,7 @@ export function ConnectionSelectionDock({
               disabled={Boolean(progress)}
               onClick={onClear}
             >
-              <X size={15} weight="bold" />
+              <X size={15} />
             </button>
           </>
         )}

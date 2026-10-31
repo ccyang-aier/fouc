@@ -21,7 +21,7 @@ import {
   SpinnerGap,
   User,
   X,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import { useEffect, useRef, useState } from 'react';
 import { messages as unitMessages } from './dts/i18n/dts-ticket-list';
 import { dtsSeverityLabel, dtsStatusLabel } from './dts/i18n/ticket-labels';
@@ -133,11 +133,6 @@ export function DtsTicketList(props: Props) {
               >
                 <Funnel
                   className="size-3.5"
-                  weight={
-                    MORE_FILTERS.some((filter) => filter.id === props.activeFilter)
-                      ? 'fill'
-                      : 'regular'
-                  }
                 />
               </button>
             </DropdownMenuTrigger>
@@ -160,7 +155,7 @@ export function DtsTicketList(props: Props) {
             onClick={props.onCollapse}
             className="flex size-8 shrink-0 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
           >
-            <SidebarSimple className="size-3.5" weight="regular" />
+            <SidebarSimple className="size-3.5" />
           </button>
         </div>
       </div>
@@ -264,7 +259,7 @@ export function DtsTicketList(props: Props) {
               </div>
               <div className="mt-2 flex min-w-0 items-center gap-2 border-t border-dashed border-[var(--line-strong)]/70 pt-2 text-[8px] text-[var(--muted)]">
                 <span className="flex min-w-0 items-center gap-1">
-                  <User className="size-3 shrink-0" weight="regular" />
+                  <User className="size-3 shrink-0" />
                   <span className="truncate">
                     {ticket.currentHandler ?? ticket.creator ?? tu('未分配')}
                   </span>

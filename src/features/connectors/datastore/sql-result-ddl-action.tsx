@@ -4,7 +4,7 @@ import { messages as connectorMessages } from './sql-result-ddl-action.messages'
 const translateConnector = createTranslator(connectorMessages);
 import { useRef, useState } from 'react';
 import type { EditorView } from '@codemirror/view';
-import { Table, Copy } from '@phosphor-icons/react';
+import { Table, Copy } from '@/components/icons';
 import type { RelationalProvider, RelationalTableStructure } from '@fouc/shared';
 import { Button } from '@/components/ui/button';
 import { useAppAlert } from '@/components/app-alert-provider';
@@ -53,7 +53,7 @@ export function SqlResultDdlAction({
         }
         onClick={() => setOpen(true)}
       >
-        <Table weight="bold" />
+        <Table />
         <span>DDL</span>
       </Button>
       {open && source && (

@@ -3,7 +3,7 @@ import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './sql-tab-strip.messages';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { FileCode, PushPin, X } from '@phosphor-icons/react';
+import { FileCode, PushPin, X, ArrowsLeftRight, ClockCounterClockwise, FolderOpen } from '@/components/icons';
 import type { SqlDraftSnapshot, SqlDraftTab, SqlExecutionMode } from '@fouc/shared';
 import { getOverlayRoot } from '@/lib/overlay-root';
 import {
@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { sqlTabDirty } from './sql-tabs';
 import { navigateWorkbenchTabs } from './workbench-tab-navigation';
-import { ArrowsLeftRight, ClockCounterClockwise, FolderOpen } from '@phosphor-icons/react';
+
 import styles from './sql-tabs.module.css';
 export type SqlTabAction =
   'pin' | 'rename' | 'duplicate' | 'close' | 'others' | 'left' | 'right' | 'all' | 'reopen';
@@ -149,9 +149,9 @@ export function SqlTabStrip({
             }}
           >
             {tab.pinned ? (
-              <PushPin size={15} weight="fill" />
+              <PushPin size={15} />
             ) : (
-              <FileCode size={15} weight="bold" />
+              <FileCode size={15} />
             )}
             <span>{tab.title}</span>
             {busyIds.has(tab.id) ? (
@@ -170,7 +170,7 @@ export function SqlTabStrip({
                 onAction('close', tab);
               }}
             >
-              <X size={13} weight="bold" />
+              <X size={13} />
             </button>
           </div>
         ))}

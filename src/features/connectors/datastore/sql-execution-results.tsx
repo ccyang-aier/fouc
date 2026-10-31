@@ -12,7 +12,7 @@ import {
   Table,
   WarningCircle,
   X,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import {
   sqlExecutionActive,
   type RelationalProvider,
@@ -208,7 +208,7 @@ export function SqlExecutionResults({
                   closeResult(index);
                 }}
               >
-                <X size={14} weight="bold" />
+                <X size={14} />
               </button>
             </div>
           )),
@@ -234,7 +234,7 @@ export function SqlExecutionResults({
             }
             onClick={() => statement && onPin(statement, selected)}
           >
-            <PushPin size={19} weight={currentPinned ? 'fill' : 'bold'} />
+            <PushPin size={19} />
           </button>,
           headerHost.pin,
         )}
@@ -272,7 +272,7 @@ export function SqlExecutionResults({
                 aria-label={tConnector('cancelQuery')}
                 onClick={onCancel}
               >
-                <Stop size={16} weight="fill" />
+                <Stop size={16} />
                 {tConnector('cancelQuery')}
               </Button>
             )}

@@ -2,7 +2,7 @@
 import { backendFetch } from '@/lib/backend';
 import { useTranslation } from '@/lib/i18n';
 import type { RedisDatabaseList, RedisSession } from '@fouc/shared';
-import { ArrowRight, ArrowsClockwise, Database, X } from '@phosphor-icons/react';
+import { ArrowRight, ArrowsClockwise, Database, X } from '@/components/icons';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import common from '../datastore/relational.module.css';
 import { createUiMessages, uiFailure, uiText, type UiMessage } from '../i18n/ui-message';

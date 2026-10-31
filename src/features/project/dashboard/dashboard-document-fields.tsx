@@ -6,7 +6,7 @@ import { translateFixed } from '../i18n/display';
 import { useTranslation } from '@/lib/i18n';
 import { messages } from './i18n/dashboard-document-fields';
 
-import { Plus, X } from '@phosphor-icons/react';
+import { Plus, X } from '@/components/icons';
 import common from './dashboard-actions.module.css';
 import styles from './dashboard-document-dialog.module.css';
 import { invoiceTotal, money } from './dashboard-document-export';

@@ -12,7 +12,7 @@ import type {
   RelationalProvider,
   RelationalSort,
 } from '@fouc/shared';
-import { DownloadSimple } from '@phosphor-icons/react';
+import { DownloadSimple } from '@/components/icons';
 import { useAppAlert } from '@/components/app-alert-provider';
 import { DataExportMenu } from './data-export-menu';
 import { XlsxExportDialog } from './result-export/xlsx-dialog';

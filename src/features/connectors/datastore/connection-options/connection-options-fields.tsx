@@ -4,7 +4,7 @@ import { uiText, uiFailure, createUiMessages, type UiMessage } from '../../i18n/
 import { createTranslator, type Locale, useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './connection-options-fields.messages';
 import { useEffect, useEffectEvent, useId, useLayoutEffect, useRef, useState } from 'react';
-import { FileArrowUp, ShieldCheck, Timer, Trash, WarningCircle } from '@phosphor-icons/react';
+import { FileArrowUp, ShieldCheck, Timer, Trash, WarningCircle } from '@/components/icons';
 import {
   defaultConnectionOptions,
   resolveConnectionOptions,

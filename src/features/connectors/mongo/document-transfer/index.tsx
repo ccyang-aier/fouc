@@ -1,7 +1,7 @@
 'use client';
 import { useTranslation } from '@/lib/i18n';
-import { ArrowsDownUp } from '@phosphor-icons/react/dist/csr/ArrowsDownUp';
-import { X } from '@phosphor-icons/react/dist/csr/X';
+import { ArrowsDownUp, X } from '@/components/icons';
+
 import { useEffect, useRef, useState } from 'react';
 import { messages as unitMessages } from './../i18n/document-transfer-index';
 import { MongoDocumentExportView } from './export';

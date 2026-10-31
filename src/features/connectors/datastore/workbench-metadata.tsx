@@ -2,7 +2,7 @@
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './workbench-metadata.messages';
 import type { ReactNode } from 'react';
-import { Table, Toolbox } from '@phosphor-icons/react';
+import { Table, Toolbox } from '@/components/icons';
 import { WorkbenchMenu } from './workbench-menu';
 import styles from './dbx-workbench.module.css';
 import menuStyles from './data-tools-menu.module.css';

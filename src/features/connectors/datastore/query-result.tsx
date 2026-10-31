@@ -14,14 +14,13 @@ import {
   Clock,
   Copy,
   FloppyDisk,
-  IconContext,
   ListChecks,
   Plus,
   Table,
   Timer,
   Trash,
   UploadSimple,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -135,7 +134,7 @@ export function SqlQueryResult({
     }
   }
   return (
-    <IconContext.Provider value={{ weight: 'bold', size: 16 }}>
+    <>
       <div className={styles.root}>
         <div className={styles.toolbar}>
           <div className={styles.views} role="tablist" aria-label={tConnector('queryResultView')}>
@@ -462,6 +461,6 @@ export function SqlQueryResult({
           <ResultExportDialog {...exportSnapshot} onClose={() => setExportSnapshot(null)} />
         )}
       </div>
-    </IconContext.Provider>
+    </>
   );
 }

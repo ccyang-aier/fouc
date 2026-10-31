@@ -15,8 +15,6 @@ beforeAll(async () => {
   for (const key of ['document', 'navigator', 'HTMLElement', 'Element', 'Node', 'Event', 'MouseEvent', 'KeyboardEvent', 'ResizeObserver', 'MutationObserver', 'getComputedStyle']) globals[key] = (browser as unknown as Record<string, unknown>)[key];
   globals.window = browser; globals.IS_REACT_ACT_ENVIRONMENT = true;
   browser.localStorage.setItem('fouc.language', 'en-US');
-  const icon = () => <svg aria-hidden />;
-  mock.module('@phosphor-icons/react', () => Object.fromEntries(['CalendarDots', 'PencilSimple', 'PlusCircle', 'SquaresFour', 'Table', 'Trash'].map(name => [name, icon])));
   const pass = ({ children }: { children: ReactNode }) => children;
   mock.module('@/components/ui/tooltip', () => ({ Tooltip: pass, TooltipTrigger: pass, TooltipContent: () => null }));
   mock.module('@/lib/overlay-root', () => ({ getOverlayRoot: () => document.body }));

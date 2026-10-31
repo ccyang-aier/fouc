@@ -1,7 +1,7 @@
 'use client';
 
 import type { TaskBoardDetail, TaskComment } from '@fouc/shared/tasks';
-import { ChatCircle, Trash } from '@phosphor-icons/react';
+import { ChatCircle, Trash } from '@/components/icons';
 import { useEffect, useRef, useState } from 'react';
 import { AppAlert } from '@/components/app-alert';
 import { EmptyState } from '@/components/empty-state';

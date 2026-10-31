@@ -9,7 +9,7 @@ import {
   ShareNetwork,
   SidebarSimple,
   SpinnerGap,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import { useState } from 'react';
 import { DtsRelationshipGraph } from './dts-relationship-graph';
 import { DtsTicketDetailView } from './dts-ticket-detail-view';
@@ -87,7 +87,7 @@ function TicketHeader({
           onClick={onOpenList}
           className="flex size-8 shrink-0 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
         >
-          <SidebarSimple className="size-4" weight="regular" />
+          <SidebarSimple className="size-4" />
         </button>
       ) : null}
       <span className={cn('size-2 shrink-0 rounded-full', severityTone(ticket.severity))} />

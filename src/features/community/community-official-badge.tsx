@@ -1,6 +1,6 @@
 'use client';
 
-import { SealCheck } from '@phosphor-icons/react';
+import { SealCheck } from '@/components/icons';
 import { useTranslation } from '@/lib/i18n/react';
 import { cn } from '@/lib/utils';
 import { messages } from './i18n/community-official-badge.messages';
@@ -13,7 +13,6 @@ export function CommunityOfficialBadge({ className }: { className?: string }) {
     <SealCheck
       role="img"
       aria-label={t('官方资源')}
-      weight="fill"
       className={cn('size-3.5 shrink-0', styles.badge, className)}
     />
   );

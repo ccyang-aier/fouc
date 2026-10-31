@@ -2,12 +2,12 @@
 
 /**
  * 通用侧栏导航行（展开 30px / 折叠 32px 图标态）：hover 浅灰底条，
- * 图标默认采用深灰轮廓与浅灰局部填充，激活时保留同一造型和灰度。
+ * 图标由统一 FA7 / Lucide 目录提供，激活时保留同一造型和灰度。
  * 消费方：navigation-sidebar / settings-canvas。
  */
 
 import type { ReactNode } from "react"
-import type { Icon } from "@phosphor-icons/react"
+import type { Icon } from '@/components/icons'
 
 import { cn } from "@/lib/utils"
 
@@ -17,8 +17,6 @@ export type SidebarRowItem = {
   icon: Icon
   /** 图标的固定着色（如收藏金星），不随导航激活改变 */
   iconClassName?: string
-  /** 图标权重：默认 duotone，明确的功能图标可覆盖 */
-  iconWeight?: "regular" | "duotone" | "fill"
   /** 行尾附加节点（时间戳、红点等），仅展开态渲染 */
   trailing?: ReactNode
 }
@@ -54,7 +52,6 @@ export function NavButton({
       <Icon
         aria-hidden
         size={compact ? 18 : 16}
-        weight={item.iconWeight ?? "duotone"}
         className={cn(
           "sidebar-nav-icon shrink-0",
           item.iconClassName,

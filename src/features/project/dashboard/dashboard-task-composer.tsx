@@ -5,7 +5,7 @@ import { useTranslation } from '@/lib/i18n';
 import { fixtureField } from '../i18n/display';
 import { messages } from './i18n/dashboard-task-composer';
 
-import { At, Paperclip, X } from '@phosphor-icons/react';
+import { At, Paperclip, X } from '@/components/icons';
 import { useId, useRef, useState, type RefObject } from 'react';
 import { MentionText } from './dashboard-comments';
 import {

@@ -2,8 +2,8 @@
 import { createTranslator, type Locale, useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './event-details.messages';
 import { useState } from 'react';
-import { Clock } from '@phosphor-icons/react/dist/csr/Clock';
-import { Warning } from '@phosphor-icons/react/dist/csr/Warning';
+import { Clock, Warning } from '@/components/icons';
+
 import type { MySqlEventDetails } from '@fouc/shared/database-admin-objects';
 import { AdminObjectSource } from './source';
 import styles from './admin-objects.module.css';

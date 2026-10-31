@@ -1,6 +1,6 @@
 "use client";
 
-import { ClipboardText, PencilSimple, Sparkle } from "@phosphor-icons/react";
+import { ClipboardText, PencilSimple, Sparkle } from '@/components/icons';
 import { Button } from "@/components/ui/button";
 import { useAppAlert } from "@/components/app-alert-provider";
 import { ChatAttachments } from "./chat-attachments";
@@ -82,7 +82,7 @@ export function ChatConversation({
           </div>
           <div className={styles.assistantMessage}>
             <span className={styles.assistantBadge}>
-              <Sparkle size={16} weight="fill" />
+              <Sparkle size={16} />
             </span>
             <div className={styles.assistantContent}>
               <h2>{t("ready")}</h2>

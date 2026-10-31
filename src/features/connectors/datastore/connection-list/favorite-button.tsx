@@ -2,7 +2,7 @@
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './favorite-button.messages';
 import { useState } from 'react';
-import { Star } from '@phosphor-icons/react';
+import { Star, StarOutline } from '@/components/icons';
 import type { ConnectionListProps, ConnectionListRow } from './types';
 import styles from './connection-list.module.css';
 /** Show the requested star immediately; saving never flashes a disabled cursor or animation. */
@@ -46,7 +46,7 @@ export function ConnectionFavoriteButton({
       disabled={disabled}
       onClick={() => void toggle()}
     >
-      <Star size={15} weight={favorite ? 'fill' : 'regular'} />
+      {favorite ? <Star size={15} /> : <StarOutline size={15} />}
     </button>
   );
 }

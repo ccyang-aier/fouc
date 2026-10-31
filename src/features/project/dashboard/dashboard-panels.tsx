@@ -18,9 +18,9 @@ import {
   Export,
   LinkSimple,
   Plus,
-  Star,
+  Star, StarOutline,
   Trash,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import { useState } from 'react';
 import {
   DashboardMenu as DropdownMenu,
@@ -76,7 +76,7 @@ export function ProjectCard({
               className={`fouc-action ${styles.flatIcon}`}
               aria-label={t('{v0} options', { v0: fixtureField(project, 'name', locale) })}
             >
-              <DotsThree size={18} weight="bold" />
+              <DotsThree size={18} />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -84,7 +84,7 @@ export function ProjectCard({
               {t('Open project')}
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => onToggleFavorite(project.id)}>
-              <Star weight={project.starred ? 'fill' : 'regular'} />
+              {project.starred ? <Star /> : <StarOutline />}
               {project.starred ? t('Remove from favourites') : t('Add to favourites')}
             </DropdownMenuItem>
             <DropdownMenuItem
@@ -110,7 +110,7 @@ export function ProjectCard({
           <span className={styles.priority} data-priority={project.priority}>
             {uiLabel(project.priority)}
           </span>
-          {project.starred ? <Star size={13} weight="fill" aria-label={t('Favourite')} /> : null}
+          {project.starred ? <Star size={13} aria-label={t('Favourite')} /> : null}
         </span>
       </div>
       <p className={styles.taskDescription} title={fixtureField(project, 'description', locale)}>
@@ -243,7 +243,7 @@ export function TeamPanel({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <IconButton label={t('Team options')}>
-              <DotsThree weight="bold" />
+              <DotsThree />
             </IconButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -324,7 +324,7 @@ export function MeetingsPanel({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <IconButton label={t('Meeting options')}>
-              <DotsThree weight="bold" />
+              <DotsThree />
             </IconButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -419,7 +419,7 @@ export function ActivityPanel({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <IconButton label={t('Activity options')}>
-              <DotsThree weight="bold" />
+              <DotsThree />
             </IconButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">

@@ -1,6 +1,6 @@
 'use client';
 
-import { CaretDown, Plus, X } from '@phosphor-icons/react';
+import { CaretDown, Plus, X } from '@/components/icons';
 import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { TASK_LABEL_COLORS, type TaskLabel, type TaskLabelColor } from '@fouc/shared/tasks';
 import { AnchoredPopover } from '@/components/ui/anchored-popover';

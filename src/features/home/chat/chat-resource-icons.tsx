@@ -1,4 +1,4 @@
-import { PlugsConnected, PuzzlePiece, ChatCenteredText } from '@phosphor-icons/react';
+import { PlugsConnected, PuzzlePiece, ChatCenteredText } from '@/components/icons';
 import { SkillIcon } from '@/components/icons/skill-icon';
 import type { ComposerResourceKind } from '@/features/community/composer-catalog';
 

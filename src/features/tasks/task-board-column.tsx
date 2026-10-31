@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type DragEventHandler, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { Reorder, useDragControls } from 'motion/react';
-import { ArrowLeft, ArrowRight, DotsSix, PencilSimple, Plus, Trash } from '@phosphor-icons/react';
+import { ArrowLeft, ArrowRight, DotsSix, PencilSimple, Plus, Trash } from '@/components/icons';
 import type { TaskColumn } from '@fouc/shared/tasks';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useTranslation } from '@/lib/i18n';
@@ -86,7 +86,7 @@ export function TaskBoardColumn({ column, index, columnCount, count, total, edit
         <DropdownMenu open={open} onOpenChange={setOpen}><DropdownMenuTrigger asChild>
           <button type="button" className={`fouc-action ${styles.iconButton} ${styles.columnHandle}`} aria-label={t('statusActions', { name: column.name })} disabled={disabled} data-held={dragging || undefined}
             onPointerDown={press} onClick={event => { if (event.detail === 0 || !suppressClick.current) setOpen(value => !value); else { event.preventDefault(); event.stopPropagation(); } }}
-            onContextMenu={event => event.preventDefault()} onDragStart={event => event.preventDefault()}><DotsSix size={17} weight="bold" /></button>
+            onContextMenu={event => event.preventDefault()} onDragStart={event => event.preventDefault()}><DotsSix size={17} /></button>
         </DropdownMenuTrigger><DropdownMenuContent align="end" density="compact">
           <DropdownMenuItem disabled={disabled} onSelect={onEdit}><PencilSimple />{t('editColumn')}</DropdownMenuItem>
           <DropdownMenuItem disabled={index === 0 || disabled} onSelect={() => onShift(-1)}><ArrowLeft />{t('moveLeft')}</DropdownMenuItem>

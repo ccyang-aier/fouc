@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowSquareOut, GearSix, GitBranch, GitFork } from "@phosphor-icons/react";
+import { ArrowSquareOut, GearSix, GitBranch, GitFork } from '@/components/icons';
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,

@@ -1,6 +1,6 @@
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './relationships.messages';
-import { ArrowRight } from '@phosphor-icons/react/dist/csr/ArrowRight';
+import { ArrowRight } from '@/components/icons';
 import type { DatabaseDocsSnapshot, DatabaseDocsTable } from '@fouc/shared/database-docs';
 import styles from './database-docs.module.css';
 export function DocsRelationships({

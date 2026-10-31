@@ -1,7 +1,7 @@
 'use client';
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './review.messages';
-import { Copy, WarningCircle, CheckCircle, LockOpen } from '@phosphor-icons/react';
+import { Copy, WarningCircle, CheckCircle, LockOpen } from '@/components/icons';
 import type { RelationalProvider } from '@fouc/shared';
 import type { ForeignKeyEditModel } from './use-foreign-key-edit';
 import styles from './foreign-key-edit.module.css';

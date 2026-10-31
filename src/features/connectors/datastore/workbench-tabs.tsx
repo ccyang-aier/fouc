@@ -12,7 +12,7 @@ import {
   Activity,
   PanelsTopLeft,
   X,
-} from 'lucide-react';
+} from '@/components/icons';
 import { WorkbenchMenu } from './workbench-menu';
 import { navigateWorkbenchTabs } from './workbench-tab-navigation';
 import styles from './dbx-workbench.module.css';

@@ -13,7 +13,7 @@ import {
   CircleNotch,
   FileSql,
   WarningCircle,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import { SQL_FILE_MAX_BYTES, type RelationalProvider } from '@fouc/shared';
 import type { EditorView } from '@codemirror/view';
 import { SqlEditor } from './sql-editor';

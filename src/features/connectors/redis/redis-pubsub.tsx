@@ -2,7 +2,7 @@
 
 import { useTranslation } from '@/lib/i18n';
 import type { RedisPubSubAction } from '@fouc/shared';
-import { Broadcast, PaperPlaneTilt, Plug, X } from '@phosphor-icons/react';
+import { Broadcast, PaperPlaneTilt, Plug, X } from '@/components/icons';
 import { useState } from 'react';
 import { createUiMessages, uiFailure, uiText, type UiMessage } from '../i18n/ui-message';
 import { messages as unitMessages } from './i18n/redis-pubsub';

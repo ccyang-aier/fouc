@@ -28,7 +28,7 @@ import {
   SignOut,
   SpinnerGap,
   WarningCircle,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import type { ComponentPropsWithoutRef } from 'react';
 import { forwardRef, useCallback, useEffect, useRef, useState } from 'react';
 import { ConnectorBackButton } from './connector-back-button';
@@ -504,7 +504,7 @@ export function DtsConnectorDetail({
                 aria-label={tu('更多操作')}
                 className="flex size-8 items-center justify-center rounded-[7px] text-[var(--muted)] outline-none hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
               >
-                <DotsThree className="size-4" weight="bold" />
+                <DotsThree className="size-4" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-40">
@@ -646,9 +646,9 @@ function ConnectionStatusMenu({
             )}
           >
             {connected ? (
-              <CheckCircle className="size-4" weight="fill" />
+              <CheckCircle className="size-4" />
             ) : (
-              <WarningCircle className="size-4" weight="fill" />
+              <WarningCircle className="size-4" />
             )}
             <span className="text-[11px] font-medium">
               {connected ? tu('DTS 已连接') : tu('DTS 需要连接')}
@@ -713,7 +713,7 @@ function ConnectionLoading() {
     >
       <div className="flex w-[340px] flex-col items-center rounded-[14px] border border-[var(--line)] bg-[var(--elevated)] px-8 py-7 text-center shadow-[0_18px_50px_rgba(24,30,42,0.12)]">
         <span className="flex size-11 items-center justify-center rounded-[11px] bg-[var(--accent-soft)] text-[var(--accent-ink)]">
-          <SpinnerGap className="size-5 animate-spin" weight="bold" aria-hidden />
+          <SpinnerGap className="size-5 animate-spin" aria-hidden />
         </span>
         <h2 className="mt-4 text-[13px] font-semibold text-[var(--ink)]">
           {tu('正在完成 DTS 连接')}

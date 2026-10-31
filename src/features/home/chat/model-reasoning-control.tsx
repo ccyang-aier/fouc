@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useId, useRef, useState } from 'react';
-import { Brain } from '@phosphor-icons/react';
+import { Brain } from '@/components/icons';
 import type { ModelCatalogEntry, ModelReasoningLevel } from '@fouc/shared/model-catalog';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';

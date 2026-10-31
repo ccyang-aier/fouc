@@ -25,7 +25,7 @@ import {
   ClockCounterClockwise,
   Info,
   ShareFat,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -177,7 +177,7 @@ export function CommunityDetailPage({
           style={{ fontSize: 10 }}
           className="flex h-7 items-center gap-1 rounded-[7px] px-1.5 text-[10px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-[var(--hover-fill)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
         >
-          <CaretLeft className="size-3.5" weight="bold" />
+          <CaretLeft className="size-3.5" />
           {uiText('社区')}
         </button>
         <p className="truncate text-[11px] text-[var(--muted)]">
@@ -230,7 +230,7 @@ export function CommunityDetailPage({
             <div className="flex shrink-0 items-center gap-2 pt-1">
               {done ? (
                 <span className="flex h-9 items-center gap-1.5 rounded-[8px] border border-[var(--line-strong)] px-4 text-[12px] font-medium text-[var(--muted-strong)]">
-                  <Check className="size-3.5" weight="bold" />
+                  <Check className="size-3.5" />
                   {DONE_LABELS[detail.tab]}
                 </span>
               ) : (
@@ -248,7 +248,7 @@ export function CommunityDetailPage({
                 onClick={onShare}
                 className="flex size-9 items-center justify-center rounded-[8px] border border-[var(--line)] text-[var(--muted-strong)] outline-none transition-colors hover:bg-[var(--hover-fill)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
               >
-                <ShareFat className="size-4" weight="fill" />
+                <ShareFat className="size-4" />
               </button>
             </div>
           </div>
@@ -276,7 +276,6 @@ export function CommunityDetailPage({
                 >
                   <item.icon
                     className={cn('size-4', active ? 'text-[var(--ink)]' : 'text-[var(--muted)]')}
-                    weight="fill"
                   />
                   {item.label}
                   <span
@@ -313,7 +312,6 @@ export function CommunityDetailPage({
                         'size-3.5 text-[var(--muted)] transition-transform duration-200',
                         aboutOpen && 'rotate-90',
                       )}
-                      weight="bold"
                     />
                   </button>
                   {aboutOpen ? (
@@ -334,7 +332,6 @@ export function CommunityDetailPage({
                       >
                         <Check
                           className="mt-0.5 size-3.5 shrink-0 text-[var(--muted-strong)]"
-                          weight="bold"
                         />
                         {permission}
                       </li>
@@ -386,7 +383,7 @@ export function CommunityDetailPage({
                     onClick={onDiscuss}
                     className="flex h-8 items-center gap-1.5 rounded-[8px] bg-[var(--hover-fill)] px-3.5 text-[11.5px] text-[var(--ink-soft)] outline-none transition-colors hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                   >
-                    <ChatCircleDots className="size-3.5" weight="fill" />
+                    <ChatCircleDots className="size-3.5" />
                     {uiText('发起讨论')}
                   </button>
                 </div>
@@ -478,7 +475,7 @@ export function CommunityDetailPage({
           <aside className="sticky top-0 w-[300px] shrink-0 max-[1100px]:w-full">
             {done ? (
               <span className="flex h-10 w-full items-center justify-center gap-1.5 rounded-[9px] border border-[var(--line-strong)] text-[12px] font-medium text-[var(--muted-strong)]">
-                <Check className="size-3.5" weight="bold" />
+                <Check className="size-3.5" />
                 {DONE_LABELS[detail.tab]}
               </span>
             ) : (
@@ -524,7 +521,6 @@ export function CommunityDetailPage({
                         {item.done ? (
                           <Check
                             className="size-3.5 shrink-0 text-[var(--muted-strong)]"
-                            weight="bold"
                           />
                         ) : null}
                       </div>

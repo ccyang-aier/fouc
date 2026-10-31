@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CaretLeft, CaretRight, Clock, Plus, Tray } from '@phosphor-icons/react';
+import { CaretLeft, CaretRight, Clock, Plus, Tray } from '@/components/icons';
 import type { BoardTask, TaskBoardDetail, TaskSchedule } from '@fouc/shared/tasks';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-picker';

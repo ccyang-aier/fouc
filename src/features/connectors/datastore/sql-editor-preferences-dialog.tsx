@@ -10,7 +10,7 @@ import {
   FloppyDisk,
   SlidersHorizontal,
   WarningCircle,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import type { RelationalProvider, SqlEditorPreferences } from '@fouc/shared';
 import { backendFetch } from '@/lib/backend';
 import { SqlDialog } from './sql-library-dialog';

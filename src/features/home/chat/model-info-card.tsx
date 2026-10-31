@@ -1,8 +1,8 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { CaretDown, X } from '@phosphor-icons/react';
-import { ArrowDownToDot, ArrowUpFromDot, Atom, CircleFadingArrowUp, Eye, Image as ImageIcon, Video, Wrench } from 'lucide-react';
+import { CaretDown, X, ArrowDownToDot, ArrowUpFromDot, Atom, CircleFadingArrowUp, Eye, Image as ImageIcon, Video, Wrench } from '@/components/icons';
+
 import type { ModelCatalogEntry } from '@fouc/shared/model-catalog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -45,7 +45,7 @@ export function ModelInfoCard({ model, expanded, onToggle, onSelect, onClose }: 
   const header = (section: keyof ModelInfoSections, summary?: ReactNode) => <button
     type="button" className={`fouc-action ${styles.sectionHeader}`} data-variant="collapsible" data-section={section} aria-label={t(section)} aria-expanded={expanded[section]}
     onClick={() => onToggle(section)}>
-    <span>{t(section)}<CaretDown size={10} weight="fill" className={styles.caret} data-open={expanded[section]} /></span>
+    <span>{t(section)}<CaretDown size={10} className={styles.caret} data-open={expanded[section]} /></span>
     {!expanded[section] ? summary : null}
   </button>;
 

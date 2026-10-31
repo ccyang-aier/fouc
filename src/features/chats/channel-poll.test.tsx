@@ -15,8 +15,6 @@ beforeAll(async () => {
   for (const name of ['document', 'navigator', 'HTMLElement', 'Element', 'Node', 'Event', 'MutationObserver']) globals[name] = (browser as unknown as Record<string, unknown>)[name];
   globals.window = browser;
   globals.IS_REACT_ACT_ENVIRONMENT = true;
-  const Icon = () => null;
-  mock.module('@phosphor-icons/react', () => ({ ChartBar: Icon, CheckCircle: Icon, Circle: Icon, LockSimple: Icon, Users: Icon }));
   mock.module('@/features/chats/channel-ui', () => ({ ChannelAvatar: () => null }));
   mock.module('@/lib/i18n', () => ({ defineMessages: (value: unknown) => value, useTranslation: () => ({ t: (key: string, args?: { count: number }) => key === 'votes' ? `${args?.count} votes` : key }) }));
   Poll = (await import('./channel-poll')).ChannelPollCard;

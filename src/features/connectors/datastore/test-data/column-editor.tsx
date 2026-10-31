@@ -3,8 +3,8 @@ import { uiText } from '../../i18n/ui-message';
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './column-editor.messages';
 import type { RelationalTableStructure } from '@fouc/shared';
-import { LockSimple } from '@phosphor-icons/react/dist/csr/LockSimple';
-import { Key } from '@phosphor-icons/react/dist/csr/Key';
+import { LockSimple, Key } from '@/components/icons';
+
 import {
   testDataColumnFamily,
   testDataColumnLock,

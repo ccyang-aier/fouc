@@ -1,7 +1,7 @@
 'use client';
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './designer.messages';
-import { Plus, Trash, CircleNotch } from '@phosphor-icons/react';
+import { Plus, Trash, CircleNotch } from '@/components/icons';
 import { FOREIGN_KEY_ACTIONS } from '@fouc/shared/foreign-key-edit';
 import type { ForeignKeyEditModel } from './use-foreign-key-edit';
 import styles from './foreign-key-edit.module.css';

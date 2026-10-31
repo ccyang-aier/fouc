@@ -4,7 +4,7 @@ import { createTranslator, type Locale, useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './edit-dialog.messages';
 const translateConnector = createTranslator(connectorMessages);
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ClipboardText, PencilSimple, WarningCircle } from '@phosphor-icons/react';
+import { ClipboardText, PencilSimple, WarningCircle } from '@/components/icons';
 import type { DatabaseColumnInfo, DatabaseTablePage, RelationalProvider } from '@fouc/shared';
 import { SqlDialog } from '../sql-library-dialog';
 import common from '../relational.module.css';

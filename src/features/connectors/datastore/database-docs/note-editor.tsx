@@ -4,8 +4,8 @@ import { messages as connectorMessages } from './note-editor.messages';
 import { useState } from 'react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { PencilSimple } from '@phosphor-icons/react/dist/csr/PencilSimple';
-import { Check } from '@phosphor-icons/react/dist/csr/Check';
+import { PencilSimple, Check } from '@/components/icons';
+
 import type { DatabaseDocsNote } from '@fouc/shared/database-docs';
 import styles from './database-docs.module.css';
 function safeMarkdownUrl(value: string): string {

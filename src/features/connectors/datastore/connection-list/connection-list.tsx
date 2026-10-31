@@ -18,7 +18,7 @@ import {
   Tag,
   Trash,
   X,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -92,7 +92,7 @@ function RowActions({
             disabled={pending || row.status === 'testing'}
             onClick={() => onOpen(row)}
           >
-            <ArrowSquareOut size={16} weight="bold" />
+            <ArrowSquareOut size={16} />
           </button>
         </TooltipTrigger>
         <TooltipContent>
@@ -112,7 +112,7 @@ function RowActions({
             disabled={pending}
             onClick={() => onEdit(row)}
           >
-            <PencilSimple size={16} weight="bold" />
+            <PencilSimple size={16} />
           </button>
         </TooltipTrigger>
         <TooltipContent>{tConnector('editConnection')}</TooltipContent>
@@ -127,7 +127,7 @@ function RowActions({
                 aria-label={tConnector('moreActionsFor', { p0: String(row.name) })}
                 disabled={pending}
               >
-                <DotsThree size={20} weight="bold" />
+                <DotsThree size={20} />
               </button>
             </DropdownMenuTrigger>
           </TooltipTrigger>
@@ -135,12 +135,12 @@ function RowActions({
         </Tooltip>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onSelect={() => onManageTags(row)}>
-            <Tag weight="bold" />
+            <Tag />
             {tConnector('manageTags')}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem variant="destructive" onSelect={() => onRemove(row)}>
-            <Trash weight="bold" />
+            <Trash />
             {tConnector('deleteConnection')}
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -675,7 +675,7 @@ export function ConnectionList(props: ConnectionListProps) {
               disabled={currentPage <= 1 || loading}
               onClick={() => setPage(currentPage - 1)}
             >
-              <CaretLeft size={16} weight="bold" />
+              <CaretLeft size={16} />
             </button>
             <span
               className={styles.currentPage}
@@ -691,7 +691,7 @@ export function ConnectionList(props: ConnectionListProps) {
               disabled={currentPage >= pageCount || loading}
               onClick={() => setPage(currentPage + 1)}
             >
-              <CaretRight size={16} weight="bold" />
+              <CaretRight size={16} />
             </button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

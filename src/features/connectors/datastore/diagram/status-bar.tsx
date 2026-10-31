@@ -1,7 +1,7 @@
 'use client';
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './status-bar.messages';
-import { Warning } from '@phosphor-icons/react';
+import { Warning } from '@/components/icons';
 import { useMemo } from 'react';
 import {
   DropdownMenu,

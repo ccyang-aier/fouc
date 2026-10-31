@@ -19,7 +19,6 @@ beforeAll(async () => {
     showModal: { configurable: true, value(this: HTMLDialogElement) { this.setAttribute('open', ''); } },
     close: { configurable: true, value(this: HTMLDialogElement) { this.removeAttribute('open'); } },
   });
-  mock.module('@phosphor-icons/react', () => Object.fromEntries(['TreeStructure', 'Tag', 'PushPin', 'PushPinSlash', 'Buildings', 'EnvelopeSimple', 'ClipboardText', 'FolderPlus', 'MagnifyingGlass', 'Plus', 'SlidersHorizontal', 'Stack', 'UserCircleGear', 'UserPlus', 'UsersThree', 'X', 'ArrowRight', 'CaretDown', 'CaretRight', 'Check', 'CheckCircle', 'Info', 'WarningCircle', 'XCircle', 'SquaresFour', 'Table'].map(name => [name, () => <svg aria-hidden />])));
   mock.module('@/components/user-avatar', () => ({ UserAvatar: ({ name }: { name: string }) => <span>{name[0]}</span> }));
   mock.module('@/components/ui/date-picker', () => ({ DatePicker: ({ value }: { value: string }) => <button type="button">{value}</button> }));
   mock.module('@/components/app-alert-provider', () => ({ useAppAlert: () => ({ notify: () => {} }) }));

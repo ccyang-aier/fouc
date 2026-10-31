@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
-import { LockSimple, UserPlus, UsersThree, X } from '@phosphor-icons/react';
+import { LockSimple, UserPlus, UsersThree, X } from '@/components/icons';
 import type { TaskBoardDetail, TaskBoardVisibility, TaskColumn, TaskColumnColor } from '@fouc/shared/tasks';
 import { AppAlert } from '@/components/app-alert';
 import { Button } from '@/components/ui/button';

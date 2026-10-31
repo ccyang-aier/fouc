@@ -5,7 +5,7 @@ import { uiText, type UiMessage, uiFailure, createUiMessages } from '../i18n/ui-
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './structure-edit-action.messages';
 import { useEffect, useRef, useState } from 'react';
-import { PencilSimple, SpinnerGap } from '@phosphor-icons/react';
+import { PencilSimple, SpinnerGap } from '@/components/icons';
 import type { RelationalTableStructure } from '@fouc/shared';
 import type {
   StructureEditCommitResult,

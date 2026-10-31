@@ -4,7 +4,7 @@ import { useTranslation } from '@/lib/i18n/react';
 import { messages } from './i18n/settings-dialog.messages';
 
 import { useEffect, useRef } from 'react';
-import { X } from '@phosphor-icons/react';
+import { X } from '@/components/icons';
 
 import { SettingsCanvas, type SettingsSection } from './settings-canvas';
 import styles from './settings-dialog.module.css';

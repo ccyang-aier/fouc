@@ -4,9 +4,9 @@ import { messages as connectorMessages } from './source.messages';
 import { useRef } from 'react';
 import { useAppAlert } from '@/components/app-alert-provider';
 import type { EditorView } from '@codemirror/view';
-import { Copy } from '@phosphor-icons/react/dist/csr/Copy';
-import { DownloadSimple } from '@phosphor-icons/react/dist/csr/DownloadSimple';
-import { Warning } from '@phosphor-icons/react/dist/csr/Warning';
+import { Copy, DownloadSimple, Warning } from '@/components/icons';
+
+
 import type { DatabaseAdminObjectSource } from '@fouc/shared/database-admin-objects';
 import type { RelationalProvider } from '@fouc/shared';
 import { SqlEditor } from '../sql-editor';

@@ -14,7 +14,7 @@ import {
   Grid2X2,
   Search,
   PanelLeftClose,
-} from 'lucide-react';
+} from '@/components/icons';
 import type { DatabaseObjectInfo } from '@fouc/shared';
 import type { StructureTab } from './structure-metadata';
 import {

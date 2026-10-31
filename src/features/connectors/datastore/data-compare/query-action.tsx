@@ -4,7 +4,7 @@ import { getLocale } from '@/lib/i18n';
 import { createTranslator, type Locale, useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './query-action.messages';
 import { useMemo, useState } from 'react';
-import { ArrowRight, ArrowsClockwise, LockSimple } from '@phosphor-icons/react';
+import { ArrowRight, ArrowsClockwise, LockSimple } from '@/components/icons';
 import type { DatabaseQueryResult, RelationalProvider, SqlDraftTab } from '@fouc/shared';
 import { SqlDialog } from '../sql-library-dialog';
 import type { SqlExecutionUI } from '../use-sql-executions';

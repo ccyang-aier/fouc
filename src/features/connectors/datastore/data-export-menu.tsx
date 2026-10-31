@@ -2,7 +2,7 @@
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './data-export-menu.messages';
 import { useState } from 'react';
-import { CaretRight, UploadSimple } from '@phosphor-icons/react';
+import { CaretRight, UploadSimple } from '@/components/icons';
 import {
   DropdownMenu,
   DropdownMenuContent,

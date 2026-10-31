@@ -4,7 +4,7 @@ import { useTranslation, createTranslator } from '@/lib/i18n';
 import { messages as connectorMessages } from './panel.messages';
 const translateConnector = createTranslator(connectorMessages);
 import { useMemo, useRef, useState } from 'react';
-import { Graph, Table, Warning } from '@phosphor-icons/react';
+import { Graph, Table, Warning } from '@/components/icons';
 import { useAppAlert } from '@/components/app-alert-provider';
 import {
   diagramVisibleColumns,

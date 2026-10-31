@@ -3,8 +3,8 @@ import { backendFetch } from '@/lib/backend';
 import { useTranslation } from '@/lib/i18n';
 import { formatJsonSource } from '@fouc/shared';
 import type { MongoCommandResult } from '@fouc/shared/mongo';
-import { Play } from '@phosphor-icons/react/dist/csr/Play';
-import { Stop } from '@phosphor-icons/react/dist/csr/Stop';
+import { Play, Stop } from '@/components/icons';
+
 import { useEffect, useRef, useState } from 'react';
 import { createUiMessages, uiFailure, uiText, type UiMessage } from '../i18n/ui-message';
 import { messages as unitMessages } from './i18n/mongo-console';
@@ -60,7 +60,7 @@ export function MongoConsole({ base, database }: { base: string; database: strin
           className={busy ? styles.smallButton : styles.primaryButton}
           onClick={() => (busy ? cancel() : void run())}
         >
-          {busy ? <Stop size={14} /> : <Play size={14} weight="fill" />}
+          {busy ? <Stop size={14} /> : <Play size={14} />}
           {busy ? tu('取消') : tu('运行')}
         </button>
       </div>

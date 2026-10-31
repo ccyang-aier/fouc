@@ -22,7 +22,7 @@ import {
   Copy,
   PencilSimple,
   ArrowUUpLeft,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import type { DatabaseTablePage, RelationalProvider } from '@fouc/shared';
 import { formatGridEditClipboard } from './clipboard';
 import { GridEditDialog, type GridEditOperation } from './edit-dialog';

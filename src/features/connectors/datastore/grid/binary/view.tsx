@@ -10,7 +10,7 @@ import {
   Copy,
   DownloadSimple,
   MagnifyingGlass,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import type { DatabaseCell } from '@fouc/shared';
 import { rawGridCellText } from '../clipboard';
 import {

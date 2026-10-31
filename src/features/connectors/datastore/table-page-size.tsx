@@ -4,7 +4,7 @@ import { uiText, type UiMessage, createUiMessages } from '../i18n/ui-message';
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './table-page-size.messages';
 import { useId, useState } from 'react';
-import { CaretDown, Check } from '@phosphor-icons/react';
+import { CaretDown, Check } from '@/components/icons';
 import { RELATIONAL_PAGE_LIMITS } from '@fouc/shared';
 import {
   DropdownMenu,

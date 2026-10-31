@@ -3,13 +3,13 @@ import { uiText, type UiMessage, uiFailure, createUiMessages } from '../../i18n/
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './action.messages';
 import { useEffect, useState } from 'react';
-import { CheckCircle } from '@phosphor-icons/react/dist/csr/CheckCircle';
-import { Copy } from '@phosphor-icons/react/dist/csr/Copy';
-import { Database } from '@phosphor-icons/react/dist/csr/Database';
-import { LockOpen } from '@phosphor-icons/react/dist/csr/LockOpen';
-import { Plus } from '@phosphor-icons/react/dist/csr/Plus';
-import { SpinnerGap } from '@phosphor-icons/react/dist/csr/SpinnerGap';
-import { Warning } from '@phosphor-icons/react/dist/csr/Warning';
+import { CheckCircle, Copy, Database, LockOpen, Plus, SpinnerGap, Warning } from '@/components/icons';
+
+
+
+
+
+
 import type { RelationalSession } from '@fouc/shared';
 import { schemaCreateNameError } from '@fouc/shared/schema-create';
 import { SqlDialog } from '../sql-library-dialog';

@@ -2,7 +2,7 @@
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './connector-catalog-items.messages';
 import Image from 'next/image';
-import { Check } from '@phosphor-icons/react';
+import { Check } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import styles from '@/components/ui/resource-card.module.css';
 import { connectorCategoryLabel, connectorPresentation, type Connector } from './connectors-data';
@@ -52,7 +52,7 @@ function ConnectorAction({ connector, onConnect, onDisconnect }: ConnectorItemPr
         className="group/connected relative z-10 flex h-[29px] min-w-[74px] items-center justify-center overflow-hidden rounded-[6px] border border-[color-mix(in_srgb,var(--ok-ink)_22%,var(--line))] bg-[color-mix(in_srgb,var(--ok-ink)_6%,var(--panel))] px-2 text-[10px] font-medium outline-none transition-colors hover:border-[color-mix(in_srgb,var(--err-ink)_36%,var(--line))] hover:bg-[color-mix(in_srgb,var(--err-ink)_5%,var(--panel))] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
       >
         <span className="flex items-center gap-1.5 text-[var(--ok-ink)] transition-opacity group-hover/connected:opacity-0 group-focus-visible/connected:opacity-0">
-          <Check className="size-3" weight="bold" />
+          <Check className="size-3" />
           {tConnector('connected')}
         </span>
         <span className="absolute inset-0 flex items-center justify-center text-[var(--err-ink)] opacity-0 transition-opacity group-hover/connected:opacity-100 group-focus-visible/connected:opacity-100">

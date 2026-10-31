@@ -6,7 +6,7 @@ import {
   type MongoGridFsFile,
   type MongoGridFsPage,
 } from '@fouc/shared/mongo-gridfs';
-import { DownloadSimple, File, Info } from '@phosphor-icons/react';
+import { DownloadSimple, File, Info } from '@/components/icons';
 import { useMemo, useState } from 'react';
 import { uiText } from '../../i18n/ui-message';
 import { messages as unitMessages } from './../i18n/gridfs-files';

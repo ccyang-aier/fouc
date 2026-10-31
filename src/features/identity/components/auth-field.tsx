@@ -10,7 +10,7 @@ import { messages } from './i18n/auth-field.messages';
  */
 
 import { useId, useState } from 'react';
-import { Eye, EyeSlash } from '@phosphor-icons/react';
+import { Eye, EyeSlash } from '@/components/icons';
 import styles from './auth-form.module.css';
 
 export function AuthTextField({

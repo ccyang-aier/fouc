@@ -2,7 +2,7 @@
 import { getLocale, type Locale, useTranslation } from '@/lib/i18n';
 import type { RedisBlob, RedisMutation, RedisValuePage } from '@fouc/shared';
 import { formatJsonSource } from '@fouc/shared';
-import { Check, Clock, Copy, PencilSimple, Plus, TextAa, Trash } from '@phosphor-icons/react';
+import { Check, Clock, Copy, PencilSimple, Plus, TextAa, Trash } from '@/components/icons';
 import { useState } from 'react';
 import { createUiMessages, type UiMessage, uiText } from '../i18n/ui-message';
 import { messages as unitMessages } from './i18n/redis-value-viewer';

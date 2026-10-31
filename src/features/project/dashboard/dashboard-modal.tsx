@@ -4,7 +4,7 @@ import { useTranslation } from '@/lib/i18n';
 import { fixtureField, translateFixed } from '../i18n/display';
 import { messages } from './i18n/dashboard-modal';
 
-import { X } from '@phosphor-icons/react';
+import { X } from '@/components/icons';
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import styles from './dashboard-actions.module.css';
 import { dashboardPeople, type DashboardPersonId } from './dashboard-model';

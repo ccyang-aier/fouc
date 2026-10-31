@@ -2,7 +2,7 @@
 import { useTranslation } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import type { DtsFlowNodeSummary, DtsTicketDetail, DtsTicketSummary } from '@fouc/shared';
-import { ArrowSquareOut, Check } from '@phosphor-icons/react';
+import { ArrowSquareOut, Check } from '@/components/icons';
 import { messages as unitMessages } from './dts/i18n/dts-ticket-detail-view';
 import { dtsStatusLabel } from './dts/i18n/ticket-labels';
 import { createUiMessages, uiText } from './i18n/ui-message';
@@ -229,7 +229,7 @@ function WorkflowTimeline({
                       : 'border-[var(--line-strong)] text-[var(--muted)]',
                 )}
               >
-                {done ? <Check className="size-3" weight="bold" /> : index + 1}
+                {done ? <Check className="size-3" /> : index + 1}
               </span>
               <p
                 className={cn(

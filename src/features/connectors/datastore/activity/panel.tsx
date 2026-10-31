@@ -2,11 +2,11 @@
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './panel.messages';
 import { useState } from 'react';
-import { Pulse } from '@phosphor-icons/react/dist/csr/Pulse';
-import { ArrowClockwise } from '@phosphor-icons/react/dist/csr/ArrowClockwise';
-import { Pause } from '@phosphor-icons/react/dist/csr/Pause';
-import { Play } from '@phosphor-icons/react/dist/csr/Play';
-import { SpinnerGap } from '@phosphor-icons/react/dist/csr/SpinnerGap';
+import { Pulse, ArrowClockwise, Pause, Play, SpinnerGap } from '@/components/icons';
+
+
+
+
 import type { RelationalProvider } from '@fouc/shared';
 import {
   databaseActivityMetrics,

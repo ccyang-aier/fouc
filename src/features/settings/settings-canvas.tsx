@@ -9,7 +9,7 @@ import { messages } from './i18n/settings-canvas.messages';
  */
 
 import { useState } from 'react';
-import { BookOpenText, Info, MagnifyingGlass, PaintBrush, Robot, SlidersHorizontal } from '@phosphor-icons/react';
+import { BookOpenText, Info, MagnifyingGlass, PaintBrush, Robot, SlidersHorizontal } from '@/components/icons';
 
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';

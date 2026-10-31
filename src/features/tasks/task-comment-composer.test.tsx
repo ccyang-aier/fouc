@@ -20,8 +20,6 @@ beforeAll(async () => {
   browser.localStorage.setItem('fouc.language', 'en-US');
   URL.createObjectURL = () => `blob:comment-${++nextUrl}`;
   URL.revokeObjectURL = revoke;
-  const icon = () => <svg aria-hidden />;
-  mock.module('@phosphor-icons/react', () => ({ ImageSquare: icon, X: icon }));
   mock.module('@/components/user-avatar', () => ({ UserAvatar: () => <span /> }));
   mock.module('@/components/app-alert', () => ({ AppAlert: ({ title }: { title: string }) => <div role="alert">{title}</div> }));
   mock.module('@/components/ui/button', () => ({ Button: ({ loading, ...props }: ComponentProps<'button'> & { loading?: boolean }) => <button {...props} disabled={loading || props.disabled} /> }));

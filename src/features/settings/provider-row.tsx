@@ -24,7 +24,7 @@ import {
   TrashSimple,
   WarningCircle,
   XCircle,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 
 import type { AgentInstallation, CapabilityManifest, ProviderSpec } from '@fouc/shared';
 import { formatRelativeTime } from '@/lib/relative-time';
@@ -135,7 +135,7 @@ export function ProviderStatusBadge({ statusKey }: { statusKey: ProviderStatusKe
         meta.className,
       )}
     >
-      <Icon size={11} weight="bold" aria-hidden />
+      <Icon size={11} aria-hidden />
       {uiText(meta.label)}
     </span>
   );
@@ -195,7 +195,7 @@ export function ProviderRow(props: ProviderRowProps) {
             <ProviderStatusBadge statusKey={statusKey} />
             {best?.isDefault && (
               <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-[#eef3fb] px-1.5 py-px text-[10px] font-medium text-[#3f6db5]">
-                <Flag size={9} weight="fill" aria-hidden />
+                <Flag size={9} aria-hidden />
                 {uiText('默认')}
               </span>
             )}
@@ -240,7 +240,6 @@ export function ProviderRow(props: ProviderRowProps) {
             {expanded ? uiText('收起') : uiText('编辑')}
             <CaretDown
               size={11}
-              weight="bold"
               aria-hidden
               className={cn('transition-transform duration-150', expanded && 'rotate-180')}
             />
@@ -270,7 +269,7 @@ function ProviderInfoTip({ provider }: { provider: ProviderSpec }) {
           aria-label={uiText('{0} 接入信息', { '0': provider.name })}
           className="shrink-0 rounded-md p-1 text-[var(--muted)] outline-none transition-colors hover:bg-wash hover:text-[var(--muted-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
         >
-          <Info size={13} weight="bold" aria-hidden />
+          <Info size={13} aria-hidden />
         </button>
       </TooltipTrigger>
       <TooltipContent side="top" className="w-56">

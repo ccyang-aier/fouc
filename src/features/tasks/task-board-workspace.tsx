@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { LockSimple, Plus, SquaresFour } from '@phosphor-icons/react';
+import { LockSimple, Plus, SquaresFour } from '@/components/icons';
 import type { BoardTask, CreateTaskBoardViewInput, TaskBoardView, TaskSchedule } from '@fouc/shared/tasks';
 import { Button } from '@/components/ui/button';
 import { PageSessionNamespace, usePageSessionState } from '@/lib/page-session-state';

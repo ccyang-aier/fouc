@@ -1,6 +1,6 @@
 'use client';
 
-import { X } from '@phosphor-icons/react';
+import { X } from '@/components/icons';
 import { resourceKindIcons } from './chat-resource-icons';
 import { useTranslation } from '@/lib/i18n';
 import type { ComposerResourceReference } from '@/features/community/composer-catalog';

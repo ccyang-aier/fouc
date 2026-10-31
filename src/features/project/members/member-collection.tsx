@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, Buildings, EnvelopeSimple, PushPin } from '@phosphor-icons/react';
+import { ArrowRight, Buildings, EnvelopeSimple, PushPin } from '@/components/icons';
 import { UserAvatar } from '@/components/user-avatar';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/lib/i18n';

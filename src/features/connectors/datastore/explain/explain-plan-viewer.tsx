@@ -1,16 +1,16 @@
 'use client';
 import { createTranslator, type Locale, useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './explain-plan-viewer.messages';
-import { ArrowClockwise } from '@phosphor-icons/react/dist/csr/ArrowClockwise';
-import { BracketsCurly } from '@phosphor-icons/react/dist/csr/BracketsCurly';
-import { ChartBar } from '@phosphor-icons/react/dist/csr/ChartBar';
-import { Check } from '@phosphor-icons/react/dist/csr/Check';
-import { Copy } from '@phosphor-icons/react/dist/csr/Copy';
-import { FlowArrow } from '@phosphor-icons/react/dist/csr/FlowArrow';
-import { MagnifyingGlass } from '@phosphor-icons/react/dist/csr/MagnifyingGlass';
-import { SpinnerGap } from '@phosphor-icons/react/dist/csr/SpinnerGap';
-import { TreeStructure } from '@phosphor-icons/react/dist/csr/TreeStructure';
-import { WarningCircle } from '@phosphor-icons/react/dist/csr/WarningCircle';
+import { ArrowClockwise, BracketsCurly, ChartBar, Check, Copy, FlowArrow, MagnifyingGlass, SpinnerGap, TreeStructure, WarningCircle } from '@/components/icons';
+
+
+
+
+
+
+
+
+
 import { useId, useMemo, useState, type KeyboardEvent } from 'react';
 import { parseExplainResult } from './parse-plan';
 import { buildPlanCanvas, parsePlanNumber } from './plan-canvas';

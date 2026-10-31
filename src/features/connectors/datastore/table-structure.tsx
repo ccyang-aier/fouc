@@ -10,7 +10,7 @@ import {
   Copy,
   DownloadSimple,
   MagnifyingGlass,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import type { RelationalSession, RelationalTableStructure } from '@fouc/shared';
 import { backendFetch } from '@/lib/backend';
 import { StructureMetadata, type StructureTab } from './structure-metadata';

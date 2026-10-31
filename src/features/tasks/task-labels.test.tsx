@@ -20,8 +20,6 @@ beforeAll(async () => {
   for (const key of ['document', 'navigator', 'HTMLElement', 'Element', 'Node', 'Event', 'MouseEvent', 'MutationObserver', 'getComputedStyle']) globals[key] = (browser as unknown as Record<string, unknown>)[key];
   globals.window = browser; globals.IS_REACT_ACT_ENVIRONMENT = true;
   browser.localStorage.setItem('fouc.language', 'en-US');
-  const icon = () => <svg aria-hidden />;
-  mock.module('@phosphor-icons/react', () => ({ CaretDown: icon, Plus: icon, X: icon }));
   mock.module('@/components/ui/button', () => ({ Button: ({ children, ...props }: ComponentProps<'button'>) => <button {...props}>{children}</button> }));
   // The shared popover owns positioning, Escape, outside-click and return-focus tests.
   mock.module('@/components/ui/anchored-popover', () => ({ AnchoredPopover: ({ children, label }: { children: ReactNode; label: string }) => <div role="dialog" aria-label={label}>{children}</div> }));

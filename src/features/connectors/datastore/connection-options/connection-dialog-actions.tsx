@@ -1,7 +1,7 @@
 'use client';
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './connection-dialog-actions.messages';
-import { ArrowsClockwise } from '@phosphor-icons/react';
+import { ArrowsClockwise } from '@/components/icons';
 import { AppAlert } from '@/components/app-alert';
 import common from '../relational.module.css';
 import styles from './connection-dialog.module.css';
@@ -52,7 +52,6 @@ export function ConnectionDialogActions({
           >
             <ArrowsClockwise
               size={15}
-              weight="bold"
               className={pending === 'test' ? styles.spinner : undefined}
             />
             {pending === 'test' ? tConnector('testing') : tConnector('testConnections')}

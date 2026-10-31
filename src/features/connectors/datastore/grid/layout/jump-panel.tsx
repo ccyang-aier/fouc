@@ -2,7 +2,7 @@
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './jump-panel.messages';
 import { useState } from 'react';
-import { Columns, MagnifyingGlass } from '@phosphor-icons/react';
+import { Columns, MagnifyingGlass } from '@/components/icons';
 import type { DatabaseQueryResult } from '@fouc/shared';
 import { columnLabel } from '../../result-format';
 import { WorkbenchSidePanel } from '../../workbench-side-panel';

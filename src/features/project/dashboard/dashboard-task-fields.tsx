@@ -23,7 +23,7 @@ import {
   Tag,
   User,
   X,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import { useId, useState, type ReactNode } from 'react';
 import {
   dashboardPeople,

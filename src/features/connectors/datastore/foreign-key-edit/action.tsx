@@ -2,7 +2,7 @@
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './action.messages';
 import { useState } from 'react';
-import { Link } from '@phosphor-icons/react';
+import { Link } from '@/components/icons';
 import type { RelationalProvider } from '@fouc/shared';
 import { useForeignKeyEdit, type ForeignKeyEditContext } from './use-foreign-key-edit';
 import { ForeignKeyDesigner } from './designer';

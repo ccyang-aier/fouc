@@ -11,7 +11,7 @@ import {
   CaretLeft,
   CaretRight,
   X,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import type { RelationalTableCount, RelationalTablePage, RelationalTableQuery } from '@fouc/shared';
 import { RELATIONAL_PAGE_LIMITS } from '@fouc/shared';
 import { Button } from '@/components/ui/button';

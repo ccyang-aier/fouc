@@ -4,8 +4,8 @@ import {
   Binoculars, BracketsCurly, Browser, CalendarDots, ChartBar, ChartPieSlice, ChatsCircle,
   Checks, CheckSquare, Code, Database, EnvelopeSimple, FigmaLogo, FileText, FolderSimple,
   GitBranch, GitDiff, Lightbulb, MagnifyingGlass, Megaphone, NotePencil,
-  PresentationChart, ShieldCheck, Star, StarHalf, TextT, Monitor, Intersect, PenNib,
-} from '@phosphor-icons/react';
+  PresentationChart, ShieldCheck, Star, StarHalf, StarOutline, TextT, Monitor, Intersect, PenNib,
+} from '@/components/icons';
 import { TooltipContent } from '@/components/ui/tooltip';
 import { resourceKindIcons } from './chat-resource-icons';
 import { useTranslation } from '@/lib/i18n';
@@ -31,7 +31,7 @@ const resourceIcons = {
 export function ResourceIcon({ resource }: { resource: ComposerResource }) {
   const Icon = resourceIcons[resource.id as keyof typeof resourceIcons];
   const KindIcon = resourceKindIcons[resource.kind];
-  return Icon ? <Icon className={styles.resourceIcon} size={16} weight="duotone" data-static-color aria-hidden="true" />
+  return Icon ? <Icon className={styles.resourceIcon} size={16} data-static-color aria-hidden="true" />
     : <KindIcon className={styles.resourceIcon} size={16} data-static-color aria-hidden="true" />;
 }
 
@@ -60,8 +60,8 @@ export function ChatResourceInfo({ resource, side, alignOffset, onEscape }: {
       <span>{t('recommendation')}</span>
       {rating === null ? <span className={styles.unrated}>{t('unrated')}</span> : <span className={styles.stars} aria-label={`${rating} / 5`}>
         {Array.from({ length: 5 }, (_, index) => {
-          const Icon = stars - index === 0.5 ? StarHalf : Star;
-          return <Icon key={index} size={13} weight={index < stars ? 'fill' : 'regular'} aria-hidden="true" />;
+          const Icon = stars - index === 0.5 ? StarHalf : index < stars ? Star : StarOutline;
+          return <Icon key={index} size={13} aria-hidden="true" />;
         })}<strong>{rating.toFixed(1)}</strong>
       </span>}
     </div>

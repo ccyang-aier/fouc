@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CalendarDots, PencilSimple, PlusCircle, SquaresFour, Table, Trash } from '@phosphor-icons/react';
+import { CalendarDots, PencilSimple, PlusCircle, SquaresFour, Table, Trash } from '@/components/icons';
 import { TASK_BOARD_VIEW_LIMIT, type TaskBoardView, type TaskViewKind } from '@fouc/shared/tasks';
 import { AnchoredPopover, type PopoverAnchor } from '@/components/ui/anchored-popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';

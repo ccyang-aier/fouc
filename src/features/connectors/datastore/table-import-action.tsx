@@ -2,7 +2,7 @@
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './table-import-action.messages';
 import { useState } from 'react';
-import { DownloadSimple } from '@phosphor-icons/react';
+import { DownloadSimple } from '@/components/icons';
 import type { RelationalProvider, RelationalTablePage } from '@fouc/shared';
 import { TableImportPanel } from './table-import';
 import { SqlDialog } from './sql-library-dialog';

@@ -1,7 +1,7 @@
 'use client';
 import { createTranslator, type Locale, useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './options.messages';
-import { MagnifyingGlass } from '@phosphor-icons/react/dist/csr/MagnifyingGlass';
+import { MagnifyingGlass } from '@/components/icons';
 import { useState } from 'react';
 import type {
   DatabaseExportFormat,

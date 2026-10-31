@@ -38,7 +38,7 @@ import {
   User,
   UsersThree,
   Wrench,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import { useEffect, useRef, useState } from 'react';
 import { messages as unitMessages } from './dts/i18n/dts-relationship-graph';
 import { dtsSeverityLabel, dtsStatusLabel } from './dts/i18n/ticket-labels';
@@ -529,7 +529,7 @@ function NodeActions({
           'border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)] hover:brightness-105',
         )}
       >
-        <Plus className="size-3.5" weight="bold" />
+        <Plus className="size-3.5" />
       </button>
       <button
         type="button"
@@ -544,7 +544,7 @@ function NodeActions({
           'border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)] hover:bg-[var(--accent-strong)]',
         )}
       >
-        <NotePencil className="size-3.5" weight="bold" />
+        <NotePencil className="size-3.5" />
       </button>
       <button
         type="button"
@@ -597,7 +597,7 @@ function CustomNodeEditor({
                 title={tu('选择节点图标')}
                 className="flex h-7 items-center gap-1 rounded-[7px] border border-[var(--line)] bg-[var(--surface-subtle)] px-2 text-[var(--ink-soft)] outline-none transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
               >
-                <ActiveIcon className="size-3.5" weight="bold" />
+                <ActiveIcon className="size-3.5" />
                 <CaretDown className="size-3" />
               </button>
             </DropdownMenuTrigger>
@@ -624,7 +624,7 @@ function CustomNodeEditor({
                         : 'border-transparent text-[var(--muted-strong)] hover:border-[var(--line)] hover:bg-[var(--surface-hover)] hover:text-[var(--ink)]',
                     )}
                   >
-                    <Icon className="size-4" weight="bold" />
+                    <Icon className="size-4" />
                   </button>
                 ))}
               </div>
@@ -637,7 +637,7 @@ function CustomNodeEditor({
             onClick={onDone}
             className="ml-auto flex size-7 items-center justify-center rounded-[7px] bg-[var(--accent)] text-[var(--accent-foreground)] outline-none transition-[filter,transform] hover:brightness-105 active:scale-90 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
           >
-            <Check className="size-3.5" weight="bold" />
+            <Check className="size-3.5" />
           </button>
         </div>
         <input
@@ -672,7 +672,7 @@ function GraphSummary({ nodeCount, activity }: { nodeCount: number; activity: st
       aria-live="polite"
       className="pointer-events-none absolute left-4 top-4 z-30 flex h-8 items-center gap-2 rounded-[9px] border border-[var(--line)] bg-panel/95 px-2.5 shadow-[0_8px_24px_-18px_rgba(15,23,42,0.65)] backdrop-blur"
     >
-      <ShareNetwork className="size-3.5 text-[var(--ink)]" weight="bold" />
+      <ShareNetwork className="size-3.5 text-[var(--ink)]" />
       <span className="text-[8.5px] font-semibold text-[var(--ink)]">{tu('关系画布')}</span>
       <span className="text-[8px] text-[var(--muted)]">
         {nodeCount} {tu('个节点 ·')} {uiText(activity, locale)}
@@ -727,7 +727,7 @@ function CanvasControls({
           panMode && 'border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)] hover:bg-[var(--accent-strong)]',
         )}
       >
-        <Hand className="size-4" weight={panMode ? 'fill' : 'regular'} />
+        <Hand className="size-4" />
       </button>
     </div>
   );
@@ -759,7 +759,7 @@ function GraphConnectors({ nodes, edges }: { nodes: GraphNode[]; edges: GraphEdg
     return source && target ? [{ edge, geometry: calculateEdge(source, target) }] : [];
   });
   return (
-    <svg
+    <svg data-visualization="diagram"
       aria-hidden
       className="pointer-events-none absolute inset-0 z-0 h-full w-full overflow-visible"
       viewBox={`0 0 ${STAGE_WIDTH} ${STAGE_HEIGHT}`}
@@ -967,7 +967,7 @@ function GraphNote({
       <NodeFrame />
       <div className="relative z-10">
         <header className="mb-3 flex items-center gap-2">
-          <Icon className={cn('size-4 shrink-0', toneClass)} weight="bold" />
+          <Icon className={cn('size-4 shrink-0', toneClass)} />
           <h2 className="text-[10.5px] font-semibold text-[var(--ink)]">{title}</h2>
           <span className="ml-auto text-[7.5px] text-[var(--muted)]">{meta}</span>
         </header>
@@ -979,7 +979,7 @@ function GraphNote({
 
 function NodeFrame() {
   return (
-    <svg
+    <svg data-visualization="diagram"
       aria-hidden
       className="pointer-events-none absolute inset-0 z-0 h-full w-full overflow-visible"
       fill="none"
@@ -1077,7 +1077,7 @@ function FlowNote({
                 )}
               >
                 {done ? (
-                  <Check className="size-2.5" weight="bold" />
+                  <Check className="size-2.5" />
                 ) : (
                   <span
                     className={cn(

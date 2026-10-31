@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { Plus, Robot, Sparkle, UserPlus } from '@phosphor-icons/react';
+import { Plus, Robot, Sparkle, UserPlus } from '@/components/icons';
 import type { ChannelAttachment, ChannelMessage as Message } from '@fouc/shared/chats';
 import { Button } from '@/components/ui/button';
 import { ChannelComposer } from './channel-composer';
@@ -59,7 +59,7 @@ export function ChannelConversation({ workbench: w, actions, highlight }: { work
         : <>
           {snapshot.messages.length === 0 && <div className={styles.welcome}><ChannelIcon channel={channel} size={43} /><h3>{t('channelStart', { name: channel.name })}</h3><p>{channel.description || t('channelStartDescription')}</p><div className={styles.welcomeActions}>{canInvite && <Button size="sm" variant="outline" onClick={() => w.setModal('invite')}><UserPlus size={14} />{t('addMembers')}</Button>}<Button size="sm" variant="outline" onClick={() => void w.openAgentDialog()}><Robot size={14} />{t('addAgent')}</Button></div></div>}
           {roots.map((message, index) => <div key={message.id}>
-            {(index === 0 || day(message.createdAt) !== day(roots[index - 1].createdAt)) && <div className={styles.dateSeparator}><span>{day(message.createdAt)}</span>{index === 0 && <button type="button" className={`fouc-action ${styles.catchUp}`} onClick={() => w.setPanel('summary')}><Sparkle size={12} weight="fill" />{t('aiSummary')}</button>}</div>}
+            {(index === 0 || day(message.createdAt) !== day(roots[index - 1].createdAt)) && <div className={styles.dateSeparator}><span>{day(message.createdAt)}</span>{index === 0 && <button type="button" className={`fouc-action ${styles.catchUp}`} onClick={() => w.setPanel('summary')}><Sparkle size={12} />{t('aiSummary')}</button>}</div>}
             <ChannelMessage message={message} snapshot={snapshot} highlight={highlight === message.id} {...actions} />
           </div>)}
         </>}

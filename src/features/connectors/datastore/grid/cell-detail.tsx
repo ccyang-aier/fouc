@@ -12,7 +12,7 @@ import {
   Copy,
   TextAlignLeft,
   X,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import type { DatabaseCell } from '@fouc/shared';
 import { getOverlayRoot } from '@/lib/overlay-root';
 import { rawGridCellText } from './clipboard';

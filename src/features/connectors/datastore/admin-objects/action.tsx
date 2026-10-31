@@ -2,8 +2,8 @@
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './action.messages';
 import { useState } from 'react';
-import { Clock } from '@phosphor-icons/react/dist/csr/Clock';
-import { Package } from '@phosphor-icons/react/dist/csr/Package';
+import { Clock, Package } from '@/components/icons';
+
 import type { RelationalSession } from '@fouc/shared';
 import { SqlDialog } from '../sql-library-dialog';
 import { DatabaseAdminObjectsPanel } from './panel';

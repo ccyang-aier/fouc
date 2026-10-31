@@ -1,4 +1,4 @@
-import { Archive, ChatCircleDots, ChatsCircle, ListChecks, Planet, PlugsConnected, Robot, SquaresFour, UsersThree } from '@phosphor-icons/react';
+import { Archive, ChatCircleDots, ChatsCircle, ListChecks, Planet, PlugsConnected, Robot, SquaresFour, UsersThree } from '@/components/icons';
 import type { WorkbenchView } from './workbench-view';
 
 export type WorkbenchPage = Exclude<WorkbenchView, 'settings'>;

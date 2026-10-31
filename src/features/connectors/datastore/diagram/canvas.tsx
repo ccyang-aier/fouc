@@ -2,7 +2,7 @@
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './canvas.messages';
 import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
-import { ArrowsOut, Minus, Plus } from '@phosphor-icons/react';
+import { ArrowsOut, Minus, Plus } from '@/components/icons';
 import {
   erDiagramPath,
   fitErDiagramViewport,
@@ -279,7 +279,7 @@ export function DiagramCanvas({
   }, [model, view, selection, matches, onSelect, tConnector]);
   return (
     <div ref={host} className={styles.canvas}>
-      <svg
+      <svg data-visualization="diagram"
         role="group"
         aria-label={tConnector('databaseErDiagramDragEmptySpaceToPanDragTable')}
         tabIndex={0}

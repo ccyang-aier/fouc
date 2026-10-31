@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from 'react';
-import { CaretDown, X } from '@phosphor-icons/react';
+import { CaretDown, X } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';

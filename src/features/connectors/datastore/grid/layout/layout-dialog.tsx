@@ -10,7 +10,7 @@ import {
   MagnifyingGlass,
   PushPin,
   SlidersHorizontal,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import type { DatabaseQueryResult } from '@fouc/shared';
 import { databaseCellText } from '../../cell-format';
 import { SqlDialog } from '../../sql-library-dialog';

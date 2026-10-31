@@ -23,7 +23,7 @@ import {
   SidebarSimple,
   Table,
   X,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import type { DatabaseCell } from '@fouc/shared';
 import type { ResultGridProps } from '../result-grid';
 import { GridCellDetail } from '../cell-detail';

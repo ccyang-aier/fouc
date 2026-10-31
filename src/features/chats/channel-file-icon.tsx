@@ -1,4 +1,4 @@
-import { File, FileCode, FilePdf, FileText, ImageSquare } from '@phosphor-icons/react';
+import { File, FileCode, FilePdf, FileText, ImageSquare } from '@/components/icons';
 import type { ChannelAttachment } from '@fouc/shared/chats';
 
 export function channelFileKind({ mime, name }: Pick<ChannelAttachment, 'mime' | 'name'>) {
@@ -18,5 +18,5 @@ export function ChannelFileIcon({ attachment, size = 28, className }: {
   attachment: Pick<ChannelAttachment, 'mime' | 'name'>; size?: number; className?: string;
 }) {
   const { Icon, color } = glyphs[channelFileKind(attachment)];
-  return <Icon size={size} className={className} style={{ color }} weight="fill" aria-hidden />;
+  return <Icon size={size} className={className} style={{ color }} aria-hidden />;
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useId, useRef, useState } from 'react';
-import { MagnifyingGlass, Tag, TreeStructure, UserPlus, UsersThree, X } from '@phosphor-icons/react';
+import { MagnifyingGlass, Tag, TreeStructure, UserPlus, UsersThree, X } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSearch, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ViewSwitcher } from '@/components/ui/view-switcher';

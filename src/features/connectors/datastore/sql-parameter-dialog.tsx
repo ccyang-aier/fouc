@@ -4,7 +4,7 @@ import { createTranslator, type Locale, useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './sql-parameter-dialog.messages';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { EditorView } from '@codemirror/view';
-import { BracketsCurly, Check, Copy, Play, WarningCircle } from '@phosphor-icons/react';
+import { BracketsCurly, Check, Copy, Play, WarningCircle } from '@/components/icons';
 import {
   compileSqlTemplate,
   sqlParameterInputIssue,
@@ -324,7 +324,7 @@ export function SqlParameterDialog({
             {tConnector('cancel')}
           </button>
           <button type="submit" className={common.primary} disabled={Boolean(preview.error)}>
-            <Play size={14} weight="fill" />
+            <Play size={14} />
             {action === 'explain'
               ? tConnector('applyParametersAndGeneratePlan')
               : tConnector('applyParametersAndExecute')}

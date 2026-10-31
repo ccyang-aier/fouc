@@ -2,7 +2,7 @@
 
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { motion, Reorder } from 'motion/react';
-import { Plus } from '@phosphor-icons/react';
+import { Plus } from '@/components/icons';
 import type { BoardTask, TaskBoardDetail, TaskColumn } from '@fouc/shared/tasks';
 import { usePageScrollKey } from '@/lib/page-session-state';
 import { useTranslation } from '@/lib/i18n';

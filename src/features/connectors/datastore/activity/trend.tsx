@@ -67,7 +67,7 @@ export function ActivityTrend({
           {new Date(points.at(-1)!.at).toLocaleTimeString(locale)}
         </span>
       </div>
-      <svg
+      <svg data-visualization="chart"
         viewBox="0 0 600 120"
         role="img"
         aria-label={tConnector('latestPlottedAtActualSampleTimesMissingOrResetRates', {

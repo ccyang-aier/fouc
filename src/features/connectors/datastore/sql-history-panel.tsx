@@ -12,7 +12,7 @@ import {
   Trash,
   X,
   ArrowsClockwise,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import type { SqlHistoryEntry, SqlHistorySearch } from '@fouc/shared';
 import { backendFetch } from '@/lib/backend';
 import { useSqlResource, useSqlHistory } from './use-sql-resource';

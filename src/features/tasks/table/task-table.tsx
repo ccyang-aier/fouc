@@ -1,7 +1,7 @@
 'use client';
 
 import { useId, useRef, useState } from 'react';
-import { ArrowRight, CaretUp, Plus, X } from '@phosphor-icons/react';
+import { ArrowRight, CaretUp, Plus, X } from '@/components/icons';
 import type { BoardTask, TaskBoardDetail } from '@fouc/shared/tasks';
 import { usePageScrollKey, usePageSessionState } from '@/lib/page-session-state';
 import { useTranslation } from '@/lib/i18n';

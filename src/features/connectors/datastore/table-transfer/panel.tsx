@@ -5,7 +5,7 @@ import { uiText, type UiMessage, uiFailure, createUiMessages } from '../../i18n/
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './panel.messages';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, ArrowsLeftRight, CheckCircle, Warning, X } from '@phosphor-icons/react';
+import { ArrowRight, ArrowsLeftRight, CheckCircle, Warning, X } from '@/components/icons';
 import type { RelationalTableStructure } from '@fouc/shared';
 import {
   tableTransferInputSchema,

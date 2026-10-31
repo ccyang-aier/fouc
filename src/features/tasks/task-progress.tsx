@@ -19,7 +19,7 @@ export function TaskProgress({ progress }: { progress: TaskProgressState }) {
     <TooltipTrigger asChild>
       <span className={styles.progressIndicator} tabIndex={0} role="img" data-risk={progress.risk || undefined}
         aria-label={[summary, checklist, completedStatus, risk].filter(Boolean).join(' · ')}>
-        <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+        <svg data-visualization="progress" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
           <circle className={styles.progressRing} cx="7" cy="7" r="6" fill="none" stroke="currentColor" strokeWidth="1.2" />
           {progress.fraction === 1 ? <circle cx="7" cy="7" r="4.2" fill="currentColor" />
             : progress.fraction > 0 && <path d={sector} fill="currentColor" />}

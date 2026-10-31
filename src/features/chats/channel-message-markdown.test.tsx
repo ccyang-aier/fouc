@@ -21,9 +21,9 @@ test('images and raw HTML cannot bypass the compact attachment presentation', ()
   expect(html).toContain('inline picture');
 });
 
-test('message emojis render local artwork instead of the operating system font', () => {
+test('message emojis render shared local OpenMoji artwork with accessible names', () => {
   const html = renderToStaticMarkup(<ChannelMessageMarkdown members={members} body="收到 👍，一起出发 🚀" />);
-  expect(html.match(/src="\/emoji\//g)).toHaveLength(2);
-  expect(html).toContain('alt="👍"');
-  expect(html).toContain('alt="🚀"');
+  expect(html.match(/src="\/icons\/openmoji\//g)).toHaveLength(2);
+  expect(html).toContain('aria-label="👍"');
+  expect(html).toContain('aria-label="🚀"');
 });

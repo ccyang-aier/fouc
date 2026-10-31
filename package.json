@@ -14,7 +14,7 @@
     "preview": "serve out",
     "typecheck": "tsc --noEmit",
     "i18n:verify": "node scripts/verify-i18n.mjs",
-    "lint": "eslint . --max-warnings=0",
+    "lint": "node scripts/verify-icons.mjs && eslint . --max-warnings=0",
     "check": "pnpm typecheck && pnpm backend:typecheck && pnpm shared:typecheck && pnpm architecture:verify && pnpm docs:verify && pnpm dbx:verify && pnpm i18n:verify && pnpm lint && pnpm build",
     "tauri": "tauri",
     "desktop:dev": "tauri dev",
@@ -43,7 +43,8 @@
     "server:typecheck": "pnpm --filter @fouc/server typecheck",
     "server:test": "pnpm --filter @fouc/server test",
     "server:build": "pnpm --filter @fouc/server build",
-    "architecture:verify": "node scripts/verify-architecture.mjs"
+    "architecture:verify": "node scripts/verify-architecture.mjs",
+    "icons:verify": "node scripts/verify-icons.mjs"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.3",
@@ -54,9 +55,11 @@
     "@codemirror/search": "^6.7.2",
     "@codemirror/state": "^6.7.6",
     "@codemirror/view": "^6.43.13",
+    "@fortawesome/fontawesome-svg-core": "7.3.1",
+    "@fortawesome/free-solid-svg-icons": "7.3.1",
+    "@fortawesome/react-fontawesome": "3.5.0",
     "@fouc/shared": "workspace:*",
     "@lezer/highlight": "1.2.4",
-    "@phosphor-icons/react": "2.1.10",
     "@radix-ui/react-dropdown-menu": "latest",
     "@radix-ui/react-slot": "latest",
     "@radix-ui/react-tooltip": "latest",

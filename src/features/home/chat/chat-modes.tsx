@@ -1,4 +1,4 @@
-import { Path, TerminalWindow, SquaresFour, Target } from '@phosphor-icons/react';
+import { Path, TerminalWindow, SquaresFour, Target } from '@/components/icons';
 import { ChatPickerItem } from './chat-picker';
 import type { ChatMode } from './chat-types';
 import type { ChatText } from './chat-messages';

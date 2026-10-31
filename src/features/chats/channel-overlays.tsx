@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowClockwise, SignOut } from '@phosphor-icons/react';
+import { ArrowClockwise, SignOut } from '@/components/icons';
 import type { CreateChannelInput } from '@fouc/shared/chats';
 import { Button } from '@/components/ui/button';
 import { ChannelAgentDialog, ChannelConfirmDialog, ChannelFormDialog, ChannelInviteDialog, ChannelPollDialog, ChannelTopicDialog } from './channel-dialogs';

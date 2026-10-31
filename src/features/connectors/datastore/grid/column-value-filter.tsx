@@ -3,7 +3,7 @@ import { uiText, type UiMessage, uiFailure, createUiMessages } from '../../i18n/
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './column-value-filter.messages';
 import { useMemo, useState, type RefObject } from 'react';
-import { ArrowDown, ArrowUp, ArrowsDownUp, MagnifyingGlass } from '@phosphor-icons/react';
+import { ArrowDown, ArrowUp, ArrowsDownUp, MagnifyingGlass } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { TableQueryPopover } from '../table-query-popover';
 import type { GridColumnValueOption } from './column-filter-model';

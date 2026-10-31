@@ -2,7 +2,7 @@
 import { createTranslator, type Locale, useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './extension-details.messages';
 import { useState } from 'react';
-import { Warning } from '@phosphor-icons/react/dist/csr/Warning';
+import { Warning } from '@/components/icons';
 import type {
   DatabaseAdminObjectRows,
   PostgresExtensionDetails,

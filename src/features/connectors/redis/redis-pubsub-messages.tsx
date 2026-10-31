@@ -1,7 +1,7 @@
 'use client';
 import { useTranslation } from '@/lib/i18n';
 import type { RedisPubSubMessage } from '@fouc/shared';
-import { Copy, MagnifyingGlass, Trash, X } from '@phosphor-icons/react';
+import { Copy, MagnifyingGlass, Trash, X } from '@/components/icons';
 import { useEffect, useRef, useState } from 'react';
 import common from '../datastore/relational.module.css';
 import { createUiMessages, uiText, type UiMessage } from '../i18n/ui-message';

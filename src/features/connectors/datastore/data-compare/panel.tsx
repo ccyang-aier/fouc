@@ -16,7 +16,7 @@ import {
   SpinnerGap,
   Stop,
   WarningCircle,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import type { DatabaseQueryResult, RelationalProvider } from '@fouc/shared';
 import { compareDataResults } from './compare';
 import { CompareEntryDetail } from './entry-detail';

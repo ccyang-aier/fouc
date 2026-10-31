@@ -11,7 +11,7 @@ import {
   FileCode,
   SpinnerGap,
   Table,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import type { DatabaseQueryResult, RelationalProvider } from '@fouc/shared';
 import { SqlDialog } from '../sql-library-dialog';
 import common from '../relational.module.css';

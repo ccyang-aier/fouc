@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChatCircleText, Files, MagnifyingGlass, PushPin, Robot, Sparkle, X } from '@phosphor-icons/react';
+import { ChatCircleText, Files, MagnifyingGlass, PushPin, Robot, Sparkle, X } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ChannelMessage } from './channel-message';
@@ -42,7 +42,7 @@ export function ChannelSidePanel({ workbench: w, actions, onJump }: { workbench:
       <div className={styles.stream}><ChannelMessage message={thread} snapshot={snapshot} {...actions} compact /><div className={styles.threadReplies}>{t('replyCount', { count: replies.length })}</div>{replies.map(message => <ChannelMessage key={message.id} message={message} snapshot={snapshot} {...actions} compact />)}{!replies.length && <p className={styles.noChannels}>{t('noReplies')}</p>}</div>
       <ChannelComposer key={thread.id} thread channelId={`${snapshot.channel.id}:${thread.id}`} name={snapshot.channel.name} members={snapshot.members} busy={w.sending} disabled={snapshot.actorRole === 'member' && snapshot.channel.permissions.post === 'admins'} onSend={(body, attachments) => w.send({ body, threadId: thread.id }, attachments)} onTopic={() => {}} onPoll={() => {}} />
     </> : panel === 'summary' ? <>
-      <div className={styles.sideContent}><div className={styles.summaryIntro}><Sparkle size={23} weight="light" /></div><h4 className={styles.summaryHeading}>{t('summarize')}</h4><p className={styles.summaryDescription}>{t('summaryDescription')}</p>
+      <div className={styles.sideContent}><div className={styles.summaryIntro}><Sparkle size={23} /></div><h4 className={styles.summaryHeading}>{t('summarize')}</h4><p className={styles.summaryDescription}>{t('summaryDescription')}</p>
         {!roots.length ? <p className={styles.summaryDescription}>{t('summaryEmpty')}</p> : <>
           {topics.length > 0 && <section className={styles.summarySection}><h4><ChatCircleText size={13} />{t('summaryTopics')}</h4><ul>{topics.slice(-6).map(message => <li key={message.id}><button type="button" className="fouc-action" onClick={() => onJump(message.id)}>{message.title ?? message.poll?.question}</button></li>)}</ul></section>}
           <section className={styles.summarySection}><h4><ChatCircleText size={13} />{t('summaryRecent')}</h4><ul>{roots.slice(-6).map(message => <li key={message.id}><strong>{message.authorName}</strong><button type="button" className="fouc-action" onClick={() => onJump(message.id)}>{message.body.slice(0, 160) || message.attachments.map(file => file.name).join('、') || message.poll?.question}</button></li>)}</ul></section>

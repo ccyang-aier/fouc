@@ -5,7 +5,7 @@ import { uiText, type UiMessage, uiFailure } from '../i18n/ui-message';
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './schema-compare-action.messages';
 import { useEffect, useRef, useState } from 'react';
-import { ArrowsLeftRight, ArrowRight, SpinnerGap } from '@phosphor-icons/react';
+import { ArrowsLeftRight, ArrowRight, SpinnerGap } from '@/components/icons';
 import type {
   DatabaseObjectInfo,
   RelationalProvider,

@@ -3,7 +3,7 @@ import { uiText, type UiMessage, uiFailure } from '../i18n/ui-message';
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './test-data-action.messages';
 import { useEffect, useState } from 'react';
-import { Database } from '@phosphor-icons/react/dist/csr/Database';
+import { Database } from '@/components/icons';
 import type { RelationalSession, RelationalTableStructure } from '@fouc/shared';
 import { backendFetch } from '@/lib/backend';
 import { SqlDialog } from './sql-library-dialog';

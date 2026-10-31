@@ -17,7 +17,7 @@ import {
   type MongoTabularField,
   type MongoTabularOptions,
 } from '@fouc/shared/mongo-tabular';
-import { UploadSimple } from '@phosphor-icons/react/dist/csr/UploadSimple';
+import { UploadSimple } from '@/components/icons';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createUiMessages, uiFailure, uiText, type UiMessage } from '../../i18n/ui-message';
 import { messages as unitMessages } from './../i18n/document-transfer-import';
@@ -302,7 +302,7 @@ export function MongoDocumentImportView({
     <div className={styles.importWorkflow}>
       <div className={styles.importContent}>
         <div className={styles.intro}>
-          <UploadSimple size={28} weight="duotone" />
+          <UploadSimple size={28} />
           <div>
             <strong>{tu('验证文件，然后审查追加')}</strong>
             <p>

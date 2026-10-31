@@ -2,7 +2,7 @@
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './table-query-row-actions.messages';
 import { useState, type ReactNode } from 'react';
-import { ArrowDown, ArrowUp, DotsSixVertical, Eye, EyeSlash, Scan, X } from '@phosphor-icons/react';
+import { ArrowDown, ArrowUp, DotsSixVertical, Eye, EyeSlash, Scan, X } from '@/components/icons';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,7 +44,7 @@ export function QueryRuleActions({
             aria-label={onlyLabel}
             onClick={onOnly}
           >
-            <Scan size={16} weight="bold" />
+            <Scan size={16} />
           </button>
         </TooltipTrigger>
         <TooltipContent className="z-[90]">{onlyLabel}</TooltipContent>
@@ -59,7 +59,7 @@ export function QueryRuleActions({
             aria-pressed={!enabled}
             onClick={onToggle}
           >
-            {enabled ? <Eye size={16} weight="bold" /> : <EyeSlash size={16} weight="bold" />}
+            {enabled ? <Eye size={16} /> : <EyeSlash size={16} />}
           </button>
         </TooltipTrigger>
         <TooltipContent className="z-[90]">{toggleLabel}</TooltipContent>
@@ -74,7 +74,7 @@ export function QueryRuleActions({
             aria-label={removeLabel}
             onClick={onRemove}
           >
-            <X size={16} weight="bold" />
+            <X size={16} />
           </button>
         </TooltipTrigger>
         <TooltipContent className="z-[90]">{removeLabel}</TooltipContent>
@@ -114,7 +114,7 @@ export function QueryRuleHandle({
           disabled={disabled}
           onClick={() => setOpen((value) => !value)}
         >
-          <DotsSixVertical size={16} weight="bold" />
+          <DotsSixVertical size={16} />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent

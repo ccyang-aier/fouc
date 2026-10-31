@@ -7,7 +7,7 @@ import { messages as connectorMessages } from './sql-explain-action.messages';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import type { EditorView } from '@codemirror/view';
-import { GitBranch } from '@phosphor-icons/react';
+import { GitBranch } from '@/components/icons';
 import {
   inspectSqlTemplate,
   resolveSqlExecutionTarget,
@@ -156,7 +156,7 @@ export function SqlExplainAction({
             disabled={disabled}
             onClick={open}
           >
-            <GitBranch size={18} weight="bold" />
+            <GitBranch size={18} />
             <span>{tConnector('executionPlan')}</span>
           </button>,
           resultTriggerTarget,

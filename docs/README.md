@@ -5,6 +5,7 @@
 | 目录 | 用途 |
 | --- | --- |
 | [product/](product/README.md) | 产品定位、V1 范围与各领域权威设计 |
+| [图标系统](ui/icon-system.md)、[Emoji 系统](ui/emoji-system.md) | 与 Fob 统一的图标选型、尺寸、内容资源与检查规范 |
 | [background/](background/README.md) | 外部技术与产品研究，不作为 Fouc 实现承诺 |
 | [series/](series/00-acp-bridge-and-agent-onboarding.md) | 专题材料；涉及产品决策时以 product 下的设计为准 |
 

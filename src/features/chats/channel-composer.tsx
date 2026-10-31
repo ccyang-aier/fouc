@@ -1,14 +1,14 @@
 'use client';
 
 import { useEffect, useId, useRef, useState } from 'react';
-import { At, ChartBar, Code, ImageSquare, PaperPlaneTilt, Paperclip, Plus, TextB, TextItalic, TextT, X, ChatCircleText } from '@phosphor-icons/react';
+import { At, ChartBar, Code, ImageSquare, PaperPlaneTilt, Paperclip, Plus, TextB, TextItalic, TextT, X, ChatCircleText } from '@/components/icons';
 import { CHANNEL_FILE_LIMIT, CHANNEL_FILE_MAX_BYTES, CHANNEL_FILE_TOTAL_MAX_BYTES, type ChannelMember } from '@fouc/shared/chats';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAppAlert } from '@/components/app-alert-provider';
 import { usePageSessionState } from '@/lib/page-session-state';
 import { useTranslation } from '@/lib/i18n';
-import { ModernEmojiPicker } from '@/components/chat-emoji';
+import { EmojiPicker } from '@/components/ui/emoji-picker';
 import { ChannelAvatar, ChannelTool } from './channel-ui';
 import { ChannelTextInput, type ChannelTextInputHandle } from './channel-text-input';
 import { channelMentionQuery } from './channel-mentions';
@@ -109,11 +109,11 @@ export function ChannelComposer({ channelId, name, members, busy, disabled, thre
           <span className={styles.toolSeparator} />
           <ChannelTool label={t('attachment')} disabled={disabled || busy} onClick={() => fileInput.current?.click()}><Paperclip size={17} /></ChannelTool>
           <ChannelTool label={t('mention')} disabled={disabled || busy} onClick={() => { insert('@'); setMentionOpen(true); }}><At size={17} /></ChannelTool>
-          <ModernEmojiPicker className={styles.tool} label={t('emoji')} disabled={disabled || busy} onSelect={emoji => insert(emoji)} />
+          <EmojiPicker className={styles.tool} label={t('emoji')} disabled={disabled || busy} onSelect={emoji => insert(emoji)} />
           <ChannelTool label={t('format')} disabled={disabled || busy} aria-pressed={formatOpen} onClick={() => setFormatOpen(!formatOpen)}><TextT size={17} /></ChannelTool>
           {formatOpen && <div className={styles.formatTools}><ChannelTool label={t('bold')} disabled={busy || disabled} onClick={() => format('**')}><TextB size={16} /></ChannelTool><ChannelTool label={t('italic')} disabled={busy || disabled} onClick={() => format('*')}><TextItalic size={16} /></ChannelTool><ChannelTool label={t('code')} disabled={busy || disabled} onClick={() => format('`')}><Code size={16} /></ChannelTool></div>}
         </div>
-        <Button type="button" className={styles.sendButton} size="icon-sm" aria-label={t('send')} loading={busy} disabled={disabled || (!body.trim() && !files.length)} onClick={() => void send()}><PaperPlaneTilt size={17} weight="fill" /></Button>
+        <Button type="button" className={styles.sendButton} size="icon-sm" aria-label={t('send')} loading={busy} disabled={disabled || (!body.trim() && !files.length)} onClick={() => void send()}><PaperPlaneTilt size={17} /></Button>
       </div>
       <input ref={fileInput} type="file" multiple hidden onChange={event => { addFiles(Array.from(event.target.files ?? [])); event.target.value = ''; }} />
       <input ref={imageInput} type="file" multiple accept="image/*" hidden onChange={event => { addFiles(Array.from(event.target.files ?? [])); event.target.value = ''; }} />

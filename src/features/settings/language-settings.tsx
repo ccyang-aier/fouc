@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, Translate } from '@phosphor-icons/react';
+import { Check, Translate } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { useAppAlert } from '@/components/app-alert-provider';
 import { setLocale, type Locale } from '@/lib/i18n/locale';

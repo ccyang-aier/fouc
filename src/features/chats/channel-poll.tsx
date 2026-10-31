@@ -1,7 +1,7 @@
 'use client';
 
 import { useId, useRef, useState } from 'react';
-import { ChartBar, CheckCircle, Circle, LockSimple, Users } from '@phosphor-icons/react';
+import { ChartBar, CheckCircle, Circle, LockSimple, Users } from '@/components/icons';
 import type { ChannelMember, ChannelPoll } from '@fouc/shared/chats';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/lib/i18n';
@@ -41,7 +41,7 @@ export function ChannelPollCard({ poll, actorId, members, canVote, onVote }: {
         return <Button type="button" key={option.id} variant="ghost" className={styles.option}
           aria-pressed={selected} disabled={poll.closed || !canVote || pending !== null} loading={pending === option.id} onClick={() => void choose(option.id)}>
           <span className={styles.optionContent}>
-            {selected ? <CheckCircle className={styles.marker} size={16} weight="fill" aria-hidden /> : <Circle className={styles.marker} size={16} aria-hidden />}
+            {selected ? <CheckCircle className={styles.marker} size={16} aria-hidden /> : <Circle className={styles.marker} size={16} aria-hidden />}
             <span className={styles.optionLabel}>{option.text}</span>
             {showResults && <span className={styles.percentage}>{percentage}%</span>}
           </span>
@@ -51,7 +51,7 @@ export function ChannelPollCard({ poll, actorId, members, canVote, onVote }: {
     </div>
     <div className={styles.footer}>
       <span className={styles.voters}>{portraits.length ? <span className={styles.portraits} aria-hidden>{portraits.map(member => <ChannelAvatar key={member.id} member={member} size={18} />)}</span> : <Users size={13} aria-hidden />}{t('votes', { count: voters.length })}</span>
-      {voted && <span className={styles.voted}><CheckCircle size={12} weight="fill" aria-hidden />{t('voted')}</span>}
+      {voted && <span className={styles.voted}><CheckCircle size={12} aria-hidden />{t('voted')}</span>}
     </div>
     <p id={`${id}-hint`} className={styles.hint}>{t(poll.closed ? 'pollClosedHint' : !canVote ? 'restricted' : voted ? 'voteChangeHint' : 'voteChooseHint')}</p>
   </section>;

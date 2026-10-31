@@ -1,7 +1,7 @@
 'use client';
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './mapping-editor.messages';
-import { ArrowRight, Key, Plus, Trash } from '@phosphor-icons/react';
+import { ArrowRight, Key, Plus, Trash } from '@/components/icons';
 import type { DatabaseQueryResult } from '@fouc/shared';
 import { columnLabel } from '../result-format';
 import { inferCompareKeys, type DataCompareColumnMapping } from './model';

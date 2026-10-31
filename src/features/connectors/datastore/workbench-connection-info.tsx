@@ -3,7 +3,7 @@ import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './workbench-connection-info.messages';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Database, GridFour, Info, X } from '@phosphor-icons/react';
+import { Database, GridFour, Info, X } from '@/components/icons';
 import type { RelationalSession, RelationalTablePage } from '@fouc/shared';
 import { getOverlayRoot } from '@/lib/overlay-root';
 import { databaseCellText } from './cell-format';

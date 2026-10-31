@@ -1,6 +1,6 @@
 'use client';
 
-import { CaretDown } from '@phosphor-icons/react';
+import { CaretDown } from '@/components/icons';
 import { useState, type ReactNode, type Ref } from 'react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSearch, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { defineMessages, useTranslation } from '@/lib/i18n';

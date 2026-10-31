@@ -17,7 +17,7 @@ import {
   Table,
   TextAlignLeft,
   Timer,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import type { RelationalTableStructure } from '@fouc/shared';
 import { backendFetch } from '@/lib/backend';
 import { useAppAlert } from '@/components/app-alert-provider';

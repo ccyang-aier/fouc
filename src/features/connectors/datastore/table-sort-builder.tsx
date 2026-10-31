@@ -1,7 +1,7 @@
 'use client';
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './table-sort-builder.messages';
-import { Check } from '@phosphor-icons/react';
+import { Check } from '@/components/icons';
 import { DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import type { DatabaseColumnInfo } from '@fouc/shared';
 import type { SortDraft } from './table-sort-model';

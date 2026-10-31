@@ -2,7 +2,7 @@
 import { useTranslation } from '@/lib/i18n';
 import { formatJsonSource } from '@fouc/shared';
 import type { MongoMutationReview } from '@fouc/shared/mongo-mutation';
-import { WarningCircle } from '@phosphor-icons/react/dist/csr/WarningCircle';
+import { WarningCircle } from '@/components/icons';
 import { uiText } from '../../i18n/ui-message';
 import { mongoMutationTitle } from '../i18n/mutation-titles';
 import { messages as unitMessages } from './../i18n/mutation-review';

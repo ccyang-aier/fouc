@@ -9,7 +9,7 @@ import {
   SlidersHorizontal,
   ArrowDownAZ,
   ArrowDownZA,
-} from 'lucide-react';
+} from '@/components/icons';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,

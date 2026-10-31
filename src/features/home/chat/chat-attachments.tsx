@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { File, FilePdf, FileText, X } from "@phosphor-icons/react";
+import { File, FilePdf, FileText, X } from '@/components/icons';
 import type { ChatAttachment } from "./chat-types";
 import type { ChatText } from "./chat-messages";
 import styles from "./chat.module.css";

@@ -11,7 +11,7 @@ import {
   Lock,
   LockOpen,
   SidebarSimple,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import type {
   DatabaseObjectInfo,
   RelationalTablePage,

@@ -2,7 +2,7 @@
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './sql-result-header.messages';
 import type { ReactNode } from 'react';
-import { CaretDown, IconContext } from '@phosphor-icons/react';
+import { CaretDown } from '@/components/icons';
 import type { SqlResultView } from '@fouc/shared';
 import styles from './sql-result-header.module.css';
 export type SqlResultHeaderHost = {
@@ -42,7 +42,7 @@ export function SqlResultHeader({
 }) {
   const { t: tConnector } = useTranslation(connectorMessages);
   return (
-    <IconContext.Provider value={{ weight: 'bold', size: 16 }}>
+    <>
       <header className={styles.bar} data-empty={empty || undefined} data-view={view}>
         <div className={styles.pinSlot}>
           <div ref={onPinTarget} hidden={selectedPin} />
@@ -70,6 +70,6 @@ export function SqlResultHeader({
           <CaretDown />
         </button>
       </header>
-    </IconContext.Provider>
+    </>
   );
 }

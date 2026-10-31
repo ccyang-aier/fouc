@@ -1,6 +1,6 @@
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './project-links.messages';
-import { FolderSimple } from '@phosphor-icons/react';
+import { FolderSimple } from '@/components/icons';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -56,7 +56,7 @@ export function ConnectionProjectLinks({
           <DropdownMenuContent align="start">
             {ids.slice(1).map((id) => (
               <DropdownMenuItem key={id} disabled={!names.has(id)} onSelect={() => onOpen(id)}>
-                <FolderSimple weight="duotone" />
+                <FolderSimple />
                 {names.get(id) ?? tConnector('projectUnavailable')}
               </DropdownMenuItem>
             ))}

@@ -12,7 +12,7 @@ import {
   SquaresFour,
   TreeStructure,
   X,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,

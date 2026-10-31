@@ -5,7 +5,7 @@ import { useTranslation, type Locale, getLocale } from '@/lib/i18n';
 import { messages as connectorMessages } from './sql-editor-snippet-settings.messages';
 import { useRef, useState } from 'react';
 import type { EditorView } from '@codemirror/view';
-import { ArrowDown, ArrowUp, CodeBlock, MagnifyingGlass, Plus, Trash } from '@phosphor-icons/react';
+import { ArrowDown, ArrowUp, CodeBlock, MagnifyingGlass, Plus, Trash } from '@/components/icons';
 import {
   SQL_SNIPPET_MAX_COUNT,
   SQL_SNIPPET_MAX_PREFIX_LENGTH,

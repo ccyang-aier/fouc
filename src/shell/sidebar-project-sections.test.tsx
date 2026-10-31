@@ -24,8 +24,6 @@ beforeAll(async () => {
   for (const name of ['document', 'navigator', 'HTMLElement', 'HTMLButtonElement', 'Element', 'Node', 'Event', 'MouseEvent', 'CustomEvent', 'MutationObserver', 'getComputedStyle', 'localStorage', 'DocumentFragment']) globals[name] = (browser as unknown as Record<string, unknown>)[name];
   globals.window = browser;
   globals.IS_REACT_ACT_ENVIRONMENT = true;
-  const Icon = () => null;
-  mock.module('@phosphor-icons/react', () => ({ ChatCircleDots: Icon, DotsThree: Icon, PencilSimple: Icon, Plus: Icon, PushPin: Icon, PushPinSlash: Icon, SortAscending: Icon, ChatsCircle: Icon, Trash: Icon, CaretRight: Icon, Check: Icon, MagnifyingGlass: Icon, X: Icon }));
   mock.module('@/features/identity/identity-provider', () => ({ useIdentity: () => ({ session: { status: 'authenticated', user: { id: principal } } }) }));
   mock.module('@/features/project/project-resources', () => ({ useProjectResources: () => ({ scopeKey, principal }) }));
   mock.module('@/features/chats/channel-data', () => ({ useChannelDirectory: () => ({ data: { items: directories.get(scopeKey) ?? [] }, isError: false, refetch: async () => {} }) }));

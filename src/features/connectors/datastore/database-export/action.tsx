@@ -2,7 +2,7 @@
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './action.messages';
 import { useState } from 'react';
-import { FileArrowDown } from '@phosphor-icons/react/dist/csr/FileArrowDown';
+import { FileArrowDown } from '@/components/icons';
 import type { DatabaseObjectInfo, RelationalSession } from '@fouc/shared';
 import type { DatabaseExportTableTarget } from '@fouc/shared/database-export';
 import { SqlDialog } from '../sql-library-dialog';

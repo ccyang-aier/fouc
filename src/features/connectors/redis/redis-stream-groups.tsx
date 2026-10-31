@@ -11,7 +11,7 @@ import type {
   RedisStreamGroups,
   RedisStreamPendingPage,
 } from '@fouc/shared';
-import { ArrowsClockwise, CaretRight, Copy, UsersThree } from '@phosphor-icons/react';
+import { ArrowsClockwise, CaretRight, Copy, UsersThree } from '@/components/icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createUiMessages, uiFailure, uiText } from '../i18n/ui-message';
 import { messages as unitMessages } from './i18n/redis-stream-groups';

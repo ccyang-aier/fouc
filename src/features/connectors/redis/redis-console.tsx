@@ -10,7 +10,7 @@ import {
   Play,
   TerminalWindow,
   Trash,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { createUiMessages, uiFailure, uiText, type UiMessage } from '../i18n/ui-message';
 import { messages as unitMessages } from './i18n/redis-console';

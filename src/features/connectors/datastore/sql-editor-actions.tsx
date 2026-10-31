@@ -10,7 +10,7 @@ import {
   ArrowsInLineVertical,
   ArrowsOutLineVertical,
   TextAlignJustify,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import { useAppAlert } from '@/components/app-alert-provider';
 import { sqlKeywordCaseChanges } from './sql-editor-commands';
 export function SqlEditorActions({

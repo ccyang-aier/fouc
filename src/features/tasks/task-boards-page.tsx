@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Kanban, LockSimple, Plus, Users } from '@phosphor-icons/react';
+import { Kanban, LockSimple, Plus, Users } from '@/components/icons';
 import type { BoardTask, TaskBoardDetail, TaskBoardSummary, TaskColumn, TaskBoardView, CreateTaskBoardViewInput } from '@fouc/shared/tasks';
 import { AppAlert } from '@/components/app-alert';
 import { useAppAlert } from '@/components/app-alert-provider';
@@ -160,7 +160,7 @@ function TaskBoardsContent({ projectId, actorId }: { projectId: string; actorId:
 }
 
 function EmptyBoardIllustration() {
-  return <div className={styles.emptyIllustration} aria-hidden>{['slate', 'blue', 'green'].map((color, index) => <div key={color}><span className={styles.statusDot} data-color={color} /><i /><span className={styles.illustrationCard}><Kanban size={index === 1 ? 21 : 17} weight="duotone" /><i /><i /></span>{index !== 2 && <span className={styles.illustrationCard}><i /><i /></span>}</div>)}</div>;
+  return <div className={styles.emptyIllustration} aria-hidden>{['slate', 'blue', 'green'].map((color, index) => <div key={color}><span className={styles.statusDot} data-color={color} /><i /><span className={styles.illustrationCard}><Kanban size={index === 1 ? 21 : 17} /><i /><i /></span>{index !== 2 && <span className={styles.illustrationCard}><i /><i /></span>}</div>)}</div>;
 }
 function BoardSkeleton() {
   const { t } = useTranslation(messages);

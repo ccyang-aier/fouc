@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from 'react';
-import { Check } from '@phosphor-icons/react';
+import { Check } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import type { ChatText } from './chat-messages';

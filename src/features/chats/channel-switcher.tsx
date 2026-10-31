@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CaretDown, Check, Hash, Plus, Star } from '@phosphor-icons/react';
+import { CaretDown, Check, Hash, Plus, Star } from '@/components/icons';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSearch, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import type { ChannelWorkbench } from './use-channel-workbench';
 import { ChannelIcon } from './channel-ui';
@@ -20,7 +20,7 @@ export function ChannelSwitcher({ workbench: w }: { workbench: ChannelWorkbench 
     .sort((a, b) => Number(w.preferences.favorites.includes(b.id)) - Number(w.preferences.favorites.includes(a.id)));
   return <DropdownMenu open={open} onOpenChange={value => { setOpen(value); if (!value) setSearch(''); }}>
     <DropdownMenuTrigger className={styles.channelTrigger} aria-label={t('switchChannel')}>
-      {channel ? <ChannelIcon channel={channel} size={18} /> : <Hash size={15} weight="bold" />}<span>{channel?.name ?? t('channels')}</span><CaretDown size={10} weight="bold" />
+      {channel ? <ChannelIcon channel={channel} size={18} /> : <Hash size={15} />}<span>{channel?.name ?? t('channels')}</span><CaretDown size={10} />
     </DropdownMenuTrigger>
     {open && <DropdownMenuContent align="start" density="compact" className={styles.channelMenu}>
       <DropdownMenuSearch value={search} onValueChange={setSearch} placeholder={t('searchChannels')} clearLabel={t('clearSearch')} />

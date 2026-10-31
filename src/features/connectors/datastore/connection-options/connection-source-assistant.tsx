@@ -3,7 +3,7 @@ import { uiText, type UiMessage, uiFailure, createUiMessages } from '../../i18n/
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './connection-source-assistant.messages';
 import { useId, useState } from 'react';
-import { ArrowDown, Check, Copy, Link, WarningCircle } from '@phosphor-icons/react';
+import { ArrowDown, Check, Copy, Link, WarningCircle } from '@/components/icons';
 import type { NativeNetworkProvider } from '@fouc/shared/connection-options';
 import {
   buildConnectionSource,

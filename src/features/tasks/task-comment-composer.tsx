@@ -1,6 +1,6 @@
 'use client';
 
-import { ImageSquare, X } from '@phosphor-icons/react';
+import { ImageSquare, X } from '@/components/icons';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { TASK_COMMENT_IMAGE_LIMIT, TASK_COMMENT_IMAGE_MAX_BYTES, TASK_COMMENT_IMAGE_MIME_TYPES } from '@fouc/shared/tasks';
 import { AppAlert } from '@/components/app-alert';

@@ -5,7 +5,7 @@ import { messages as connectorMessages } from './sql-library-dialog.messages';
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { getOverlayRoot } from '@/lib/overlay-root';
-import { X } from '@phosphor-icons/react';
+import { X } from '@/components/icons';
 import { sqlFolderPath, type SavedSqlDocument, type SavedSqlLibrary } from '@fouc/shared';
 import { backendFetch } from '@/lib/backend';
 import common from './relational.module.css';

@@ -3,7 +3,7 @@ import { uiText, type UiMessage, uiFailure, createUiMessages } from '../../i18n/
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './tag-dialog.messages';
 import { useState, type FormEvent } from 'react';
-import { Plus, X } from '@phosphor-icons/react';
+import { Plus, X } from '@/components/icons';
 import { SqlDialog } from '../sql-library-dialog';
 import { appendConnectionTags } from './batch';
 import common from '../relational.module.css';

@@ -79,8 +79,6 @@ beforeAll(async () => {
   globals.window = browser;
   globals.IS_REACT_ACT_ENVIRONMENT = true;
   browser.localStorage.setItem('fouc.language', 'en-US');
-  const icon = () => <svg aria-hidden />;
-  mock.module('@phosphor-icons/react', () => ({ LockSimple: icon, Plus: icon, SquaresFour: icon }));
   mock.module('@/components/ui/button', () => ({ Button: ({ children, onClick }: { children: ReactNode; onClick?: () => void }) => <button type="button" data-empty-create onClick={onClick}>{children}</button> }));
   mock.module('./task-board-toolbar', () => ({ TaskBoardToolbar: ToolbarFixture }));
   mock.module('./task-view-form', () => ({ TaskViewForm: FormFixture }));

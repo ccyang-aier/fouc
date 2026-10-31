@@ -13,7 +13,7 @@ import { messages } from './i18n/sign-in-form.messages';
 import { useState, type FormEvent } from 'react';
 import { useIdentity } from '../identity-provider';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowRight } from '@phosphor-icons/react';
+import { ArrowLeft, ArrowRight } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { authErrorCopyFor, isFoucAuthFlowError } from '../auth-errors';
 import { foucAuthApi, type FoucAuthApi } from '../auth-api';

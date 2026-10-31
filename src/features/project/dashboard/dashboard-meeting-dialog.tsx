@@ -8,7 +8,7 @@ import { fixtureField } from '../i18n/display';
 import { messages } from './i18n/dashboard-meeting-dialog';
 
 import { useAppAlert } from '@/components/app-alert-provider';
-import { CalendarBlank, LinkSimple, Trash } from '@phosphor-icons/react';
+import { CalendarBlank, LinkSimple, Trash } from '@/components/icons';
 import { useState } from 'react';
 import { DashboardDeleteDialog } from './dashboard-actions';
 import common from './dashboard-actions.module.css';

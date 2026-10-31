@@ -2,7 +2,7 @@
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './detail.messages';
 import { useMemo, useState } from 'react';
-import { ArrowRight } from '@phosphor-icons/react/dist/csr/ArrowRight';
+import { ArrowRight } from '@/components/icons';
 import {
   databaseRolePaths,
   type DatabasePrincipal,

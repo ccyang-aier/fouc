@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { CaretRight } from "@phosphor-icons/react";
+import { CaretRight } from '@/components/icons';
 import { Button } from "@/components/ui/button";
 import type { ChatText } from "./chat-messages";
 import styles from "./chat-tools-link.module.css";

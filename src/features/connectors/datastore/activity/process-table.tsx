@@ -3,8 +3,8 @@ import { uiText, type UiMessage, uiFailure, createUiMessages } from '../../i18n/
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './process-table.messages';
 import { useMemo, useState } from 'react';
-import { Copy } from '@phosphor-icons/react/dist/csr/Copy';
-import { X } from '@phosphor-icons/react/dist/csr/X';
+import { Copy, X } from '@/components/icons';
+
 import type {
   DatabaseActivityProcess,
   DatabaseActivitySnapshot,

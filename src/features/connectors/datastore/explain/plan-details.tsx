@@ -1,6 +1,6 @@
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './plan-details.messages';
-import { WarningCircle } from '@phosphor-icons/react/dist/csr/WarningCircle';
+import { WarningCircle } from '@/components/icons';
 import type { PlanCanvasNode } from './plan-canvas';
 import { PLAN_CATEGORY_LABELS, planDetailEntries, planNodeWarnings } from './plan-presentation';
 import styles from './explain.module.css';

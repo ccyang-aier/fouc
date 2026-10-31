@@ -22,7 +22,7 @@ import {
   X,
   Rows,
   ArrowsOutSimple,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import type { DatabaseCell } from '@fouc/shared';
 import { createPortal } from 'react-dom';
 import { getOverlayRoot } from '@/lib/overlay-root';
@@ -150,14 +150,14 @@ export function GridContextMenu({
                 disabled={actions.queryDisabled}
                 onSelect={() => actions.onDatabaseSort(cell.columnName, 'asc')}
               >
-                <Database weight="bold" />
+                <Database />
                 {tConnector('sortAscendingInDatabase')}
               </DropdownMenuItem>
               <DropdownMenuItem
                 disabled={actions.queryDisabled}
                 onSelect={() => actions.onDatabaseSort(cell.columnName, 'desc')}
               >
-                <Database weight="bold" />
+                <Database />
                 {tConnector('sortDescendingInDatabase')}
               </DropdownMenuItem>
             </DropdownMenuGroup>
@@ -167,14 +167,14 @@ export function GridContextMenu({
                 disabled={actions.queryDisabled}
                 onSelect={() => actions.onPageSort(cell.columnIndex, 'asc')}
               >
-                <ArrowUp weight="bold" />
+                <ArrowUp />
                 {tConnector('sortCurrentPageAscending')}
               </DropdownMenuItem>
               <DropdownMenuItem
                 disabled={actions.queryDisabled}
                 onSelect={() => actions.onPageSort(cell.columnIndex, 'desc')}
               >
-                <ArrowDown weight="bold" />
+                <ArrowDown />
                 {tConnector('sortCurrentPageDescending')}
               </DropdownMenuItem>
             </DropdownMenuGroup>
@@ -185,7 +185,7 @@ export function GridContextMenu({
           {actions && (
             <DropdownMenuSub>
               <DropdownMenuSubTrigger disabled={actions.queryDisabled}>
-                <Funnel weight="bold" />
+                <Funnel />
                 {tConnector('filter')}
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent
@@ -220,7 +220,7 @@ export function GridContextMenu({
           )}
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>
-              <Highlighter weight="bold" />
+              <Highlighter />
               {tConnector('highlight')}
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent
@@ -245,7 +245,7 @@ export function GridContextMenu({
           </DropdownMenuSub>
           <DropdownMenuSeparator />
           <DropdownMenuItem disabled={!canHideEqual} onSelect={onHideEqual}>
-            <EyeSlash weight="bold" />
+            <EyeSlash />
             {tConnector('hideColumnsWithIdenticalNumericValues')}
           </DropdownMenuItem>
           {hasHiddenColumns && (
@@ -254,15 +254,15 @@ export function GridContextMenu({
             </DropdownMenuItem>
           )}
           <DropdownMenuItem onSelect={onCellDetails}>
-            <ArrowsOutSimple weight="bold" />
+            <ArrowsOutSimple />
             {tConnector('cellDetails')}
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={onColumnDetails}>
-            <Table weight="bold" />
+            <Table />
             {tConnector('columnDetails')}
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={onRowDetails}>
-            <Rows weight="bold" />
+            <Rows />
             {tConnector('rowDetails')}
           </DropdownMenuItem>
         </DropdownMenuGroup>
@@ -270,7 +270,7 @@ export function GridContextMenu({
         <DropdownMenuGroup>
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>
-              <Copy weight="bold" />
+              <Copy />
               {tConnector('copy')}
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent
@@ -307,16 +307,16 @@ export function GridContextMenu({
                 onSelect={() => actions.onEdit('null', scope)}
                 title={!actions.writable ? tConnector('unlockTableWritesToEdit') : undefined}
               >
-                <X weight="bold" />
+                <X />
                 {tConnector('setToNull')}
               </DropdownMenuItem>
               <DropdownMenuItem disabled={blocked} onSelect={() => actions.onEdit('fill', scope)}>
-                <PencilSimple weight="bold" />
+                <PencilSimple />
                 {tConnector('bulkEditSelection')}
               </DropdownMenuItem>
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger disabled={blocked}>
-                  <MagicWand weight="bold" />
+                  <MagicWand />
                   {tConnector('generateValues')}
                 </DropdownMenuSubTrigger>
                 <DropdownMenuSubContent
@@ -338,18 +338,18 @@ export function GridContextMenu({
             </>
           )}
           <DropdownMenuItem onSelect={onTranspose}>
-            <ArrowsLeftRight weight="bold" />
+            <ArrowsLeftRight />
             {tConnector('transposeView')}
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={onClear}>
-            <List weight="bold" />
+            <List />
             {tConnector('clearSelection')}
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem onSelect={onScreenshot}>
-            <Camera weight="bold" />
+            <Camera />
             {tConnector('captureSelectedRegion')}
           </DropdownMenuItem>
         </DropdownMenuGroup>
@@ -361,7 +361,7 @@ export function GridContextMenu({
                 disabled={!actions.writable || !actions.canClone}
                 onSelect={() => actions.onEdit('clone', scope)}
               >
-                <Copy weight="bold" />
+                <Copy />
                 {tConnector('clone')}
                 {scope.rows.length}
                 {tConnector('rowsAsNewRows')}
@@ -371,7 +371,7 @@ export function GridContextMenu({
                 disabled={!actions.writable || !actions.canDelete}
                 onSelect={() => actions.onEdit('delete', scope)}
               >
-                <Trash weight="bold" />
+                <Trash />
                 {tConnector('delete')}
                 {scope.rows.length}
                 {tConnector('row')}
@@ -381,7 +381,7 @@ export function GridContextMenu({
             <DropdownMenuGroup>
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger disabled={!scope.rectangular}>
-                  <DownloadSimple weight="bold" />
+                  <DownloadSimple />
                   {tConnector('export')}
                 </DropdownMenuSubTrigger>
                 <DropdownMenuSubContent
@@ -402,7 +402,7 @@ export function GridContextMenu({
         <DropdownMenuGroup>
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>
-              <ArrowSquareOut weight="bold" />
+              <ArrowSquareOut />
               {tConnector('openAs')}
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent
@@ -437,7 +437,7 @@ export function GridContextMenu({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem disabled={actions.queryDisabled} onSelect={actions.onRefresh}>
-                <ArrowsClockwise weight="bold" />
+                <ArrowsClockwise />
                 {tConnector('refresh')}
                 <span className={styles.shortcut}>Ctrl R</span>
               </DropdownMenuItem>

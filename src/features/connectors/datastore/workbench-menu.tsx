@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { CaretDown } from '@phosphor-icons/react';
+import { CaretDown } from '@/components/icons';
 import styles from './dbx-workbench.module.css';
 
 /** Keep feature dialogs mounted when their action closes the tool menu. */

@@ -6,10 +6,10 @@ import {
   type MongoMutationReview,
   type MongoMutationSummary,
 } from '@fouc/shared/mongo-mutation';
-import { ArrowRight } from '@phosphor-icons/react/dist/csr/ArrowRight';
-import { CheckCircle } from '@phosphor-icons/react/dist/csr/CheckCircle';
-import { SpinnerGap } from '@phosphor-icons/react/dist/csr/SpinnerGap';
-import { X } from '@phosphor-icons/react/dist/csr/X';
+import { ArrowRight, CheckCircle, SpinnerGap, X } from '@/components/icons';
+
+
+
 import { useEffect, useRef, useState } from 'react';
 import { uiFailure, uiText, type UiMessage } from '../../i18n/ui-message';
 import { mongoMutationTitle } from '../i18n/mutation-titles';
@@ -229,7 +229,7 @@ function Workflow({
       <div className={styles.body}>
         {summary ? (
           <div className={styles.success}>
-            <CheckCircle size={36} weight="duotone" />
+            <CheckCircle size={36} />
             <h3>
               {title}
               {tu('已完成')}

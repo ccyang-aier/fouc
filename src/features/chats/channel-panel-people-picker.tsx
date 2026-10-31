@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import type { ProjectMember } from '@fouc/shared/projects';
-import { Check, MagnifyingGlass } from '@phosphor-icons/react';
+import { Check, MagnifyingGlass } from '@/components/icons';
 import { UserAvatar } from '@/components/user-avatar';
 import { useTranslation } from '@/lib/i18n';
 import { panelMessages } from './channel-panels.messages';
@@ -21,7 +21,7 @@ export function ChannelPeoplePicker({ people, selected, onChange, emptyLabel, au
       {matching.map(person => <button key={person.userId} type="button" className={`fouc-action ${styles.personOption}`} data-surface="plain" aria-pressed={selected.includes(person.userId)} onClick={() => onChange(selected.includes(person.userId) ? selected.filter(id => id !== person.userId) : [...selected, person.userId])}>
         <UserAvatar name={person.name} image={person.image} className={styles.smallAvatar} />
         <span className={styles.personIdentity}><strong>{person.name}</strong><small>{person.email}</small></span>
-        <span className={styles.checkBox} aria-hidden>{selected.includes(person.userId) && <Check size={12} weight="bold" />}</span>
+        <span className={styles.checkBox} aria-hidden>{selected.includes(person.userId) && <Check size={12} />}</span>
       </button>)}
       {!matching.length && <p className={styles.emptySmall}>{emptyLabel && !term ? emptyLabel : t('noPeople')}</p>}
     </div>

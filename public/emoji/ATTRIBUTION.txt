@@ -1,9 +1,0 @@
-Chat emoji artwork
-
-All emoji artwork uses Twemoji 17.0.2 graphics by Twitter, Inc. and other contributors under Creative Commons Attribution 4.0 International (CC BY 4.0): https://creativecommons.org/licenses/by/4.0/
-Source: https://github.com/jdecked/twemoji/tree/v17.0.2
-The original SVG artwork is distributed without modification.
-
-Emoji names, grouping and Chinese/English search annotations use Unicode Emoji 17 and Unicode CLDR data under the accompanying Unicode license. Source: https://github.com/unicode-org/cldr-json
-
-Exact revisions are recorded in sources.json. Rebuild with `node scripts/build-chat-emoji-assets.mjs`; no CDN is contacted by the application at runtime.

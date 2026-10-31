@@ -8,7 +8,7 @@ import { registerProjectFixtures } from '../i18n/display';
 import { messages } from './i18n/dashboard-document-dialog';
 
 import { useAppAlert } from '@/components/app-alert-provider';
-import { DownloadSimple, LinkSimple, Star, Trash } from '@phosphor-icons/react';
+import { DownloadSimple, LinkSimple, Star, StarOutline, Trash } from '@/components/icons';
 import { useState } from 'react';
 import { DashboardDeleteDialog } from './dashboard-actions';
 import common from './dashboard-actions.module.css';
@@ -226,7 +226,7 @@ export function DashboardDocumentDialog({
             aria-pressed={draft.starred}
             onClick={() => setDraft((current) => ({ ...current, starred: !current.starred }))}
           >
-            <Star size={16} weight={draft.starred ? 'fill' : 'regular'} />
+            {draft.starred ? <Star size={16} /> : <StarOutline size={16} />}
           </IconButton>
           {savedDocument ? (
             <IconButton label={t('Copy document link')} onClick={() => void copyLink()}>

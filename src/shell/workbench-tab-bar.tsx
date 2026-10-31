@@ -2,7 +2,7 @@
 
 import { useId, useRef, useState, type KeyboardEvent, type MouseEvent, type Ref } from 'react';
 import { AnimatePresence, LayoutGroup, motion, Reorder, useDragControls, useIsPresent } from 'motion/react';
-import { CaretLeft, CaretRight, PushPin, Plus, X } from '@phosphor-icons/react';
+import { CaretLeft, CaretRight, PushPin, Plus, X } from '@/components/icons';
 import { useTranslation } from '@/lib/i18n';
 import { workbenchPages, type WorkbenchPage } from './workbench-pages';
 import { workbenchPanelId, workbenchTabId, type TabAction, type TabCloseAction, type WorkbenchTab } from './workbench-tabs';
@@ -58,8 +58,8 @@ export function WorkbenchTabBar({ tabs, active, revealRequest, titles, onActivat
     focusSelected();
   }
   const contextIndex = context ? tabs.findIndex(tab => tab.instance === context.instance) : -1;
-  return <div ref={strip} className={styles.strip} data-tauri-drag-region="false">
-    {edges.overflow && <button type="button" className={`fouc-action ${styles.browse}`} aria-label={t('向左浏览页签')} title={t('向左浏览页签')} disabled={!edges.left} onClick={() => browse(-1)}><CaretLeft size={13} aria-hidden /></button>}
+  return <div ref={strip} className={styles.strip} data-single={tabs.length === 1} data-tauri-drag-region="false">
+    {edges.overflow && <button type="button" className={`fouc-action ${styles.browse}`} aria-label={t('向左浏览页签')} title={t('向左浏览页签')} disabled={!edges.left} onClick={() => browse(-1)}><CaretLeft size={14} aria-hidden /></button>}
     <div className={styles.scroller} data-hidden-left={edges.left} data-hidden-right={edges.right}>
     <motion.div ref={viewport} layoutScroll className={styles.viewport}>
       <LayoutGroup id={group}>
@@ -79,10 +79,10 @@ export function WorkbenchTabBar({ tabs, active, revealRequest, titles, onActivat
       </LayoutGroup>
     </motion.div>
     </div>
-    {edges.overflow && <button type="button" className={`fouc-action ${styles.browse}`} aria-label={t('向右浏览页签')} title={t('向右浏览页签')} disabled={!edges.right} onClick={() => browse(1)}><CaretRight size={13} aria-hidden /></button>}
+    {edges.overflow && <button type="button" className={`fouc-action ${styles.browse}`} aria-label={t('向右浏览页签')} title={t('向右浏览页签')} disabled={!edges.right} onClick={() => browse(1)}><CaretRight size={14} aria-hidden /></button>}
     <button ref={newButton} type="button" className={`fouc-action ${styles.newTab}`} aria-label={t('新建标签页')} title={t('新建标签页')} aria-haspopup="menu" aria-expanded={Boolean(newContext)} onClick={() => newTab()}
       onContextMenu={event => { event.preventDefault(); setContext(null); setNewContext({ x: event.clientX, y: event.clientY }); }}
-      onKeyDown={event => { if (event.key === 'ContextMenu' || event.shiftKey && event.key === 'F10') { event.preventDefault(); const bounds = event.currentTarget.getBoundingClientRect(); setContext(null); setNewContext({ x: bounds.left, y: bounds.bottom }); } }}><Plus size={17} aria-hidden /></button>
+      onKeyDown={event => { if (event.key === 'ContextMenu' || event.shiftKey && event.key === 'F10') { event.preventDefault(); const bounds = event.currentTarget.getBoundingClientRect(); setContext(null); setNewContext({ x: bounds.left, y: bounds.bottom }); } }}><Plus size={16} aria-hidden /></button>
     {context && contextIndex >= 0 && <WorkbenchTabMenu key={context.instance} point={context} pinned={Boolean(tabs[contextIndex].pinned)} hasOthers={tabs.length > 1} onClose={() => setContext(null)} onAction={value => action(tabs[contextIndex].key, value)} onReturnFocus={focusSelected} />}
     {newContext && <WorkbenchNewTabMenu point={newContext} onClose={() => setNewContext(null)} onNew={newTab} onReturnFocus={() => newButton.current?.focus()} />}
   </div>;
@@ -101,13 +101,13 @@ function TabItem({ ref, tab, title, closeLabel, selected, animatePosition, onAct
   const Icon = workbenchPages[tab.view].icon;
   return <Reorder.Item ref={ref} as="div" value={tab.instance} layout="position" dragListener={false} dragControls={controls} dragMomentum={false} dragTransition={{ bounceStiffness: 600, bounceDamping: 40 }}
     data-dragging={dragging} data-selected={active} data-pinned={Boolean(tab.pinned)} aria-hidden={!present || undefined} inert={!present} className={`fouc-action ${styles.item}`}
-    style={{ width: (tab.conversationId ? 164 : 128) + (tab.pinned ? 16 : 0) }} initial={{ opacity: 0, scale: .96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: .96, transition: { duration: .12 } }} whileDrag={{ scale: 1.015 }} transition={{ type: 'spring', stiffness: 430, damping: 38, mass: .7, layout: animatePosition ? { type: 'spring', stiffness: 430, damping: 38, mass: .7 } : { duration: 0 } }}
+    style={{ width: 128 + (tab.pinned ? 16 : 0) }} initial={{ opacity: 0, scale: .96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: .96, transition: { duration: .12 } }} whileDrag={{ scale: 1.015 }} transition={{ type: 'spring', stiffness: 430, damping: 38, mass: .7, layout: animatePosition ? { type: 'spring', stiffness: 430, damping: 38, mass: .7 } : { duration: 0 } }}
     onDragStart={() => { moved.current = true; setDragging(true); onDragStart(); }} onDragEnd={() => { setDragging(false); onDragEnd(); }}
     onContextMenu={onContextMenu}>
     {active && <motion.span layoutId="selected-tab" className={styles.active} transition={{ type: 'spring', stiffness: 480, damping: 40 }} />}
     <button type="button" id={workbenchTabId(tab.instance)} role="tab" className={styles.select} aria-selected={active} aria-controls={workbenchPanelId(tab.instance)} aria-haspopup="menu" tabIndex={active ? 0 : -1} title={title}
       onPointerDown={event => { if (event.button === 0) { moved.current = false; controls.start(event, { distanceThreshold: 5 }); } }}
-      onClick={event => { if (!moved.current || event.detail === 0) onActivate(); }} onKeyDown={onKeyDown}><Icon size={16} weight="duotone" aria-hidden /><span>{title}</span>{tab.pinned && <PushPin className={styles.pin} size={12} weight="duotone" aria-hidden />}</button>
-    <button type="button" className={`fouc-action ${styles.close}`} data-variant="nested" aria-label={closeLabel} tabIndex={active ? 0 : -1} onClick={onClose}><X size={13} aria-hidden /></button>
+      onClick={event => { if (!moved.current || event.detail === 0) onActivate(); }} onKeyDown={onKeyDown}><Icon size={16} aria-hidden /><span>{title}</span>{tab.pinned && <PushPin className={styles.pin} size={12} aria-hidden />}</button>
+    <button type="button" className={`fouc-action ${styles.close}`} data-variant="nested" aria-label={closeLabel} tabIndex={active ? 0 : -1} onClick={onClose}><X size={14} aria-hidden /></button>
   </Reorder.Item>;
 }

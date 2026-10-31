@@ -5,7 +5,7 @@ import { useTranslation } from '@/lib/i18n';
 import { fixtureField } from '../i18n/display';
 import { messages } from './i18n/dashboard-project-dialog';
 
-import { Plus, Trash } from '@phosphor-icons/react';
+import { Plus, Trash } from '@/components/icons';
 import { useId, useState } from 'react';
 import { DashboardModal } from './dashboard-modal';
 import type { DashboardPriority, DashboardProject, DashboardTask } from './dashboard-model';

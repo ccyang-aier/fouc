@@ -3,15 +3,15 @@ import { schemaObjectLabel } from './labels';
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './panel.messages';
 import { useEffect, useState } from 'react';
-import { ArrowsClockwise } from '@phosphor-icons/react/dist/csr/ArrowsClockwise';
-import { Code } from '@phosphor-icons/react/dist/csr/Code';
-import { Stack } from '@phosphor-icons/react/dist/csr/Stack';
-import { Lightning } from '@phosphor-icons/react/dist/csr/Lightning';
-import { Function as FunctionIcon } from '@phosphor-icons/react/dist/csr/Function';
-import { ListNumbers } from '@phosphor-icons/react/dist/csr/ListNumbers';
-import { MagnifyingGlass } from '@phosphor-icons/react/dist/csr/MagnifyingGlass';
-import { CaretLeft } from '@phosphor-icons/react/dist/csr/CaretLeft';
-import { CaretRight } from '@phosphor-icons/react/dist/csr/CaretRight';
+import { ArrowsClockwise, Code, Stack, Lightning, Function as FunctionIcon, ListNumbers, MagnifyingGlass, CaretLeft, CaretRight } from '@/components/icons';
+
+
+
+
+
+
+
+
 import {
   SCHEMA_OBJECT_KINDS,
   type SchemaObject,

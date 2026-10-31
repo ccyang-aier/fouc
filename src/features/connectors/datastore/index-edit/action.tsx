@@ -4,12 +4,12 @@ import { uiText, type UiMessage, createUiMessages } from '../../i18n/ui-message'
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './action.messages';
 import { useEffect, useState } from 'react';
-import { CheckCircle } from '@phosphor-icons/react/dist/csr/CheckCircle';
-import { Copy } from '@phosphor-icons/react/dist/csr/Copy';
-import { LockOpen } from '@phosphor-icons/react/dist/csr/LockOpen';
-import { SpinnerGap } from '@phosphor-icons/react/dist/csr/SpinnerGap';
-import { TreeStructure } from '@phosphor-icons/react/dist/csr/TreeStructure';
-import { Warning } from '@phosphor-icons/react/dist/csr/Warning';
+import { CheckCircle, Copy, LockOpen, SpinnerGap, TreeStructure, Warning } from '@/components/icons';
+
+
+
+
+
 import type { RelationalSession } from '@fouc/shared';
 import { SqlDialog } from '../sql-library-dialog';
 import { IndexDesigner } from './designer';

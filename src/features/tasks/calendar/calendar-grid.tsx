@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef } from 'react';
-import { CalendarPlus } from '@phosphor-icons/react';
+import { CalendarPlus } from '@/components/icons';
 import type { BoardTask, TaskBoardDetail, TaskSchedule } from '@fouc/shared/tasks';
 import { useTranslation } from '@/lib/i18n';
 import { localDay } from '../task-board-model';

@@ -19,7 +19,7 @@ import {
   Sparkle,
   Tag,
   TextT,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 
 import { cn } from '@/lib/utils';
 import { SidebarResizeHandle } from '@/components/sidebar-resize';
@@ -160,7 +160,7 @@ export function CommunityFacets({
           onClick={() => setCollapsed(false)}
           className="mt-2.5 flex size-7 items-center justify-center rounded-[6px] text-[var(--muted)] outline-none hover:bg-sidebar-hover hover:text-[var(--ink-soft)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
         >
-          <CaretRight className="size-3.5" weight="bold" />
+          <CaretRight className="size-3.5" />
         </button>
         <div className="mt-2 flex flex-col gap-1">
           {TYPE_ITEMS.map((item) => {
@@ -185,7 +185,6 @@ export function CommunityFacets({
                     'size-4',
                     active ? 'text-[var(--accent-ink)]' : 'text-[var(--muted)]',
                   )}
-                  weight={active ? 'fill' : 'duotone'}
                 />
               </button>
             );
@@ -215,7 +214,7 @@ export function CommunityFacets({
             onClick={() => setCollapsed(true)}
             className="flex size-6 items-center justify-center rounded-[5px] text-[var(--muted)] outline-none hover:bg-sidebar-hover hover:text-[var(--ink-soft)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
           >
-            <CaretLeft className="size-3" weight="bold" />
+            <CaretLeft className="size-3" />
           </button>
         </div>
 
@@ -233,7 +232,7 @@ export function CommunityFacets({
               <FacetRow
                 key={item.id}
                 active={active}
-                icon={<Icon className="size-4" weight={active ? 'fill' : 'duotone'} />}
+                icon={<Icon className="size-4" />}
                 label={typeLabels[item.id]}
                 count={typeCounts[item.id]}
                 onClick={() => {
@@ -265,7 +264,6 @@ export function CommunityFacets({
                   <Icon
                     className="size-4"
                     style={{ color: active ? 'var(--accent-ink)' : item.color }}
-                    weight={active ? 'fill' : 'duotone'}
                   />
                 }
                 label={communityCategoryLabel(item.id, locale)}
@@ -298,7 +296,7 @@ export function CommunityFacets({
               }}
               className="ml-auto flex size-5 items-center justify-center rounded-[4px] text-[var(--muted)] hover:bg-sidebar-hover hover:text-[var(--ink-soft)]"
             >
-              <Plus className="size-3" weight="bold" />
+              <Plus className="size-3" />
             </button>
           }
         >
@@ -325,7 +323,7 @@ export function CommunityFacets({
                 onClick={addTag}
                 className="flex size-7 items-center justify-center rounded-[5px] bg-[var(--accent)] text-[var(--accent-foreground)]"
               >
-                <Plus className="size-3" weight="bold" />
+                <Plus className="size-3" />
               </button>
             </div>
           ) : null}
@@ -429,7 +427,7 @@ function FacetSection({
           onClick={onToggle}
           className="group flex min-w-0 flex-1 items-center gap-1.5 rounded-[5px] px-1.5 py-1 text-left text-[10.5px] font-normal text-[var(--muted)] outline-none hover:bg-sidebar-hover hover:text-[var(--muted-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
         >
-          <Icon className="size-3.5 shrink-0" weight="duotone" />
+          <Icon className="size-3.5 shrink-0" />
           <span>{label}</span>
           <span className="font-mono text-[9px]">({count})</span>
           <CaretDown
@@ -437,7 +435,6 @@ function FacetSection({
               'ml-0.5 size-2.5 transition-transform duration-150',
               !open && '-rotate-90',
             )}
-            weight="fill"
           />
         </button>
         {action}

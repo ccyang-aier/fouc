@@ -1,6 +1,6 @@
 'use client';
 import { useTranslation } from '@/lib/i18n';
-import { Check, Copy, MagnifyingGlass, Stop } from '@phosphor-icons/react';
+import { Check, Copy, MagnifyingGlass, Stop } from '@/components/icons';
 import { useEffect, useRef, useState } from 'react';
 import { createUiMessages, uiText, type UiMessage } from '../i18n/ui-message';
 import { messages as unitMessages } from './i18n/redis-monitor-output';

@@ -10,7 +10,7 @@ import {
   DoorOpen,
   User,
   UserCircle,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import { useRef, useState } from 'react';
 import {
   DropdownMenu,
@@ -167,7 +167,7 @@ export function AccountItem({ compact = false }: { compact?: boolean }) {
                     <span>{option.label}</span>
                     <span className={styles.statusDescription}>{option.description}</span>
                   </span>
-                  {presencePreference === option.value ? <Check weight="bold" /> : null}
+                  {presencePreference === option.value ? <Check /> : null}
                 </DropdownMenuItem>
               ))}
               <p className={styles.statusNote}>{uiText('在线时，5 分钟无操作自动显示离开。')}</p>
@@ -180,7 +180,7 @@ export function AccountItem({ compact = false }: { compact?: boolean }) {
               openSignIn();
             }}
           >
-            <UserCircle weight="duotone" />
+            <UserCircle />
             {uiText('个人信息')}
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -190,7 +190,7 @@ export function AccountItem({ compact = false }: { compact?: boolean }) {
               openSwitchAccount();
             }}
           >
-            <Users weight="duotone" />
+            <Users />
             {uiText('切换账户')}
           </DropdownMenuItem>
           <DropdownMenuSeparator className={styles.separator} />
@@ -202,7 +202,7 @@ export function AccountItem({ compact = false }: { compact?: boolean }) {
               setLogoutOpen(true);
             }}
           >
-            <DoorOpen weight="duotone" />
+            <DoorOpen />
             {uiText('退出登录')}
           </DropdownMenuItem>
         </DropdownMenuContent>}

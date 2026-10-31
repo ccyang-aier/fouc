@@ -3,10 +3,10 @@ import { uiText, type UiMessage, uiFailure, createUiMessages } from '../../i18n/
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './panel.messages';
 import { useEffect, useRef, useState } from 'react';
-import { Database } from '@phosphor-icons/react/dist/csr/Database';
-import { DownloadSimple } from '@phosphor-icons/react/dist/csr/DownloadSimple';
-import { ArrowRight } from '@phosphor-icons/react/dist/csr/ArrowRight';
-import { Stop } from '@phosphor-icons/react/dist/csr/Stop';
+import { Database, DownloadSimple, ArrowRight, Stop } from '@/components/icons';
+
+
+
 import type { RelationalProvider } from '@fouc/shared';
 import {
   DEFAULT_DATABASE_EXPORT_INPUT,
@@ -137,7 +137,7 @@ function Panel({
       <header className={styles.header}>
         <div className={styles.heading}>
           <span className={styles.headerIcon}>
-            <Database size={21} weight="duotone" />
+            <Database size={21} />
           </span>
           <div>
             <span className={styles.eyebrow}>{tConnector('nativeDatabaseExport')}</span>

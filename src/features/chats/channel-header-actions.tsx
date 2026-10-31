@@ -1,6 +1,6 @@
 'use client';
 
-import { BellSimpleSlash, DotsThree, Link, MagnifyingGlass, PushPin, Robot, SignOut, SlidersHorizontal, Star, Trash, UserPlus } from '@phosphor-icons/react';
+import { BellSimpleSlash, DotsThree, Link, MagnifyingGlass, PushPin, Robot, SignOut, SlidersHorizontal, Star, Trash, UserPlus } from '@/components/icons';
 import type { ChannelMember } from '@fouc/shared/chats';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -29,18 +29,18 @@ export function ChannelHeaderActions({ workbench: w, members }: { workbench: Cha
       <span>{t('activeMembers', { count: members.length })}</span>
     </Button>
     <span className={styles.headerActionDivider} aria-hidden />
-    <ChannelTool className={styles.headerTool} label={t('searchMessages')} aria-pressed={w.panel === 'search'} onClick={() => { w.setTab('conversation'); w.setPanel(w.panel === 'search' ? null : 'search'); }}><MagnifyingGlass size={16} weight="bold" /></ChannelTool>
-    <DropdownMenu><DropdownMenuTrigger className={`${styles.tool} ${styles.headerTool}`} aria-label={t('channelActions')}><DotsThree size={19} weight="bold" /></DropdownMenuTrigger><DropdownMenuContent className={styles.menu} align="end" density="compact">
-      {(manager || channel.permissions.invite === 'members') && <DropdownMenuItem onSelect={() => w.setModal('invite')}><UserPlus weight="bold" />{t('addMembers')}</DropdownMenuItem>}
-      <DropdownMenuItem onSelect={() => void w.openAgentDialog()}><Robot weight="bold" />{t('addAgent')}</DropdownMenuItem>
+    <ChannelTool className={styles.headerTool} label={t('searchMessages')} aria-pressed={w.panel === 'search'} onClick={() => { w.setTab('conversation'); w.setPanel(w.panel === 'search' ? null : 'search'); }}><MagnifyingGlass size={16} /></ChannelTool>
+    <DropdownMenu><DropdownMenuTrigger className={`${styles.tool} ${styles.headerTool}`} aria-label={t('channelActions')}><DotsThree size={19} /></DropdownMenuTrigger><DropdownMenuContent className={styles.menu} align="end" density="compact">
+      {(manager || channel.permissions.invite === 'members') && <DropdownMenuItem onSelect={() => w.setModal('invite')}><UserPlus />{t('addMembers')}</DropdownMenuItem>}
+      <DropdownMenuItem onSelect={() => void w.openAgentDialog()}><Robot />{t('addAgent')}</DropdownMenuItem>
       <DropdownMenuSeparator />
-      <DropdownMenuItem onSelect={() => { w.setTab('conversation'); w.setPanel('pins'); }}><PushPin weight="bold" />{t('pins')}</DropdownMenuItem>
-      <DropdownMenuItem onSelect={toggleFavorite}><Star weight="bold" />{t(favorite ? 'unfavorite' : 'favorite')}</DropdownMenuItem>
-      <DropdownMenuItem onSelect={() => { w.preferences.toggle('muted', channel.id); w.notify('success', t(muted ? 'unmuted' : 'muted')); }}><BellSimpleSlash weight="bold" />{t(muted ? 'unmute' : 'mute')}</DropdownMenuItem>
-      <DropdownMenuItem onSelect={copyLink}><Link weight="bold" />{t('copyLink')}</DropdownMenuItem>
-      {manager && <><DropdownMenuSeparator /><DropdownMenuItem onSelect={() => w.setModal('settings')}><SlidersHorizontal weight="bold" />{t('settings')}</DropdownMenuItem></>}
-      {snapshot?.actorRole === 'owner' && <><DropdownMenuSeparator /><DropdownMenuItem variant="destructive" onSelect={() => w.setModal('deleteChannel')}><Trash weight="bold" />{t('deleteChannel')}</DropdownMenuItem></>}
-      {snapshot && snapshot.actorRole !== 'owner' && <><DropdownMenuSeparator /><DropdownMenuItem variant="destructive" onSelect={() => w.setModal('leave')}><SignOut weight="bold" />{t('leave')}</DropdownMenuItem></>}
+      <DropdownMenuItem onSelect={() => { w.setTab('conversation'); w.setPanel('pins'); }}><PushPin />{t('pins')}</DropdownMenuItem>
+      <DropdownMenuItem onSelect={toggleFavorite}><Star />{t(favorite ? 'unfavorite' : 'favorite')}</DropdownMenuItem>
+      <DropdownMenuItem onSelect={() => { w.preferences.toggle('muted', channel.id); w.notify('success', t(muted ? 'unmuted' : 'muted')); }}><BellSimpleSlash />{t(muted ? 'unmute' : 'mute')}</DropdownMenuItem>
+      <DropdownMenuItem onSelect={copyLink}><Link />{t('copyLink')}</DropdownMenuItem>
+      {manager && <><DropdownMenuSeparator /><DropdownMenuItem onSelect={() => w.setModal('settings')}><SlidersHorizontal />{t('settings')}</DropdownMenuItem></>}
+      {snapshot?.actorRole === 'owner' && <><DropdownMenuSeparator /><DropdownMenuItem variant="destructive" onSelect={() => w.setModal('deleteChannel')}><Trash />{t('deleteChannel')}</DropdownMenuItem></>}
+      {snapshot && snapshot.actorRole !== 'owner' && <><DropdownMenuSeparator /><DropdownMenuItem variant="destructive" onSelect={() => w.setModal('leave')}><SignOut />{t('leave')}</DropdownMenuItem></>}
     </DropdownMenuContent></DropdownMenu>
   </div>;
 }

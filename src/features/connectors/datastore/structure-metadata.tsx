@@ -3,7 +3,7 @@ import { createTranslator, type Locale, useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './structure-metadata.messages';
 import type { ReactNode } from 'react';
 import type { RelationalTableStructure } from '@fouc/shared';
-import { ArrowSquareOut, Key } from '@phosphor-icons/react';
+import { ArrowSquareOut, Key } from '@/components/icons';
 import styles from './table-structure.module.css';
 export type StructureTab =
   'columns' | 'indexes' | 'foreignKeys' | 'constraints' | 'triggers' | 'ddl';

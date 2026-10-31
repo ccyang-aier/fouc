@@ -17,9 +17,9 @@ import {
   MagnifyingGlass,
   Plus,
   Star,
-  StarHalf,
+  StarHalf, StarOutline,
   X,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 
 import {
   DropdownMenu,
@@ -438,7 +438,7 @@ export function CommunityCanvas() {
                 onClick={() => notify('info', uiText('作品提交通道即将开放'))}
                 className="flex h-[30px] items-center gap-1.5 rounded-[6px] bg-[var(--accent)] px-3.5 text-[11px] font-semibold text-[var(--accent-foreground)] shadow-[0_3px_9px_color-mix(in_srgb,var(--accent)_18%,transparent)] outline-none hover:bg-[var(--accent-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
               >
-                <Plus className="size-3.5" weight="bold" />
+                <Plus className="size-3.5" />
                 {uiText('提交资源')}
               </button>
               <button
@@ -447,7 +447,7 @@ export function CommunityCanvas() {
                 onClick={() => notify('info', uiText('更多社区能力即将开放'))}
                 className="fouc-action flex size-[30px] items-center justify-center rounded-[6px] border border-[var(--control-border)] text-[var(--muted-strong)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
               >
-                <DotsThree className="size-[18px]" weight="bold" />
+                <DotsThree className="size-[18px]" />
               </button>
             </div>
           </header>
@@ -462,7 +462,7 @@ export function CommunityCanvas() {
                       data-active={minRating > 0 || undefined}
                       className="fouc-action flex h-full items-center gap-1 border-r border-[var(--line)] px-2.5 text-[9.5px] text-[var(--ink-soft)] outline-none data-[active=true]:bg-[color-mix(in_srgb,var(--accent)_8%,transparent)] data-[active=true]:text-[var(--accent-ink)]"
                     >
-                      <Star className="size-3.5" weight={minRating ? 'fill' : 'regular'} />
+                      {minRating ? <Star className="size-3.5" /> : <StarOutline className="size-3.5" />}
                       {uiText('评分')}
                       {minRating ? (
                         <span className="font-mono text-[8px]">{minRating}+</span>
@@ -479,7 +479,9 @@ export function CommunityCanvas() {
                       </span>
                     </div>
                     <div className="mt-3 flex items-center justify-between rounded-[7px] bg-[var(--surface-subtle)] px-2 py-1.5">
-                      {[1, 2, 3, 4, 5].map((value) => (
+                      {[1, 2, 3, 4, 5].map((value) => {
+                        const Icon = minRating >= value ? Star : StarOutline;
+                        return (
                         <button
                           key={value}
                           type="button"
@@ -488,15 +490,15 @@ export function CommunityCanvas() {
                           onClick={() => setMinRating(minRating === value ? 0 : value)}
                           className="flex size-7 items-center justify-center rounded-[5px] outline-none hover:bg-panel focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                         >
-                          <Star
+                          <Icon
                             className={cn(
                               'size-[18px]',
                               minRating >= value ? 'text-[#dfa43c]' : 'text-[var(--line-strong)]',
                             )}
-                            weight={minRating >= value ? 'fill' : 'regular'}
                           />
                         </button>
-                      ))}
+                        );
+                      })}
                     </div>
                     <div className="mt-2.5 grid grid-cols-3 gap-1.5">
                       {[
@@ -745,7 +747,7 @@ export function CommunityCanvas() {
               onClick={() => setSelectedId(null)}
               className="fouc-action absolute right-3 top-3 z-10 flex size-6 items-center justify-center rounded-[5px] text-[var(--muted)] outline-none hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
             >
-              <X className="size-3.5" weight="bold" />
+              <X className="size-3.5" />
             </button>
             <div className="flex min-h-full flex-col">
               <div className="flex flex-1 flex-col">
@@ -826,7 +828,7 @@ export function CommunityCanvas() {
                           onClick={() => addDetailTag(selectedItem)}
                           className="flex size-4 items-center justify-center text-[var(--accent-ink)]"
                         >
-                          <Plus className="size-2.5" weight="bold" />
+                          <Plus className="size-2.5" />
                         </button>
                         <button
                           type="button"
@@ -898,7 +900,7 @@ export function CommunityCanvas() {
                     className="flex h-9 items-center justify-center gap-1.5 rounded-[7px] bg-[var(--accent)] px-3 text-[11px] font-semibold text-[var(--accent-foreground)] outline-none transition-colors hover:bg-[var(--accent-strong)] disabled:bg-[var(--surface-hover)] disabled:text-[var(--ok-ink)]"
                   >
                     {selectedItem.installed ? (
-                      <CheckCircle className="size-3.5" weight="fill" />
+                      <CheckCircle className="size-3.5" />
                     ) : (
                       <DownloadSimple className="size-3.5" />
                     )}
@@ -934,7 +936,7 @@ function RatingStars({ rating }: { rating?: number }) {
       {[1, 2, 3, 4, 5].map((value) => {
         const filled = rating >= value - 0.25;
         const half = !filled && rating >= value - 0.75;
-        const Icon = half ? StarHalf : Star;
+        const Icon = half ? StarHalf : filled ? Star : StarOutline;
         return (
           <Icon
             key={value}
@@ -942,7 +944,6 @@ function RatingStars({ rating }: { rating?: number }) {
               'size-3.5',
               filled || half ? 'text-[#dfa43c]' : 'text-[var(--line-strong)]',
             )}
-            weight={filled || half ? 'fill' : 'regular'}
           />
         );
       })}

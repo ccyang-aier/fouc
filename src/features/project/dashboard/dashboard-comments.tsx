@@ -4,7 +4,7 @@ import { useTranslation } from '@/lib/i18n';
 import { fixtureField } from '../i18n/display';
 import { messages } from './i18n/dashboard-comments';
 
-import { DownloadSimple, File } from '@phosphor-icons/react';
+import { DownloadSimple, File } from '@/components/icons';
 import { useState } from 'react';
 import { downloadFile } from './dashboard-download';
 import {

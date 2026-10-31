@@ -17,7 +17,7 @@ import {
   Table,
   TextAa,
   WarningCircle,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import { SqlDialog } from './sql-library-dialog';
 import { SqlEditor } from './sql-editor';
 import {

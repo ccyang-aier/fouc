@@ -14,7 +14,7 @@ import {
   Table,
   Warning,
   X,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import type { RelationalProvider } from '@fouc/shared';
 import { buildSchemaDiff } from './compare';
 import { buildSchemaDiffScript, expandSchemaDiffSelection } from './script';

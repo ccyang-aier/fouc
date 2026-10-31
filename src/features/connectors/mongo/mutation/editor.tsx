@@ -1,7 +1,7 @@
 'use client';
 import { useTranslation } from '@/lib/i18n';
 import { formatJsonSource } from '@fouc/shared';
-import { BracketsCurly } from '@phosphor-icons/react/dist/csr/BracketsCurly';
+import { BracketsCurly } from '@/components/icons';
 import { useState } from 'react';
 import { uiFailure, uiText, type UiMessage } from '../../i18n/ui-message';
 import { messages as unitMessages } from './../i18n/mutation-editor';

@@ -4,7 +4,7 @@ import { uiText, type UiMessage } from '../../i18n/ui-message';
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './connection-target.messages';
 import { useEffect, useRef, useState } from 'react';
-import { Check, Copy, WarningCircle } from '@phosphor-icons/react';
+import { Check, Copy, WarningCircle } from '@/components/icons';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { ConnectionListRow } from './types';
 import styles from './connection-list.module.css';
@@ -61,11 +61,11 @@ export function ConnectionTarget({
             onClick={() => void copy()}
           >
             {feedback === 'copied' ? (
-              <Check size={14} weight="bold" />
+              <Check size={14} />
             ) : feedback === 'error' ? (
-              <WarningCircle size={14} weight="bold" />
+              <WarningCircle size={14} />
             ) : (
-              <Copy size={14} weight="bold" />
+              <Copy size={14} />
             )}
           </button>
         </TooltipTrigger>

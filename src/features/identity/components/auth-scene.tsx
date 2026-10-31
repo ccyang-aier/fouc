@@ -17,7 +17,7 @@ const easeOutSoft = [0.22, 1, 0.36, 1] as const;
 
 function FoucMark({ size = 28 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden focusable="false">
+    <svg data-visualization="brand" width={size} height={size} viewBox="0 0 32 32" aria-hidden focusable="false">
       <rect x="3" y="3" width="26" height="26" rx="9" fill="var(--accent)" />
       <rect x="3" y="3" width="26" height="26" rx="9" fill="url(#foucAuthMarkSheen)" />
       <circle cx="16" cy="16" r="5.5" fill="var(--panel)" />

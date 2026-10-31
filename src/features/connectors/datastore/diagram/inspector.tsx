@@ -12,7 +12,7 @@ import {
   Stack,
   Table,
   Warning,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import {
   diagramFieldRelations,
   diagramJoinSql,

@@ -1,9 +1,9 @@
 'use client';
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './key-row.messages';
-import { ArrowDown } from '@phosphor-icons/react/dist/csr/ArrowDown';
-import { ArrowUp } from '@phosphor-icons/react/dist/csr/ArrowUp';
-import { Trash } from '@phosphor-icons/react/dist/csr/Trash';
+import { ArrowDown, ArrowUp, Trash } from '@/components/icons';
+
+
 import {
   indexEditPrefixColumn,
   type IndexEditKey,

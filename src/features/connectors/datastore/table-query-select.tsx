@@ -1,6 +1,6 @@
 'use client';
 
-import { CaretDown } from '@phosphor-icons/react';
+import { CaretDown } from '@/components/icons';
 import {
   DropdownMenu,
   DropdownMenuContent,

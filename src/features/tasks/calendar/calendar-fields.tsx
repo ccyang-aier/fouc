@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarBlank, Clock, LinkSimple } from '@phosphor-icons/react';
+import { CalendarBlank, Clock, LinkSimple } from '@/components/icons';
 import type { TaskSchedule } from '@fouc/shared/tasks';
 import { useTranslation } from '@/lib/i18n';
 import { localDateTime } from './calendar-model';

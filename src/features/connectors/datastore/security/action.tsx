@@ -4,10 +4,10 @@ import { uiText, type UiMessage, createUiMessages } from '../../i18n/ui-message'
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './action.messages';
 import { useState } from 'react';
-import { ShieldCheck } from '@phosphor-icons/react/dist/csr/ShieldCheck';
-import { ArrowClockwise } from '@phosphor-icons/react/dist/csr/ArrowClockwise';
-import { DownloadSimple } from '@phosphor-icons/react/dist/csr/DownloadSimple';
-import { SpinnerGap } from '@phosphor-icons/react/dist/csr/SpinnerGap';
+import { ShieldCheck, ArrowClockwise, DownloadSimple, SpinnerGap } from '@/components/icons';
+
+
+
 import type { RelationalSession } from '@fouc/shared';
 import { SqlDialog } from '../sql-library-dialog';
 import { DatabasePrincipalDetail } from './detail';

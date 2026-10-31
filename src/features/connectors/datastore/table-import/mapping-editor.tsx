@@ -8,7 +8,7 @@ import {
   type TableImportMapping,
   type TableImportParsed,
 } from '@fouc/shared/table-import';
-import { ArrowRight } from '@phosphor-icons/react/dist/csr/ArrowRight';
+import { ArrowRight } from '@/components/icons';
 import { importCellText } from './preview-grid';
 import styles from './table-import.module.css';
 type Props = {

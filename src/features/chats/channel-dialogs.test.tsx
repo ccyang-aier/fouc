@@ -21,8 +21,6 @@ beforeAll(async () => {
   const globals = globalThis as Record<string, unknown>;
   for (const name of ['document', 'navigator', 'HTMLElement', 'HTMLInputElement', 'Element', 'Node', 'Event', 'KeyboardEvent', 'MutationObserver']) globals[name] = (browser as unknown as Record<string, unknown>)[name];
   globals.window = browser; globals.IS_REACT_ACT_ENVIRONMENT = true;
-  const Icon = () => null;
-  mock.module('@phosphor-icons/react', () => ({ CaretDown: Icon, CaretRight: Icon, Check: Icon, DiceFive: Icon, LockSimple: Icon, MagnifyingGlass: Icon, Plus: Icon, Robot: Icon, Trash: Icon, X: Icon }));
   mock.module('@/lib/i18n', () => ({ defineMessages: (value: unknown) => value, useTranslation: () => ({ t: (key: string) => key }) }));
   mock.module('@/components/app-alert-provider', () => ({ useAppAlert: () => ({ notify: () => 1 }) }));
   mock.module('@/components/ui/button', () => ({ Button: TestButton }));

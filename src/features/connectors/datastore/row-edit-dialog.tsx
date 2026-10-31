@@ -3,7 +3,7 @@ import { uiText, type UiMessage, uiFailure, createUiMessages } from '../i18n/ui-
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './row-edit-dialog.messages';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { X, PencilSimple, Plus } from '@phosphor-icons/react';
+import { X, PencilSimple, Plus } from '@/components/icons';
 import type { DatabaseCell, DatabaseColumnInfo, RelationalRowChange } from '@fouc/shared';
 import styles from './table-editing.module.css';
 import common from './relational.module.css';

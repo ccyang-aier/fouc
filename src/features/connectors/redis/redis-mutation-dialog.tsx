@@ -11,7 +11,7 @@ import {
   type RedisMutationPreview,
   type RedisMutationResult,
 } from '@fouc/shared';
-import { ArrowLeft, FileCode, Plus, Trash, X } from '@phosphor-icons/react';
+import { ArrowLeft, FileCode, Plus, Trash, X } from '@/components/icons';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import common from '../datastore/relational.module.css';
 import { createUiMessages, uiFailure, uiText, type UiMessage } from '../i18n/ui-message';

@@ -3,7 +3,7 @@ import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './sql-mutation-action.messages';
 import { useEffect, useImperativeHandle, useRef, useState, type RefObject } from 'react';
 import type { EditorView } from '@codemirror/view';
-import { ShieldCheck } from '@phosphor-icons/react';
+import { ShieldCheck } from '@/components/icons';
 import { resolveSqlExecutionTarget, type RelationalSession } from '@fouc/shared';
 import type {
   SqlMutationCommitResult,

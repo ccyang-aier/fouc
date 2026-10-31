@@ -17,7 +17,7 @@ import {
   TextAa,
   TextAlignRight,
   Wrench,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import type { DatabaseQueryResult } from '@fouc/shared';
 import { TableQueryPopover } from '../../table-query-popover';
 import { TableQuerySelect } from '../../table-query-select';

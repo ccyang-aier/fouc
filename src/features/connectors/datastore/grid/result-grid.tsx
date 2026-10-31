@@ -34,7 +34,7 @@ import {
   Columns,
   Key,
   Hash,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import { GridColumnActions, type GridColumnQueryActions } from './column-actions';
 import type { DatabaseCell, DatabaseQueryResult, RelationalSort } from '@fouc/shared';
 import { databaseCellText } from '../cell-format';
@@ -1223,7 +1223,7 @@ function ResultGridContent({
                                 aria-label={value ? 'true' : 'false'}
                                 data-checked={value}
                               >
-                                {value && <Check size={12} weight="bold" />}
+                                {value && <Check size={12} />}
                               </span>
                             ) : value === '' && !layout.formatters[columnKey] ? (
                               <i className={styles.emptyString}>{tConnector('emptyString')}</i>

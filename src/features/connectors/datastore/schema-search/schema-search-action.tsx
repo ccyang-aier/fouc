@@ -16,7 +16,7 @@ import {
   Table,
   WarningCircle,
   X,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import {
   SCHEMA_OBJECT_KINDS,
   type RelationalSession,

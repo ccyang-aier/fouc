@@ -22,7 +22,7 @@ export function ModelUsageSparkline({ modelId, series, descriptionId }: { modelI
     <TooltipTrigger asChild>
       <span className={styles.sparkline} role="img" aria-label={description} data-usage-source={usage.source}
         onPointerDown={event => event.stopPropagation()} onPointerUp={event => event.stopPropagation()} onClick={event => event.stopPropagation()}>
-        <svg viewBox="0 0 52 20" aria-hidden="true">
+        <svg data-visualization="chart" viewBox="0 0 52 20" aria-hidden="true">
           <title>{period}</title>
           <defs><linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
             <stop className={styles.fillTop} offset="0%" />

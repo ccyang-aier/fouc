@@ -3,7 +3,7 @@
 import { useCallback, useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
-import { CaretDown, Check, ClockCounterClockwise, Eye, MagnifyingGlass, PencilSimple, Plus, UserMinus, Users } from '@phosphor-icons/react';
+import { CaretDown, Check, ClockCounterClockwise, Eye, MagnifyingGlass, PencilSimple, Plus, UserMinus, Users } from '@/components/icons';
 import type { TaskBoardDetail, TaskBoardMemberRole } from '@fouc/shared/tasks';
 import { AppAlert } from '@/components/app-alert';
 import { AvatarGroup } from '@/components/avatar-group';
@@ -173,7 +173,7 @@ export function TaskBoardMembers({ board, client, onChanged, onEditSettings }: {
     <button type="button" className={styles.avatarTrigger} aria-label={t('count', { count: members.length })} aria-haspopup="dialog" aria-expanded={displayed} aria-controls={displayed ? popoverId : undefined} onClick={event => openPanel(event.currentTarget, false)}>
       <AvatarGroup className={styles.avatarStack} members={members.map(({ userId, name, image }) => ({ id: userId, name, image }))} maxVisible={3} size={28} />
     </button>
-    {isOwner ? <Button type="button" size="sm" className={styles.invite} aria-haspopup="dialog" aria-expanded={displayed} aria-controls={displayed ? popoverId : undefined} onClick={event => openPanel(event.currentTarget, true)}><Users size={15} weight="fill" />{t('invite')}</Button> : null}
+    {isOwner ? <Button type="button" size="sm" className={styles.invite} aria-haspopup="dialog" aria-expanded={displayed} aria-controls={displayed ? popoverId : undefined} onClick={event => openPanel(event.currentTarget, true)}><Users size={15} />{t('invite')}</Button> : null}
     {displayed && host ? createPortal(<div ref={panel} id={popoverId} className={`menu-surface ${styles.popover}`} style={position} role="dialog" aria-modal="false" aria-label={t('title')} tabIndex={-1}>
       <div className={styles.body}>
       <label className={styles.search} htmlFor={memberSearchId}>
@@ -219,7 +219,7 @@ export function TaskBoardMembers({ board, client, onChanged, onEditSettings }: {
             {candidates.length ? candidates.map(member => <button type="button" className={`fouc-action ${styles.candidate}`} key={member.userId} aria-pressed={selectedId === member.userId} onClick={() => setSelectedId(current => current === member.userId ? '' : member.userId)} disabled={Boolean(pending)}>
               <UserAvatar name={member.name} image={member.image} className={styles.candidateAvatar} />
               <span className={styles.person}><strong>{member.name || member.email}</strong><small>{member.email}</small></span>
-              <span className={styles.selection} aria-hidden>{selectedId === member.userId ? <Check size={12} weight="bold" /> : null}</span>
+              <span className={styles.selection} aria-hidden>{selectedId === member.userId ? <Check size={12} /> : null}</span>
             </button>) : <p className={styles.empty}>{t('noResults')}</p>}
           </div>
           <div className={styles.addActions}>

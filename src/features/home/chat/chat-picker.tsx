@@ -1,7 +1,7 @@
 "use client";
 
 import type { ComponentProps, ComponentPropsWithRef, ReactNode } from "react";
-import { MagnifyingGlass } from "@phosphor-icons/react";
+import { MagnifyingGlass } from '@/components/icons';
 import { DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import styles from "./chat-picker.module.css";

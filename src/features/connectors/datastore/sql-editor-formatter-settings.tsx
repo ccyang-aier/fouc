@@ -11,7 +11,7 @@ import {
   Code,
   SlidersHorizontal,
   WarningCircle,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import {
   DEFAULT_SQL_FORMATTER_SETTINGS,
   parseSqlFormatterConfig,

@@ -1,7 +1,7 @@
 'use client';
 
 import { useId, useState } from 'react';
-import { CaretDown, Check, SlidersHorizontal, WarningCircle, X } from '@phosphor-icons/react';
+import { CaretDown, Check, SlidersHorizontal, WarningCircle, X } from '@/components/icons';
 import type { ModelCatalogEntry } from '@fouc/shared/model-catalog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -85,7 +85,7 @@ export function AutoModelInfoCard({ models, rules, onChange, onSelect, onClose, 
     <button type="button" className={`fouc-action ${styles.ruleTrigger}`} data-variant="collapsible"
       aria-label={t('configure')} aria-expanded={editing} aria-controls={rulesId} onClick={() => setEditing(current => !current)}>
       <span><SlidersHorizontal size={15} />{t('candidates')}</span>
-      <span className={styles.summary}>{rules.modelIds === null ? t('allModels') : t('selection', { count: selectedCount })}<CaretDown size={10} weight="fill" data-open={editing} /></span>
+      <span className={styles.summary}>{rules.modelIds === null ? t('allModels') : t('selection', { count: selectedCount })}<CaretDown size={10} data-open={editing} /></span>
     </button>
     {editing ? <section id={rulesId} className={styles.editor} aria-label={t('candidates')}>
       <div className={styles.toolbar}>
@@ -110,7 +110,7 @@ export function AutoModelInfoCard({ models, rules, onChange, onSelect, onClose, 
                   title={checked && selectedCount === 1 ? t('minimum') : model.name}>
                   <ChatExecutionLogo option={modelExecutionOption(model)} size={15} />
                   <span className={styles.modelText}>{model.name}</span>
-                  <span className={styles.checkbox} data-checked={checked} aria-hidden="true">{checked ? <Check size={11} weight="bold" /> : null}</span>
+                  <span className={styles.checkbox} data-checked={checked} aria-hidden="true">{checked ? <Check size={11} /> : null}</span>
                 </button>;
               })}
             </div>

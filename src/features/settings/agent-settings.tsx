@@ -16,7 +16,7 @@ import {
   Plus,
   SpinnerGap,
   WifiSlash,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 
 import type { AgentEvent, AgentInstallation, ProviderSpec } from '@fouc/shared';
 import { backendFetch, subscribeBackendEvents } from '@/lib/backend';
@@ -340,7 +340,7 @@ export function AgentSettings() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button size="sm" className="h-8 rounded-[9px] px-2.5 text-[11.5px]">
-                    <Plus className="size-3.5" weight="bold" aria-hidden />
+                    <Plus className="size-3.5" aria-hidden />
                     {uiText('登记 Agent 路径')}
                     <CaretDown className="size-3" aria-hidden />
                   </Button>

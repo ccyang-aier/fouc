@@ -1,7 +1,7 @@
 'use client';
 import { useTranslation } from '@/lib/i18n';
 import type { MongoDocumentExportProgress } from '@fouc/shared/mongo-document-transfer';
-import { DownloadSimple } from '@phosphor-icons/react/dist/csr/DownloadSimple';
+import { DownloadSimple } from '@/components/icons';
 import { useEffect, useRef, useState } from 'react';
 import { createUiMessages, uiFailure, uiText, type UiMessage } from '../../i18n/ui-message';
 import { messages as unitMessages } from './../i18n/document-transfer-export';
@@ -66,7 +66,7 @@ export function MongoDocumentExportView({
   return (
     <div className={styles.workflow}>
       <div className={styles.intro}>
-        <DownloadSimple size={28} weight="duotone" />
+        <DownloadSimple size={28} />
         <div>
           <strong>Canonical Extended JSON</strong>
           <p>

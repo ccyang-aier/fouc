@@ -4,7 +4,7 @@ import { useState, type FormEvent, type KeyboardEvent, type ReactNode } from 're
 import { CHANNEL_ICON_NAMES, type Channel, type ChannelIconName, type ChannelMember, type CreateChannelInput, type UpdateChannelInput } from '@fouc/shared/chats';
 import type { ProjectMember } from '@fouc/shared/projects';
 import type { AgentInstallation, ProviderSpec } from '@fouc/shared';
-import { CaretDown, CaretRight, Check, DiceFive, LockSimple, MagnifyingGlass, Plus, Robot, Trash, X } from '@phosphor-icons/react';
+import { CaretDown, CaretRight, Check, DiceFive, LockSimple, MagnifyingGlass, Plus, Robot, Trash, X } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAppAlert } from '@/components/app-alert-provider';
@@ -124,7 +124,7 @@ export function ChannelAgentDialog({ members, installations, providers, actorUse
             const added = joined.has(item.id);
             const unavailable = item.status !== 'ready';
             return <button type="button" key={item.id} className={`fouc-action ${styles.personOption}`} data-surface="plain" aria-pressed={selected === item.id} disabled={added || unavailable} onClick={() => { setSelected(item.id); setName(label); }}>
-              <span className={styles.agentAvatar}><Robot size={21} /></span><span className={styles.personIdentity}><strong>{label}</strong><small>{item.version ?? item.providerId}</small></span>{added || unavailable ? <span className={styles.badge}>{t(added ? 'alreadyAdded' : 'agentUnavailable')}</span> : <span className={styles.checkBox}>{selected === item.id && <Check size={12} weight="bold" />}</span>}
+              <span className={styles.agentAvatar}><Robot size={21} /></span><span className={styles.personIdentity}><strong>{label}</strong><small>{item.version ?? item.providerId}</small></span>{added || unavailable ? <span className={styles.badge}>{t(added ? 'alreadyAdded' : 'agentUnavailable')}</span> : <span className={styles.checkBox}>{selected === item.id && <Check size={12} />}</span>}
             </button>;
           })}
           {!matching.length && <div className={styles.emptySmall}><Robot size={27} /><strong>{t('noAgents')}</strong><span>{t('noAgentsHelp')}</span></div>}

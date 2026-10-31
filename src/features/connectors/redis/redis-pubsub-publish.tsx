@@ -3,7 +3,7 @@
 import { backendFetch } from '@/lib/backend';
 import { useTranslation } from '@/lib/i18n';
 import type { RedisPubSubPublishResult } from '@fouc/shared';
-import { ArrowLeft, PaperPlaneTilt, X } from '@phosphor-icons/react';
+import { ArrowLeft, PaperPlaneTilt, X } from '@/components/icons';
 import { useEffect, useRef, useState } from 'react';
 import common from '../datastore/relational.module.css';
 import { createUiMessages, uiFailure, uiText, type UiMessage } from '../i18n/ui-message';

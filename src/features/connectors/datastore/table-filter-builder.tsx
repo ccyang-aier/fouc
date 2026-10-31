@@ -1,7 +1,7 @@
 'use client';
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './table-filter-builder.messages';
-import { Eye, EyeSlash, Plus, X } from '@phosphor-icons/react';
+import { Eye, EyeSlash, Plus, X } from '@/components/icons';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -148,7 +148,7 @@ function FilterGroupBuilder({
             disabled={disabled}
             onClick={() => onChange({ ...node, enabled: !node.enabled })}
           >
-            {node.enabled ? <Eye size={16} weight="bold" /> : <EyeSlash size={16} weight="bold" />}
+            {node.enabled ? <Eye size={16} /> : <EyeSlash size={16} />}
           </button>
           <button
             className="fouc-action"

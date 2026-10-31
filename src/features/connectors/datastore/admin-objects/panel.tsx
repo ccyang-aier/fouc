@@ -2,12 +2,12 @@
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './panel.messages';
 import { useEffect, useState } from 'react';
-import { ArrowsClockwise } from '@phosphor-icons/react/dist/csr/ArrowsClockwise';
-import { CaretLeft } from '@phosphor-icons/react/dist/csr/CaretLeft';
-import { CaretRight } from '@phosphor-icons/react/dist/csr/CaretRight';
-import { Clock } from '@phosphor-icons/react/dist/csr/Clock';
-import { MagnifyingGlass } from '@phosphor-icons/react/dist/csr/MagnifyingGlass';
-import { Package } from '@phosphor-icons/react/dist/csr/Package';
+import { ArrowsClockwise, CaretLeft, CaretRight, Clock, MagnifyingGlass, Package } from '@/components/icons';
+
+
+
+
+
 import type { RelationalSession } from '@fouc/shared';
 import {
   DATABASE_ADMIN_OBJECT_LIMITS,

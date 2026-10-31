@@ -2,7 +2,7 @@
 
 import { useTranslation } from '@/lib/i18n';
 import { decodeJsonUnicodeEscapes, formatJsonSource, mapDisplayToRaw } from '@fouc/shared';
-import { ArrowCounterClockwise, Copy, FloppyDisk, MagnifyingGlass } from '@phosphor-icons/react';
+import { ArrowCounterClockwise, Copy, FloppyDisk, MagnifyingGlass } from '@/components/icons';
 import { useEffect, useMemo, useState } from 'react';
 import { createUiMessages, uiFailure, uiText, type UiMessage } from '../i18n/ui-message';
 import { messages as unitMessages } from './i18n/redis-json-view';

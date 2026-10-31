@@ -10,17 +10,17 @@ import type {
   MongoIndexList,
   MongoSession,
 } from '@fouc/shared/mongo';
-import { ArrowLeft } from '@phosphor-icons/react/dist/csr/ArrowLeft';
-import { ArrowsClockwise } from '@phosphor-icons/react/dist/csr/ArrowsClockwise';
-import { CaretLeft } from '@phosphor-icons/react/dist/csr/CaretLeft';
-import { CaretRight } from '@phosphor-icons/react/dist/csr/CaretRight';
-import { Database } from '@phosphor-icons/react/dist/csr/Database';
-import { Funnel } from '@phosphor-icons/react/dist/csr/Funnel';
-import { Lock } from '@phosphor-icons/react/dist/csr/Lock';
-import { MagnifyingGlass } from '@phosphor-icons/react/dist/csr/MagnifyingGlass';
-import { Play } from '@phosphor-icons/react/dist/csr/Play';
-import { Stack } from '@phosphor-icons/react/dist/csr/Stack';
-import { Stop } from '@phosphor-icons/react/dist/csr/Stop';
+import { ArrowLeft, ArrowsClockwise, CaretLeft, CaretRight, Database, Funnel, Lock, MagnifyingGlass, Play, Stack, Stop } from '@/components/icons';
+
+
+
+
+
+
+
+
+
+
 import { useState } from 'react';
 import { uiFailure, uiText, type UiMessage } from '../i18n/ui-message';
 import { MongoDocumentTransfer } from './document-transfer';
@@ -184,7 +184,7 @@ function MongoDocumentBrowser({
           className={page.loading ? styles.smallButton : styles.primaryButton}
           onClick={() => (page.loading ? page.cancel() : apply())}
         >
-          {page.loading ? <Stop size={14} /> : <Play size={13} weight="fill" />}
+          {page.loading ? <Stop size={14} /> : <Play size={13} />}
           {page.loading ? tu('取消') : dirty ? tu('应用') : tu('查询')}
         </button>
       </div>
@@ -523,7 +523,7 @@ function MongoWorkspace({
           <ArrowLeft size={17} />
         </button>
         <span className={styles.brand}>
-          <Database size={20} weight="duotone" />
+          <Database size={20} />
         </span>
         <div className={styles.connectionName}>
           <strong>{name}</strong>
@@ -730,7 +730,7 @@ function MongoWorkspace({
             />
           ) : (
             <div className={styles.empty}>
-              <Database size={30} weight="duotone" />
+              <Database size={30} />
               <strong>{tu('选择一个集合')}</strong>
               <span>{tu('原生文档、索引与统计会在这里显示。')}</span>
             </div>

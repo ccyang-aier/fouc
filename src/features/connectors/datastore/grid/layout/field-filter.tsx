@@ -2,7 +2,7 @@
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './field-filter.messages';
 import { useId, useRef, useState } from 'react';
-import { Check, DotsSixVertical, ListChecks, MagnifyingGlass } from '@phosphor-icons/react';
+import { Check, DotsSixVertical, ListChecks, MagnifyingGlass } from '@/components/icons';
 import type { DatabaseQueryResult } from '@fouc/shared';
 import { columnLabel } from '../../result-format';
 import { TableQueryPopover } from '../../table-query-popover';
@@ -205,7 +205,7 @@ function GridFieldList({
               }
             >
               <span className={styles.check} data-checked={visible.includes(column)}>
-                {visible.includes(column) && <Check size={12} weight="bold" />}
+                {visible.includes(column) && <Check size={12} />}
               </span>
               <span title={result.columns[column]}>{columnLabel(result.columns, column)}</span>
             </button>

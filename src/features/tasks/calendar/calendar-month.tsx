@@ -1,6 +1,6 @@
 'use client';
 
-import { Plus } from '@phosphor-icons/react';
+import { Plus } from '@/components/icons';
 import type { BoardTask, TaskBoardDetail, TaskSchedule } from '@fouc/shared/tasks';
 import { useTranslation } from '@/lib/i18n';
 import { localDay } from '../task-board-model';

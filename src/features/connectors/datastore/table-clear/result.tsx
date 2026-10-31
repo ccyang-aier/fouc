@@ -1,8 +1,8 @@
 'use client';
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './result.messages';
-import { CheckCircle } from '@phosphor-icons/react/dist/csr/CheckCircle';
-import { Warning } from '@phosphor-icons/react/dist/csr/Warning';
+import { CheckCircle, Warning } from '@/components/icons';
+
 import type { TableClearCommitResult } from '@fouc/shared/table-clear';
 import styles from './table-clear.module.css';
 export function TableClearResultContent({ result }: { result: TableClearCommitResult }) {

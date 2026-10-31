@@ -1,8 +1,8 @@
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './plan-diagram.messages';
-import { ArrowsOutSimple } from '@phosphor-icons/react/dist/csr/ArrowsOutSimple';
-import { Minus } from '@phosphor-icons/react/dist/csr/Minus';
-import { Plus } from '@phosphor-icons/react/dist/csr/Plus';
+import { ArrowsOutSimple, Minus, Plus } from '@/components/icons';
+
+
 import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'react';
 import {
   edgeStrokeWidth,
@@ -125,7 +125,7 @@ export function ExplainPlanDiagram({ layout, selectedId, onSelect, search }: Pro
             className={styles.diagramContent}
             style={{ width: layout.width, height: layout.height, transform: `scale(${zoom})` }}
           >
-            <svg
+            <svg data-visualization="diagram"
               className={styles.edges}
               width={layout.width}
               height={layout.height}

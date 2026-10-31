@@ -8,7 +8,7 @@ import type {
   RedisBulkPreview,
   RedisBulkResult,
 } from '@fouc/shared/redis-bulk';
-import { Key, LockOpen, X } from '@phosphor-icons/react';
+import { Key, LockOpen, X } from '@/components/icons';
 import { useEffect, useRef, useState } from 'react';
 import { uiFailure, uiText, type UiMessage } from '../../i18n/ui-message';
 import { messages as unitMessages } from './../i18n/bulk-dialog';

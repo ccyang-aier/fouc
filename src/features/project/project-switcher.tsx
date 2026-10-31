@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useId, useRef, useState } from 'react';
-import { CaretUpDown, Check, FolderSimple, MagnifyingGlass, Palette, PencilSimple, Plus, Trash, X } from '@phosphor-icons/react';
+import { CaretUpDown, Check, FolderSimple, MagnifyingGlass, Palette, PencilSimple, Plus, Trash, X } from '@/components/icons';
 import { useAppAlert } from '@/components/app-alert-provider';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from '@/components/ui/dropdown-menu';
@@ -33,7 +33,7 @@ export function ProjectSwitcher({ onSwitch }: { onSwitch: () => void }) {
     <DropdownMenu open={menuOpen} onOpenChange={open => { setMenuOpen(open); if (open) setQuery(''); }}>
       <DropdownMenuTrigger asChild>
         <button type="button" className={`fouc-action ${styles.trigger}`} aria-label={t('switch')}>
-          {selectedProject ? <ProjectSwitcherAvatar project={selectedProject} principal={principal} /> : <span className={styles.avatar}><FolderSimple size={17} weight="duotone" /></span>}
+          {selectedProject ? <ProjectSwitcherAvatar project={selectedProject} principal={principal} /> : <span className={styles.avatar}><FolderSimple size={17} /></span>}
           <span className={styles.name}>{selectedProject?.name ?? t(status === 'loading' ? 'loading' : 'select')}</span><CaretUpDown size={13} className={styles.chevrons} />
         </button>
       </DropdownMenuTrigger>
@@ -59,11 +59,11 @@ export function ProjectSwitcher({ onSwitch }: { onSwitch: () => void }) {
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => setAction({ kind: 'create' })}><Plus size={16} />{t('create')}</DropdownMenuItem>
         {selectedProject && <>
-          <DropdownMenuItem onSelect={() => setAction({ kind: 'rename', project: selectedProject })}><PencilSimple size={16} weight="duotone" />{t('rename')}</DropdownMenuItem>
-          <DropdownMenuSub><DropdownMenuSubTrigger><Palette size={16} weight="duotone" />{t('palette')}</DropdownMenuSubTrigger><DropdownMenuSubContent>
+          <DropdownMenuItem onSelect={() => setAction({ kind: 'rename', project: selectedProject })}><PencilSimple size={16} />{t('rename')}</DropdownMenuItem>
+          <DropdownMenuSub><DropdownMenuSubTrigger><Palette size={16} />{t('palette')}</DropdownMenuSubTrigger><DropdownMenuSubContent>
             {PROJECT_AVATAR_PALETTES.map(palette => <DropdownMenuItem key={palette.id} role="menuitemradio" aria-checked={activePalette === palette.id} onSelect={() => choosePalette(palette.id)}><ProjectAvatar seed={selectedProject.id} palette={palette.id} preview className={styles.palettePreview} /><span>{t(palette.id)}</span>{activePalette === palette.id && <Check size={14} className="ml-auto" />}</DropdownMenuItem>)}
           </DropdownMenuSubContent></DropdownMenuSub>
-          <DropdownMenuItem variant="destructive" onSelect={() => setAction({ kind: 'remove', project: selectedProject })}><Trash size={16} weight="duotone" />{t('remove')}</DropdownMenuItem>
+          <DropdownMenuItem variant="destructive" onSelect={() => setAction({ kind: 'remove', project: selectedProject })}><Trash size={16} />{t('remove')}</DropdownMenuItem>
         </>}
       </DropdownMenuContent>}
     </DropdownMenu>

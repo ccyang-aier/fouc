@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
-import { CalendarPlus, Circle, Flag, NotePencil, Plus, TextAlignLeft, Users, X } from '@phosphor-icons/react';
+import { CalendarPlus, Circle, Flag, NotePencil, Plus, TextAlignLeft, Users, X } from '@/components/icons';
 import { taskScheduleSchema, type BoardTask, type TaskBoardDetail, type TaskSchedule } from '@fouc/shared/tasks';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuSearch, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ClockCounterClockwise } from "@phosphor-icons/react";
+import { ClockCounterClockwise } from '@/components/icons';
 import { Button } from "@/components/ui/button";
 import { formatRelativeTime } from "@/lib/relative-time";
 import type { Locale } from "@/lib/i18n";

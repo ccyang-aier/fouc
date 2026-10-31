@@ -10,7 +10,7 @@ import {
   Copy,
   MagnifyingGlass,
   X,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import common from '../datastore/relational.module.css';
 import { createUiMessages, uiText, type UiMessage } from '../i18n/ui-message';

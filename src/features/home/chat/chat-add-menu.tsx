@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from 'react';
-import { Paperclip, Plus } from '@phosphor-icons/react';
+import { Paperclip, Plus } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuGroup, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';

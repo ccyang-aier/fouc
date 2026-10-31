@@ -2,7 +2,7 @@
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './actions.messages';
 import { useState } from 'react';
-import { DotsThree, DownloadSimple, UploadSimple } from '@phosphor-icons/react';
+import { DotsThree, DownloadSimple, UploadSimple } from '@/components/icons';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,7 +42,7 @@ export function ConnectionConfigTransferActions({
             aria-label={tConnector('connectionConfigurationActions')}
             disabled={disabled}
           >
-            <DotsThree size={19} weight="bold" />
+            <DotsThree size={19} />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="min-w-0 w-max whitespace-nowrap">

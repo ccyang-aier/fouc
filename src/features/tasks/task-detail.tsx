@@ -1,7 +1,7 @@
 'use client';
 
 import { taskScheduleSchema, type BoardTask, type TaskBoardDetail } from '@fouc/shared/tasks';
-import { CalendarBlank, CaretDown, CheckSquare, Circle, Flag, LockSimple, Plus, Tag, TextAlignLeft, Trash, Users, Warning, X } from '@phosphor-icons/react';
+import { CalendarBlank, CaretDown, CheckSquare, Circle, Flag, LockSimple, Plus, Tag, TextAlignLeft, Trash, Users, Warning, X } from '@/components/icons';
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { AppAlert } from '@/components/app-alert';
 import { Button } from '@/components/ui/button';
@@ -302,7 +302,7 @@ function TaskConfirmation({ kind, taskTitle, busy, onClose, onConfirm }: {
   }, [visible]);
   return <dialog ref={ref} className={styles.confirmDialog} role="alertdialog" aria-labelledby={titleId} onCancel={(event) => { event.preventDefault(); event.stopPropagation(); onClose(); }}>
     <div className={styles.confirmContent}>
-      <Warning size={25} weight="duotone" className={styles.warningIcon} />
+      <Warning size={25} className={styles.warningIcon} />
       <h2 id={titleId}>{t(kind === 'delete' ? 'deleteTitle' : 'discardTitle')}</h2>
       {kind === 'delete' && taskTitle && <strong className={styles.confirmTaskTitle}>{taskTitle}</strong>}
       <p>{t(kind === 'delete' ? 'deleteDescription' : 'discardDescription')}</p>

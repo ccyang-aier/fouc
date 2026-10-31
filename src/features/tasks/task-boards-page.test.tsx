@@ -81,8 +81,6 @@ beforeAll(async () => {
   }
   globals.window = browser;
   globals.IS_REACT_ACT_ENVIRONMENT = true;
-  const icon = () => <svg aria-hidden />;
-  mock.module('@phosphor-icons/react', () => Object.fromEntries(['Check', 'DotsThree', 'Kanban', 'ListChecks', 'LockSimple', 'PencilSimple', 'Plus', 'SquaresFour', 'Trash', 'Users'].map(name => [name, icon])));
   mock.module('@/features/identity/identity-provider', () => ({ useIdentity: () => ({ session: { status: 'authenticated', user: { id: 'owner' } }, openSignIn: () => {} }) }));
   mock.module('@/features/project/project-resources', () => ({ useProjectResources: () => ({ selectedProject: { id: 'project', source: 'server' }, scopeKey: 'owner:server:project' }) }));
   mock.module('@/components/app-alert-provider', () => ({ useAppAlert: () => ({ notify: () => 1 }) }));

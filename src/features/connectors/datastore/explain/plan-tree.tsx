@@ -1,7 +1,7 @@
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './plan-tree.messages';
-import { CaretDown } from '@phosphor-icons/react/dist/csr/CaretDown';
-import { CaretRight } from '@phosphor-icons/react/dist/csr/CaretRight';
+import { CaretDown, CaretRight } from '@/components/icons';
+
 import type { KeyboardEvent } from 'react';
 import type { ExplainPlanNode } from './types';
 import { categorizePlanNode } from './plan-canvas';

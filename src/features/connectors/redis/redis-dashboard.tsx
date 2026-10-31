@@ -11,7 +11,7 @@ import {
   ChartLineUp,
   Copy,
   MagnifyingGlass,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import { useState } from 'react';
 import { createUiMessages, uiText, type UiDescriptor } from '../i18n/ui-message';
 import { messages as unitMessages } from './i18n/redis-dashboard';

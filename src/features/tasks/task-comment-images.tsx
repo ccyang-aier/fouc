@@ -1,7 +1,7 @@
 'use client';
 
 import type { TaskCommentImage } from '@fouc/shared/tasks';
-import { ArrowClockwise, ImageSquare } from '@phosphor-icons/react';
+import { ArrowClockwise, ImageSquare } from '@/components/icons';
 import { useEffect, useState } from 'react';
 import { useTranslation } from '@/lib/i18n';
 import type { TaskBoardClient } from './task-board-client';

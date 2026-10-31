@@ -1,5 +1,5 @@
 import type { ComponentProps } from 'react';
-import type { LucideIcon } from 'lucide-react';
+import type { LucideIcon } from '@/components/icons';
 import { motion, type Variants } from 'motion/react';
 import { ButtonLoading } from '@/components/ui/button-loading';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';

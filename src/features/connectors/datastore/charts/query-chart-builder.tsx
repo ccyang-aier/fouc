@@ -3,7 +3,7 @@ import { useTranslation, createTranslator } from '@/lib/i18n';
 import { messages as connectorMessages } from './query-chart-builder.messages';
 const translateConnector = createTranslator(connectorMessages);
 import { useMemo, useState } from 'react';
-import { ChartBar, ChartLine, WarningCircle } from '@phosphor-icons/react';
+import { ChartBar, ChartLine, WarningCircle } from '@/components/icons';
 import { useAppAlert } from '@/components/app-alert-provider';
 import type { DatabaseQueryResult } from '@fouc/shared';
 import { QueryChartCanvas } from './chart-canvas';

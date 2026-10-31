@@ -2,7 +2,7 @@
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './save-preview-dialog.messages';
 import { useEffect, useRef } from 'react';
-import { X, FileCode } from '@phosphor-icons/react';
+import { X, FileCode } from '@/components/icons';
 import type { RelationalSavePreview } from '@fouc/shared';
 import styles from './table-editing.module.css';
 import common from './relational.module.css';

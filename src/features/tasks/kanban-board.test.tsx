@@ -32,8 +32,6 @@ beforeAll(async () => {
   }
   globals.window = browser;
   globals.IS_REACT_ACT_ENVIRONMENT = true;
-  const icon = () => <svg aria-hidden />;
-  mock.module('@phosphor-icons/react', () => Object.fromEntries(['ArrowLeft', 'ArrowRight', 'CaretDown', 'Check', 'DotsThree', 'PencilSimple', 'Plus', 'X', 'Trash', 'CalendarDots', 'ChatText', 'Paperclip', 'CheckSquare', 'Flag', 'DotsSix', 'LinkSimple'].map(name => [name, icon])));
   mock.module('@/components/user-avatar', () => ({ UserAvatar: () => <span /> }));
   const group = ({ children }: { children: ReactNode }) => <>{children}</>;
   const menuOpen = createContext(false);

@@ -9,7 +9,7 @@ import { messages } from './i18n/session-console.messages';
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { Check, PaperPlaneTilt, ShieldCheck, StopCircle, X } from '@phosphor-icons/react';
+import { Check, Play, PaperPlaneTilt, ShieldCheck, StopCircle, X } from '@/components/icons';
 
 import type { AgentEvent, AgentInstallation, SessionStatus } from '@fouc/shared';
 import { backendFetch, subscribeBackendEvents } from '@/lib/backend';
@@ -192,7 +192,7 @@ export function SessionConsole({
       {!sessionId ? (
         <div className="flex flex-1 items-center justify-center px-8">
           <Button onClick={() => void createSession()} disabled={!ready || busy}>
-            <Play_ className="size-3.5" aria-hidden />
+            <Play className="size-3.5" aria-hidden />
             {uiText('创建会话')}
           </Button>
         </div>
@@ -258,14 +258,6 @@ export function SessionConsole({
         </>
       )}
     </div>
-  );
-}
-
-function Play_(props: { className?: string }) {
-  return (
-    <svg viewBox="0 0 16 16" fill="currentColor" className={props.className} aria-hidden>
-      <path d="M4.5 2.8v10.4c0 .6.7 1 1.2.7l8.2-5.2c.5-.3.5-1 0-1.3L5.7 2.1c-.5-.3-1.2.1-1.2.7z" />
-    </svg>
   );
 }
 

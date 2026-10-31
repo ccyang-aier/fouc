@@ -3,7 +3,7 @@ import { uiText, type UiMessage, uiFailure, createUiMessages } from '../i18n/ui-
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './table-transfer-action.messages';
 import { useEffect, useRef, useState } from 'react';
-import { ArrowsLeftRight, Lock, LockOpen } from '@phosphor-icons/react';
+import { ArrowsLeftRight, Lock, LockOpen } from '@/components/icons';
 import type {
   DatabaseObjectInfo,
   RelationalSavedConnection,

@@ -9,7 +9,7 @@ import {
   ShieldCheck,
   Sparkle,
   X,
-} from '@phosphor-icons/react';
+} from '@/components/icons';
 import { useState } from 'react';
 import { messages as unitMessages } from './dts/i18n/dts-connector-inspector';
 
@@ -86,7 +86,7 @@ export function DtsConnectorInspector({ ticket, summary, onClose }: Props) {
           <div className="py-4">
             <div className="rounded-[10px] border border-[var(--accent-soft-line)] bg-[var(--accent-soft)] p-3">
               <div className="flex items-center gap-2 text-[10px] font-semibold text-[var(--accent-ink)]">
-                <Sparkle className="size-4" weight="fill" />
+                <Sparkle className="size-4" />
                 {tu('围绕当前工单提问')}
               </div>
             </div>
@@ -109,7 +109,7 @@ export function DtsConnectorInspector({ ticket, summary, onClose }: Props) {
             aria-label={tu('发送')}
             className="flex size-7 shrink-0 items-center justify-center rounded-[6px] bg-[var(--accent)] text-[var(--accent-foreground)]"
           >
-            <PaperPlaneTilt className="size-3.5" weight="fill" />
+            <PaperPlaneTilt className="size-3.5" />
           </button>
         </div>
       </form>

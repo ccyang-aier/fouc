@@ -1,7 +1,7 @@
 'use client';
 import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './filter-menu.messages';
-import { CaretDown } from '@phosphor-icons/react';
+import { CaretDown } from '@/components/icons';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,

@@ -3,7 +3,7 @@ import { useTranslation } from '@/lib/i18n';
 import { messages as connectorMessages } from './chart-canvas.messages';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import type { ECharts } from 'echarts/core';
-import { SpinnerGap, WarningCircle } from '@phosphor-icons/react';
+import { SpinnerGap, WarningCircle } from '@/components/icons';
 import { queryChartOption, type QueryChartTheme } from './options';
 import type { QueryChartConfig } from './model';
 import type { QueryChartData } from './transform';

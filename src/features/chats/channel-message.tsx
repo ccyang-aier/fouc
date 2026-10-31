@@ -1,13 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowSquareOut, ChatCircleText, Check, Copy, DotsThree, PencilSimple, PushPin, Robot, Sparkle, Trash } from '@phosphor-icons/react';
+import { ArrowSquareOut, ChatCircleText, Check, Copy, DotsThree, PencilSimple, PushPin, Robot, Sparkle, Trash, Emoji } from '@/components/icons';
 import type { ChannelAttachment, ChannelMessage as Message, ChannelSnapshot } from '@fouc/shared/chats';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAppAlert } from '@/components/app-alert-provider';
 import { useTranslation } from '@/lib/i18n';
-import { EmojiGlyph, ModernEmojiPicker } from '@/components/chat-emoji';
+
+import { EmojiPicker } from '@/components/ui/emoji-picker';
 import { ChannelAvatar, ChannelTool } from './channel-ui';
 import { ChannelAttachmentCard } from './channel-attachment';
 import { ChannelPollCard } from './channel-poll';
@@ -53,11 +54,11 @@ export function ChannelMessage({ message, snapshot, onReply, onReact, onEdit, on
         : message.body && <div className={styles.messageText}><ChannelMessageMarkdown body={message.body} members={snapshot.members} /></div>}
       {message.poll && <ChannelPollCard poll={message.poll} actorId={snapshot.actorId} members={snapshot.members} canVote={canPost} onVote={optionId => onVote(message, optionId)} />}
       {message.attachments.length > 0 && <div className={styles.messageAttachments}>{message.attachments.map(attachment => <ChannelAttachmentCard key={attachment.id} attachment={attachment} onOpen={() => onAttachment(attachment)} />)}</div>}
-      {message.reactions.some(reaction => reaction.userIds.length > 0) && <div className={styles.reactions}>{message.reactions.filter(reaction => reaction.userIds.length > 0).map(reaction => <button type="button" className={`fouc-action ${styles.reaction}`} key={reaction.emoji} aria-label={`${reaction.emoji} ${reaction.userIds.map(id => snapshot.members.find(member => member.id === id)?.name ?? '').join(', ')}`} aria-pressed={reaction.userIds.includes(snapshot.actorId)} disabled={!canPost} onClick={() => onReact(message, reaction.emoji)}><EmojiGlyph emoji={reaction.emoji} size={18} /><small>{reaction.userIds.length}</small></button>)}</div>}
+      {message.reactions.some(reaction => reaction.userIds.length > 0) && <div className={styles.reactions}>{message.reactions.filter(reaction => reaction.userIds.length > 0).map(reaction => <button type="button" className={`fouc-action ${styles.reaction}`} key={reaction.emoji} aria-label={`${reaction.emoji} ${reaction.userIds.map(id => snapshot.members.find(member => member.id === id)?.name ?? '').join(', ')}`} aria-pressed={reaction.userIds.includes(snapshot.actorId)} disabled={!canPost} onClick={() => onReact(message, reaction.emoji)}><Emoji value={reaction.emoji} size={18} /><small>{reaction.userIds.length}</small></button>)}</div>}
       {!compact && replies.length > 0 && <button type="button" className={`fouc-action ${styles.replyButton}`} onClick={() => onReply(message)}><span className={styles.replyAvatars}>{replyMembers.map(member => <ChannelAvatar key={member.id} member={member} size={24} />)}</span><span>{t('replyCount', { count: replies.length })}</span><ArrowSquareOut size={12} aria-hidden /></button>}
     </div>
     <div className={styles.messageTools}>
-      <ModernEmojiPicker className={styles.tool} mode="reaction" disabled={!canPost} label={t('react')} onSelect={emoji => onReact(message, emoji)} />
+      <EmojiPicker className={styles.tool} disabled={!canPost} label={t('react')} onSelect={emoji => onReact(message, emoji)} />
       {!compact && <ChannelTool label={t('reply')} onClick={() => onReply(message)}><ChatCircleText size={16} /></ChannelTool>}
       <DropdownMenu><DropdownMenuTrigger className={styles.tool} aria-label={t('more')}><DotsThree size={19} /></DropdownMenuTrigger><DropdownMenuContent className={styles.menu} side="top" align="end" density="compact">
         <DropdownMenuItem onSelect={() => void copy()}><Copy />{t('copy')}</DropdownMenuItem>

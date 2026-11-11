@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fouc × ADD · 五套 UX 画册</title>
+<style>
+  *{box-sizing:border-box}html,body{margin:0;height:100%;font-family:Inter,"Segoe UI","Microsoft YaHei",sans-serif;color:#202020;background:#f1f1f1;font-size:13px}
+  body{display:flex;flex-direction:column}header{display:flex;align-items:center;gap:14px;min-height:54px;padding:8px 16px;background:#fff;border-bottom:1px solid #dedede;flex-shrink:0}
+  .identity{white-space:nowrap;line-height:1.5}.identity strong{font-size:13px;font-weight:650}.identity span{display:block;color:#767676;font-size:11px}
+  nav{display:flex;align-items:center;gap:3px}button,select,a{font:inherit}button,select{height:30px;border:1px solid transparent;border-radius:6px;background:transparent;color:inherit;cursor:pointer}
+  button{padding:0 10px;white-space:nowrap}button:hover,a:hover{background:#f6f6f6}button[aria-pressed="true"]{background:#202020;color:#fff}button:focus-visible,a:focus-visible{outline:1px solid #777;outline-offset:2px}select:focus-visible{outline:none;border-color:#202020}
+  .tools{display:flex;align-items:center;gap:6px;margin-left:auto}select{width:177px;max-width:35vw;border-color:#d6d6d6;padding:0 7px;background:#fff}a{color:#555;text-decoration:none;border-radius:5px;padding:6px;white-space:nowrap}
+  main{flex:1;min-height:0;overflow:auto;padding:14px;scrollbar-gutter:stable}figure{margin:0 auto;width:100%;max-width:1586px}img{display:block;width:100%;height:auto;background:#fff;border:1px solid #e0e0e0}
+  main[data-size="actual"] figure{max-width:none;width:max-content}main[data-size="actual"] img{width:auto;max-width:none}
+  footer{min-height:34px;display:flex;align-items:center;gap:12px;flex-shrink:0;padding:4px 16px;background:#fff;border-top:1px solid #dedede;color:#767676;font-size:12px}footer #caption{color:#404040}footer .spacer{margin-left:auto}footer button{height:24px;font-size:12px;padding:0 7px}
+  #load-state{font-size:11px;color:#767676}img[data-loading="true"]{opacity:.5}
+  @media(max-width:1100px){header{gap:8px;flex-wrap:wrap}.tools{margin-left:0}.identity span{display:none}nav{flex:1}button{padding-inline:8px}}
+  @media(max-width:650px){header{padding:8px}.identity{display:none}nav{flex-basis:100%;overflow:auto}main{padding:4px}footer{padding:4px 8px;gap:4px}footer .hint{display:none}}
+</style>
+<header>
+  <div class="identity"><strong>Fouc × ADD</strong><span>静态 UX 图 · 5 套 / 15 页</span></div>
+  <nav aria-label="候选方案" id="concepts"></nav>
+  <div class="tools">
+    <select aria-label="当前方案的页面" id="pages"></select>
+    <button type="button" id="size" aria-pressed="false">原尺寸</button>
+    <a id="original" target="_blank" rel="noopener">原图</a>
+    <a id="prompts" target="_blank" rel="noopener">提示词</a>
+  </div>
+</header>
+<main id="viewer" data-size="fit"><figure><img id="screen" alt="" decoding="async"></figure></main>
+<footer>
+  <span id="caption"></span><span id="load-state" role="status" aria-live="polite"></span>
+  <span class="spacer"></span><span class="hint">← → 切页</span>
+  <button type="button" id="previous">上一页</button><button type="button" id="next">下一页</button>
+  <a href="../../fouc-project-space-product-ux-design.md" target="_blank" rel="noopener">设计说明</a>
+</footer>
+<script>
+const concepts=[
+  {id:'journey',name:'阶段工作室',pages:[['详细设计工作面','01-design-studio.png'],['批次规划','02-batch-planning.png'],['独立评审','03-review-gate.png']]},
+  {id:'artifact',name:'成果工坊',pages:[['成果索引','01-artifact-index.png'],['正式正文编辑室','02-artifact-editor.png'],['G3 实施证据审阅','03-evidence-review.png']]},
+  {id:'dispatch',name:'协作调度台',pages:[['待我处理','dispatch-inbox.png'],['当前批次执行','dispatch-batch.png'],['交接审阅','dispatch-review.png']]},
+  {id:'atlas',name:'依赖地图',pages:[['工作项依赖地图','01-dependency-map.png'],['契约与责任对齐','02-contract-alignment.png'],['集成与真实 E2E','03-integration-e2e.png']]},
+  {id:'casebook',name:'决策案卷',pages:[['工作项案卷','01-change-casebook-refined.png'],['ADR 决策室','02-adr-decision-room.png'],['交付封卷与回写','03-delivery-closure.png']]}
+];
+const byId=id=>document.getElementById(id),nav=byId('concepts'),pages=byId('pages'),screen=byId('screen'),viewer=byId('viewer');
+let conceptIndex=0,pageIndex=0;const rememberedPages={};
+for(const [index,concept] of concepts.entries()){
+  const button=document.createElement('button');button.type='button';button.textContent=concept.name;button.setAttribute('aria-pressed','false');button.addEventListener('click',()=>navigate(index,rememberedPages[concept.id]??0));nav.append(button);
+}
+function navigate(index,page){
+  rememberedPages[concepts[conceptIndex].id]=pageIndex;
+  const validIndex=Math.max(0,Math.min(concepts.length-1,index)),validPage=Math.max(0,Math.min(2,page));
+  const hash=concepts[validIndex].id+'/'+(validPage+1);
+  if(location.hash.slice(1)===hash)render();else location.hash=hash;
+}
+function render(){
+  const [id,page]=location.hash.slice(1).split('/');const found=concepts.findIndex(concept=>concept.id===id);conceptIndex=found<0?0:found;pageIndex=/^[1-3]$/.test(page??'')?Number(page)-1:0;
+  const concept=concepts[conceptIndex],selected=concept.pages[pageIndex];rememberedPages[concept.id]=pageIndex;
+  for(const [index,button] of [...nav.children].entries())button.setAttribute('aria-pressed',String(index===conceptIndex));
+  pages.replaceChildren(...concept.pages.map(([label],index)=>{const option=document.createElement('option');option.value=String(index);option.textContent=(index+1)+' / '+label;return option;}));pages.value=String(pageIndex);
+  screen.dataset.loading='true';byId('load-state').textContent='载入中';screen.alt=concept.name+' · '+selected[0]+'，Fouc × ADD 静态设计稿';
+  screen.src=concept.id+'/'+selected[1];byId('original').href=screen.src;byId('prompts').href=concept.id+'/generation-prompts.json';
+  byId('caption').textContent=concept.name+' · '+selected[0]+' · '+(pageIndex+1)+'/3';viewer.scrollTo({top:0,left:0});
+}
+screen.addEventListener('load',()=>{screen.dataset.loading='false';byId('load-state').textContent=screen.naturalWidth+' × '+screen.naturalHeight;});
+screen.addEventListener('error',()=>{screen.dataset.loading='false';byId('load-state').textContent='图像未能载入，可打开原图重试';});
+pages.addEventListener('change',()=>navigate(conceptIndex,Number(pages.value)));
+byId('previous').addEventListener('click',()=>navigate(conceptIndex,(pageIndex+2)%3));byId('next').addEventListener('click',()=>navigate(conceptIndex,(pageIndex+1)%3));
+byId('size').addEventListener('click',()=>{const actual=viewer.dataset.size!=='actual';viewer.dataset.size=actual?'actual':'fit';byId('size').setAttribute('aria-pressed',String(actual));byId('size').textContent=actual?'适应宽度':'原尺寸';});
+window.addEventListener('keydown',event=>{if(event.target instanceof HTMLSelectElement)return;if(event.key==='ArrowLeft'||event.key==='ArrowRight'){event.preventDefault();navigate(conceptIndex,(pageIndex+(event.key==='ArrowLeft'?2:1))%3);}});
+window.addEventListener('hashchange',render);render();
+</script>
+</html>

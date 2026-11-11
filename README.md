@@ -43,16 +43,18 @@ V1 负责建立 Fouc 最小但完整的 Agent 工作底座，并用远程问题�
 
 ## 本地开发
 
-环境要求：Node.js 22+、pnpm 10.29.3、Bun；开发桌面壳时还需要 Rust 与平台工具链。
+环境要求：Node.js 22+、pnpm 10.29.3、Bun、Docker Engine 与 Compose；Windows 使用 WSL 中的 Docker（默认 `Ubuntu-22.04`，可设置 `FOUC_WSL_DISTRO`）。开发桌面壳时还需要 Rust 与平台工具链。
 
 ```bash
 pnpm install
 pnpm dev:all
 ```
 
-`dev:all` 启动或复用本仓库 Web、设备运行时和业务服务，退出命令后服务常驻并自动刷新源码。业务服务配置使用 `.env.fouc.local`。前端保持在 `src/`，后端拆为 `backend/device/` 与 `backend/server/`；职责和分发边界见[项目结构设计](./docs/product/V1/design/arch/fouc-project-structure-design.md)。单独启动前端仍使用 `pnpm dev`。
+`dev:all` 一次启动或复用 PostgreSQL、Redis、MinIO，以及本仓库 Web、设备运行时和业务服务。业务服务配置使用 Git 忽略的 `.env.fouc.local`，首次自动生成本地密钥，并仅对空数据库初始化当前结构；已有数据库执行结构检查，已有容器和数据卷保留。三个应用进程先全部启动，再分别等待 HTTP 200；Web 首次页面编译最多等待 180 秒，设备与业务服务各等待 45 秒。退出命令后服务常驻，Next.js 与 Bun watch 自动刷新源码，日志位于 `.runtime/dev/`。单独启动前端仍使用 `pnpm dev`。
 
-先运行 `node backend/server/scripts/infra.mjs up` 启动并检查 PostgreSQL 和 MinIO；首次使用先执行该脚本的 `init` 命令。基础设施网络使用独立的 `192.168.240.0/24`，避免与 WSL NAT 网段重叠。Web 默认使用 3000 端口，可通过进程环境或 `.env.fouc.local` 中的 `FOUC_WEB_PORT` 指定其他端口，同时将对应网页 origin 加入 `FOUC_AUTH_TRUSTED_ORIGINS`。
+基础设施按当前仓库目录标签、服务标签和发布端口识别已有容器，不依赖 Compose 项目名称。缺失服务才由 Compose 创建；新网络会避开现有 Docker 网络和宿主接口网段，选中的网段写入 `.env.fouc.local` 的 `FOUC_DEV_SUBNET`。Windows 每次启动会同步 PostgreSQL、Redis、MinIO 的 WSL 地址；地址变化时重启本仓库业务服务 watcher，使连接配置生效。无需手动启动依赖；也可用 `node backend/server/scripts/infra.mjs up|verify|status` 单独管理或检查基础设施。
+
+默认就绪端点为 `http://localhost:3000/`、`http://127.0.0.1:8710/health`、`http://127.0.0.1:8711/api/auth/ok`，只有全部返回 200 才报告成功；PostgreSQL、Redis、MinIO 还分别执行主机侧 SQL 登录、认证 PING 和签名对象读写检查。Web 可通过进程环境或 `.env.fouc.local` 中的 `FOUC_WEB_PORT` 指定其他端口，同时将对应网页 origin 加入 `FOUC_AUTH_TRUSTED_ORIGINS`。启动逻辑的定向回归使用 `pnpm test:dev`。前后端职责和分发边界见[项目结构设计](./docs/product/V1/design/arch/fouc-project-structure-design.md)。
 
 查看有数据的数据库连接列表与工作台时，启动开发服务后运行：
 

@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0",
     "dev:all": "node scripts/dev.mjs",
+    "test:dev": "node --test scripts/dev-readiness.test.mjs backend/server/scripts/infra-plan.test.mjs",
     "build": "next build",
     "preview": "serve out",
     "typecheck": "tsc --noEmit",

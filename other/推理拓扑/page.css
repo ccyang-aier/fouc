@@ -1,9 +1,0 @@
-/* Shared tokens, shell, canvas, object panels, operations and responsive layout. */
-@import url("./styles/system.css");
-@import url("./styles/topology.css");
-@import url("./styles/inspector.css");
-@import url("./styles/operations.css");
-@import url("./styles/responsive.css");
-
-@import url("./styles/invocation.css");
-@import url("./styles/hardware.css");

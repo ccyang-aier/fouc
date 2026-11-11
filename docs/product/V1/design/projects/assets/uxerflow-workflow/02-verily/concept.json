@@ -1,0 +1,87 @@
+{
+  "title": "沿原文复审",
+  "studio": "Uxerflow · Verily",
+  "thesis": "把一条已确认的验收条件从人的对话带进任务包，再由 Reviewer 拿实际导出文件沿引用回到原文。",
+  "journey": "林乔确认目标、边界和三个验收样本，任琛从确认后的 v3 派发 CP-07，程岚交付真实 diff 与自测。任琛核查 G3 后，仓宁独立重放同一筛选，发现 F-24 泄出。她可打开 v3 §3.2 核实出处并返回 R-01，退回开发后再复审。后续由 Lead 确认 G5 集成合入，第 10 项活动更新现有长期资料。",
+  "references": [
+    {
+      "title": "Barly Design for Uxerflow · Verily – AI Dashboard – Chat",
+      "author": "Barly Design for Uxerflow",
+      "url": "https://dribbble.com/shots/27775292-Verily-AI-Dashboard-Chat",
+      "profileUrl": "https://dribbble.com/uxerflow",
+      "imageUrl": "https://cdn.dribbble.com/userupload/49187404/file/still-3cce5746a7e42254aebe7bb7e0c6f07d.png",
+      "videoUrl": "https://cdn.dribbble.com/userupload/49187404/file/9910d5b08fc4166f5acd98ea854ea734.mp4",
+      "observed": "13.70 秒的已展开会话。白色左栏约为内窗宽的 20.8%，主栏把正文收在约 74% 宽的居中阅读列里。人发言靠右，Agent 在左边写出实质内容。轻描边输入器贴住下部，只有其外沿有细小网点和青、黄、淡紫色纸光。"
+    },
+    {
+      "title": "Uxerflow · Verily – AI Dashboard – Library",
+      "author": "Uxerflow",
+      "url": "https://dribbble.com/shots/27789917-Verily-AI-Dashboard-Library",
+      "profileUrl": "https://dribbble.com/uxerflow",
+      "imageUrl": "https://cdn.dribbble.com/userupload/49243118/file/still-73bb34c49ecd671c3a4caa23d50de8f9.png",
+      "videoUrl": "https://cdn.dribbble.com/userupload/49243118/file/817f94f5fd155e3801daf66b43e7d275.mp4",
+      "observed": "10.35 秒可见图书馆内页，克制的衬线标题和搜索在一行，类别排列在下方。两列资料卡有细灰边、等宽小字和从右侧探出的倾斜纸页，底色只在文件列表起始处呈极淡珠光。12.72 秒打开单份资料，顶部返回与重新进入原对话分列两侧，彩浅引文和单列正文组成阅读页。"
+    },
+    {
+      "title": "Uxerflow · Verily – AI Dashboard – File Review",
+      "author": "Uxerflow",
+      "url": "https://dribbble.com/shots/27783826-Verily-AI-Dashboard-File-Review",
+      "profileUrl": "https://dribbble.com/uxerflow",
+      "imageUrl": "https://cdn.dribbble.com/userupload/49220082/file/still-cc7f657ed734755c046501fc29dc43db.png",
+      "videoUrl": "https://cdn.dribbble.com/userupload/49220082/file/e2dbd1b2e196849afca96fe79616c679.mp4",
+      "observed": "14.15 秒处的实际审阅内页把每项分为左侧状态和翻页控件、右侧原文出处与评语。正文以一条细线分隔说明，实证衬灰白底，建议衬很浅的青紫纸光。根据原作卡内宽度估算，状态列约占四分之一。"
+    }
+  ],
+  "pages": [
+    {
+      "file": "01-confirmation.png",
+      "title": "确认导出边界",
+      "focus": "产品负责人在需求对话内确认当前项目、筛选、权限和分页范围，看清三个可复现样本，再将《任务导出设计》v3 交给 Lead。",
+      "method": "内置 ImageGen 依据 Chat 13.70 秒的原始内窗生成首轮整屏。采用生成的 Fouc 字标和底部青紫网点素材，使用静态画板重排对话、源引用、版本、验收表与确认控件，以 1× 导出。",
+      "referenceIndex": 0,
+      "frameSecond": 13.7,
+      "firstWorkY": 121,
+      "bodyCssPx": 13.5,
+      "generatedFile": "exec-aad75c50-a447-4430-b219-0d72e5d4e64e.png",
+      "prompt": "Design one edge-to-edge Fouc Chinese desktop app screenshot at 1680×960 CSS pixels, normal 100% zoom. Use the attached cropped original application screen from Uxerflow’s Verily — Chat, by Barly Design for Uxerflow, as the sole visual reference. Reuse its internal ratios and visual craft, but substitute the entire product and all data. A near-white slim side rail, small dark unpretentious type, centered approximately 995px-wide conversation parchment, quiet one-pixel borders, pale grey human bubble, miniature outline controls, a narrow delicate mist of cyan, peach and lavender halftone behind the bottom composer, exactly as in its actual app. No colored poster, no external margin, no device frame, no browser, no marketing headlines, no chart, no excessive dashboard cards. Dark wordmark ‘Fouc’ with a compact cyan-blue small star; single project dropdown '协同产品' at the top. Main title bar '按筛选导出任务' with '需求对话'. Left conversations and pinned design records use 13px type. Tight 28px controls, 13px regular Chinese body, compact labels in a neutral mono font. The first substantive chat message starts at 105px / 960. One topic: people and an Agent agree on scope and verifiable behavior by anchoring it in an authoritative revision. Human bubble: ‘我想把现在筛选出来的任务导成 CSV，只能看到我有权限的那部分。’ Agent reply in plain text, with two simple headings ‘范围’ and ‘怎样验收’. A local citation '任务导出设计 · v3 · §3.2'. Highlight only the exact acceptance text ‘AC-02　导出结果仅含当前筛选命中且本人可见的任务’. A simple three-row verification table showing F-18 / 命中且可见 / 在 CSV 内, F-24 / 命中但无权 / 从 CSV 排除, F-31 / 未命中且可见 / 从 CSV 排除. Muted editor note indicating 列表与服务端复用同一可见性规则; at the end of the response a compact near-black button ‘确认并交给 Lead’. Composer anchored at bottom for ‘补充边界或调整验收条件…’, add button, neutral model choice, black send icon. Local date 2026-11-12. No other products’ marks. Make the layout faithful to the source application, very legible at normal desktop zoom; the full canvas must be one complete UI page."
+    },
+    {
+      "file": "02-dispatch.png",
+      "title": "从已确认的产物派工",
+      "focus": "Lead 从产物库选择 CP-07，引用 v3 与既有权限架构，检查依赖、文件范围、验证责任和停止条件，经 G1 派给开发。后续活动显示独立评审、集成合入和第 10 项写回。",
+      "method": "内置 ImageGen 依据 Library 10.35 秒的内窗生成两列档案及预览图。定稿保留四张独立生成的倾斜小纸页及首图字标，静态排版统一角色、文件、字号、次序与 G1 检查，按实际像素导出。",
+      "referenceIndex": 1,
+      "frameSecond": 10.35,
+      "firstWorkY": 129,
+      "bodyCssPx": 13.5,
+      "generatedFile": "exec-a8adbb37-8315-4df7-8b81-7fc9a024845c.png",
+      "prompt": "Create one production-quality Chinese desktop screenshot of Fouc at 1680×960 logical pixels, at normal native desktop scale. Direct reference is the attached original Verily Library interior by Uxerflow. Match its slender 20%-width side rail with hairline edge, near-white base, center-aligned work column about three quarters of the remaining area, restrained serif library title, fine English monospaced micro labels, pill-square filter buttons, two-column horizontal white document previews with a real, softly faded miniature paper clipping at each card’s right edge, and a faint pearl-lavender-cyan wash just behind the two-column library. Inner window only, absolutely no outer margins, rounded device, bright poster, hero or huge metrics. Adapt to Chinese ADD collaboration. Only a single project picker '协同产品' in the top bar beside the Fouc wordmark. The current work is ‘按筛选导出任务’. Compact title '产物与交接' at upper left and search at right followed by single inline filter strip. Actual object cards should begin around y=120px. Four cards as a short two-column library: ‘任务导出设计’ with ‘v3 · 已确认’ and AC-02, ‘现有任务权限架构’ with ‘沿用 · 不改权限模型’, ‘导出实现与验证’ with ‘任务上下文包 · Lead 待派发’, ‘架构决策记录’ with ‘仅出现新取舍时创建’. Below is the open selection for ‘导出实现与验证’. Use a very simple content preview, no duplicate card stack: current Lead identifies goal, two file scopes, dependency, Developer and independent Reviewer and evidence. Exact quote ‘导出结果仅含当前筛选命中且本人可见的任务’. Include ‘G1 · 已核对任务、依赖与文件范围’, the single primary action ‘派发给开发’, and the next handoff in plain words ‘开发提交 diff 与自测证据 → Lead 核验 G3 → Reviewer 独立评审’. Indicate activity 10 writes learning back to existing design, rule or skill only after integration. Regular body 12–14 CSS px, controls 26–30px, quiet paper whites with charcoal text, passive nav grey, believable desktop normal zoom, no giant card headlines. Date 2026-11-12. This is an original new product screen from Uxerflow proportions; do not reuse Verily names or contract data."
+    },
+    {
+      "file": "03-review.png",
+      "title": "独立复跑并退回修复",
+      "focus": "仓宁用普通成员简禾重新导出 CSV。将预期 F-18 与实得 F-18、F-24 并排比较，区分开发自测和独立证据，由 R-01 回看 v3 标准或把 CP-07 退回程岚修复。",
+      "method": "内置 ImageGen 依据 File Review 14.15 秒生成两轨审阅草图。保留其生成的局部建议底纹和首图品牌、输入器网点，按源作结构静态排版实得文件、开发自测、审核人和可回跳的原文。",
+      "referenceIndex": 2,
+      "frameSecond": 14.15,
+      "firstWorkY": 130,
+      "bodyCssPx": 13.5,
+      "generatedFile": "exec-625fd3cb-c715-4fdc-9416-e1a401da0650.png",
+      "prompt": "A single 1680×960 Chinese desktop app interior at 100% scale from Fouc, based solely on the attached Verily File Review actual screen by the Uxerflow studio. Match the white 20% left navigation, restrained dark type on white, 1px borders and the precise two-column findings anatomy: narrow left severity label with a tiny status dot and pager/anchor, right hand side the comparison with separate grey evidence block and gentle pearl/cyan/lavender recommended follow-up micro panel. This particular two-column finding pattern is the signature. Do not show the original poster background, no surrounding padding, no browser, no scoreboard, no gradients outside subtle original local material. Slim app header ‘按筛选导出任务 / 独立评审’, small share/more, project picker ‘协同产品’ only at top beside the Fouc wordmark. First substantive selected review finding at 115px. Regular Chinese at 13px, small date mono, compact controls 28px; max work column 970px. Reviewer 仓宁 independently replayed F-24 under a member account and compared the real exported file to AC-02 in ‘任务导出设计’ v3. It incorrectly included F-24 even though F-24 matches the filter and the member cannot view it. Source link '打开原文 · v3 §3.2 AC-02'. Compose an upper slim status line ‘Lead 已核对 G3 · 提交 91b6a2f · 开发自测通过’ and independently show ‘G4 待修复’. Primary finding ‘越权任务 F-24 出现在导出文件中’; early content with specific form ‘预期　只导出 F-18’ vs ‘实得　F-18、F-24’. Include ‘独立复跑　review/export-member.csv’ separate from ‘开发自测　export-filter.test.ts’. Cite exact ‘导出结果仅含当前筛选命中且本人可见的任务’. Finding controls ‘退回开发修复’ and optional ‘查看原文’. A compact quiet passing second finding for F-31 exclusion. Bottom conversation action for attaching an independently obtained file, on the reference’s authentic faint halftone paper glint. No fabricated verification score. Date 2026-11-12, coherent native small type. Complete standalone UX screenshot."
+    },
+    {
+      "file": "04-source.png",
+      "title": "回到 v3 的 AC-02 原文",
+      "focus": "Reviewer 的原文链接定位至《任务导出设计》v3 §3.2，保持 R-01 的来路，在正文中高亮 F-24 样本，可复制条款或返回同一复审记录。",
+      "method": "内置 ImageGen 依据 Library 12.72 秒的已打开资料状态生成内页。保留本次生成的浅色引号及阅读页珠光、沿用首图字标，静态排版正式条款、三个样本、确认人、段落链接和双向引用。",
+      "referenceIndex": 1,
+      "frameSecond": 12.72,
+      "firstWorkY": 110,
+      "bodyCssPx": 13.3,
+      "highlightCssPx": 14,
+      "generatedFile": "exec-bdc45213-b1ec-4b92-b5a8-db941328d830.png",
+      "prompt": "A focused fourth Chinese desktop screenshot of the Fouc ADD flow: the authoritative design link from the independent review has been opened, keeping the review's exact v3 document anchor. Use the attached original Uxerflow Verily / Library / saved-document reader frame as the sole reference. Precisely translate its centered article, serif title, compact top return chip, mono date/type strip, soft pearly blue-lilac-citron mist behind the top half, large but extremely pale open quotation mark at the right of the source quote, near-white small nav rail and black bottom return pill. No external poster, no device, no KPI card, no hero. Full-canvas 1680×960 at normal native 100%, normal Chinese body type 13px, controls 28px, real text at y=105–130. Fouc wordmark and single top project picker '协同产品'. Title '任务导出设计' with subtle ‘v3 · 已确认’. Link-back at top and bottom to ‘返回复审 R-01’. The first highlighted document quote is ‘AC-02　导出结果仅含当前筛选命中且本人可见的任务’. Annotate exact ‘§3.2 验收条件’. Show formal reference examples with F-18 / 匹配筛选、可见 / 应导出, F-24 / 匹配筛选、无项目可见权限 / 应排除, F-31 / 未匹配筛选、可见 / 应排除. Page explains only the single authoritative document; on the right of the selected quote a genuine small section-copy action. Include signature ‘林乔 · 11 月 12 日 09:42 确认’, and two backlinks ‘CP-07 导出实现与验证’ and ‘R-01 权限边界复审’. Project and workflow are real Chinese software team work, not contract law. White desktop editorial palette, mostly subtle warm/cool neutrals. Date 2026-11-12. Do not duplicate the reference's actual names, data, risk score, or visual assets."
+    }
+  ],
+  "verification": "四幅定稿均以 1680×960、设备比例 1 输出，不含原作片头或窗外装饰。官方原片 2880×2160。稳定画面实测内窗约 2592×1844，左栏约占 20.8%，正文列约占主区 74%。把原窗宽归一为 1440 估计，常规正文约 14–16px、行高约 20–24px，仅为像素反推。定稿侧栏 326px（19.4%），主区正文宽 996px（73.6%），主体正文 13.3–14px，主控件 25–29px。四页首个实质工作内容分别从 y=121、129、130、110 开始（11.5%–13.5%）。以实际浏览器画板检查 CJK 正文字体为 Noto Sans SC，目标页、版本、权限样本和 Gate 职责在逐页目视检查中互相一致。静态概念图展示了预期动作和相邻状态，文件、提交号、成员与测试结果为同一设计案例中的示例。"
+}

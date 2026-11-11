@@ -1,0 +1,83 @@
+{
+  "title": "草野 · 产物接力",
+  "studio": "Uxerflow · Rudolf – Startup Agent AI",
+  "thesis": "让每位接手人先看到当前任务采用的设计和证据，再在同一工作栏完成确认、派发、退回或合入。",
+  "journey": "陈璐确认 v3 → Lead 用 v3 在 G1 分派 T-01 开发与 T-02 独立核验 → G3 检查真实改动和局部自测 → 陈乔通过 R-17 发现 F-24 被写入 CSV，退回 T-01 → 修复后 R-18 独立复审通过 G4 → Lead 核对提交，由林岐接手集成，合入成功记录 G5；部署后继续真实看板验证，活动 10 回写现有设计和评审技能。",
+  "references": [
+    {
+      "title": "Uxerflow · Rudolf – Startup Agent AI – Generating Artifact",
+      "author": "Uxerflow",
+      "url": "https://dribbble.com/shots/27823617-Rudolf-Startup-Agent-AI-Generating-Artifact",
+      "imageUrl": "https://cdn.dribbble.com/userupload/49371736/file/still-3a1db9515940c8e059594a34b52ca948.png",
+      "videoUrl": "https://cdn.dribbble.com/userupload/49371736/file/4839d962f668f8474e521581d9b27380.mp4",
+      "profileUrl": "https://dribbble.com/uxerflow",
+      "frameSecond": 16.2,
+      "observed": "原作官方视频 16.20 秒，2880 × 2160。取应用内框 (80,100)–(2800,2032)，按 1600px 宽显示后，图标条约 59px，右侧 449px。中间宽画布上半部分有一宽一窄两块，下半部分是一张覆盖两栏的有细网线的工作表。右栏上部是聊天，带淡青色 1px 描边的操作卡固定在输入区上方。内页的皂黑底与炭色浮面接近，衬线区标题约 24–27px，普通无衬线与代码约 14–16px，行高约 21–24px。Fouc 取其产物画布、选择态和对话中的确认卡，改为真实的验收样例与评审。"
+    },
+    {
+      "title": "Uxerflow · Rudolf – Startup Agent AI – Roadmap Progress",
+      "author": "Uxerflow",
+      "url": "https://dribbble.com/shots/27814461-Rudolf-Startup-Agent-AI-Roadmap-Progress",
+      "imageUrl": "https://cdn.dribbble.com/userupload/49336033/file/still-d907ece3968bdd1c10d25102f7babeba.png",
+      "videoUrl": "https://cdn.dribbble.com/userupload/49336033/file/b2394bd0ec87bfa389e718c9e8d39a6a.mp4",
+      "profileUrl": "https://dribbble.com/uxerflow",
+      "frameSecond": 4.9,
+      "observed": "原作官方视频 4.90 秒，2880 × 2160。取应用内框 (145,158)–(2735,2003)，归一到 1600px 宽后，左轨约 59px，右栏约 448px，中心区约 68%。横向风吹草地封面压白色衬线标题；工作区底部用紧凑图标块、单行标题、第二行说明和细连接线表示临近任务。可用状态的小方签跨在卡片右上边，选中节点带蓝线。右侧按当前节点给出必要输入和下一步按钮。Fouc 将这些手法用于真实活动依赖、按需 ADR、证据交接与 G1/G5 放行。"
+    }
+  ],
+  "pages": [
+    {
+      "file": "01-confirm-design.png",
+      "title": "确认权威设计",
+      "focus": "陈璐与需求 Agent 核对当前筛选、读取权限和 F-12 / F-24 / F-37 三个样例，确认《任务导出设计》v3 后交给 Lead。",
+      "method": "内置 ImageGen 同时引用两条 Uxerflow 官方视频的应用内框，生成整页探索与原创草地、人物素材。原生成图的封面和正文过大，最终在外部静态画板中裁用新生成的草地、头像，按 1 CSS px = 1 输出像素重排准确中文、表格、控件和全部工作内容。",
+      "referenceIndex": 0,
+      "frameSecond": 16.2,
+      "firstWorkY": 119,
+      "bodyCssPx": 13,
+      "controlsCssPx": 27,
+      "generatedFile": "exec-f0d0d7e5-ffb2-48b4-893d-75cc69137a4f.png",
+      "prompt": "Use case: ui-mockup. Create one full-bleed production desktop screenshot for Fouc, a Chinese agent-driven development workbench. Image 1 is Uxerflow's Rudolf Generating Artifact, a real application frame. Image 2 is Uxerflow's Rudolf Roadmap Progress, a real related frame. Study the references' actual dark materials, cream and gray weight contrast, magazine-quality serif section titles, 4% bare dark icon rail and 28% inset right inspector with a tab row. Reinterpret their material and compact scale for a new Chinese product. Render edge-to-edge at the proportions of a real 1680 by 960 desktop window, no desktop wallpaper outside, no browser bezel. SCENE 1: product owner and a requirements agent jointly confirming the authoritative artifact 《任务导出设计》 v3. Top bar is 44 pixels with only project “研发协作” and task “按筛选导出任务”. Plausible center split area with a technically precise document excerpt occupying 65% of inner canvas and a narrow reviewed criterion index beside it. A very shallow editorial image strip, real photographic dark sage-green windblown grass closeup, fine dither/grain like the reference, no objects or names on the image. The first real criterion begins near y=108. Distinct big smooth Chinese Songti serif for only the single document title, mixed technical mono for v3 and AC-02, regular sans-serif 12–14px throughout, 27px buttons, 26–36px rows, more real evidence per unit area. Thin neutral graphite borders. Main Chinese: “任务导出设计”, \"v3\", “导出目标与范围”, \"AC-02\", “导出结果仅含当前筛选命中且本人可见的任务。” A real case table of F-12 included, F-24 matches but user lacks permission and must be omitted, F-37 does not match. Right inspector selected tab “对话”, with original Chinese analyst discussion, source chip and compact confirmation card, footer button “确认 v3 并交给 Lead”. No marketing copy, large numbers, giant headings, over-sized paddings, non-functional dashboards, calendar, charts, gantt or fake gradients. Keep text compact and unembellished. This should be a closely observed sibling of the references in visual material but contain only Fouc product content."
+    },
+    {
+      "file": "02-activity-route.png",
+      "title": "拆解与分派",
+      "focus": "Lead 选中活动 06，查看来源、依赖、文件范围、停止条件及验证人；确认 G1 后，将 T-01 给开发 Agent，并把等待 T-01/G3 的 T-02 留给独立 Reviewer。",
+      "method": "内置 ImageGen 引用 Roadmap Progress 的 4.90 秒帧和本套第 1 张生成探索，生成活动图与独立的草地照片材质。静态画板采用第 2 张生成图的草地，重排准确文字并重绘按需 ADR 分支、蛇形主线、状态和节点命中区。",
+      "referenceIndex": 1,
+      "frameSecond": 4.9,
+      "firstWorkY": 119,
+      "bodyCssPx": 13,
+      "controlsCssPx": 27,
+      "generatedFile": "exec-55d07fa5-77fa-44f7-9557-ce0e043348c4.png",
+      "prompt": "Use case: ui-mockup. A new full-bleed, 1680:960 desktop app screenshot for Fouc, page 2 of the same project as image 2. Image 1 is a 4.90 seconds frame from Uxerflow's official Rudolf Roadmap Progress. Image 2 is the Fouc design generated for its companion artifact screen. Preserve the exact original Rudolf application's restrained geometry, almost-black 4 percent narrow icon rail and 28 percent tabbed right-hand inspector. Distinguished real Chinese Song serif headings, 12–14 px native desktop sans body, little monospace code stamps, saturated cobalt actions and tiny mint completion stamps. Main focus: “活动路线”. Design a legible functional compact directed activity graph on a warm near-black canvas, 3 columns connected by fine orthogonal hairlines: 已确认需求 > 沿用现有架构 > 边界与详细设计; a tiny dashed optional “按需 ADR” tucked off the architecture node. Then active “06 拆解与分派” > 实施与自测 > 独立评审. Show 集成验证 and activity 10 写回设计、规则、技能. A short strip of original realistically photographed wind-combed grass in a muted olive field across the top 65px of central column (no letters inside the photo on its right), very fine print dither and film grain. No exterior wallpaper. Top single compact control “研发协作” and task “按筛选导出任务”. Normal 26px buttons. Actual task at y110 or sooner. Under graph, two normal rows for T-01 导出查询 and T-02 验收样例, referencing 《任务导出设计》v3 and AC-02. The right inspector is a Context Pack for Lead, source v3, dependency and file scope of T-01 and independent verifier assigned, restrained blue button “确认 G1 并派发”. Avoid calendar diagrams, big KPI, pie charts, unrelated chat, chunky buttons, oversized text or billboard titles. Capture a real desktop tool, align tiny typesetting conscientiously."
+    },
+    {
+      "file": "03-independent-review.png",
+      "title": "复核实际导出",
+      "focus": "陈乔用独立数据验证 v3 的 AC-02。开发自测通过，Lead 在 G3 已核验 diff 与日志，独立运行 R-17 的 CSV 仍有 F-24。陈乔附证据退回 T-01，修复后返回本次评审。",
+      "method": "内置 ImageGen 引用 Generating Artifact 的 16.20 秒帧与本套第 1 张探索，生成宽窄样例比对、双栏 CSV 和缺陷工作栏构图。以外部静态画板精确重排图中的比较结构及全部文字，统一分支、负责人、样例和时间。头像沿用第 1 张生成素材。",
+      "referenceIndex": 0,
+      "frameSecond": 16.2,
+      "firstWorkY": 109,
+      "bodyCssPx": 13,
+      "controlsCssPx": 27,
+      "generatedFile": "exec-2079f0a1-7735-40de-889b-9997b9598e8e.png",
+      "prompt": "Use case: ui-mockup. Create screen 3 for the Fouc Chinese desktop product. Image 1 is a clean frame from Uxerflow Rudolf Generating Artifact, 16.20s; image 2 is this concept's generated first screen. This is a dedicated G4 independent code/behavior review. Full-bleed 1680:960 realistic dark application. No photograph or hero title on this evidence screen. Preserve Rudolf's 3.7% black rail at left, charcoal center canvas ~68% wide, 28% dark inset inspector, subtle near-black fine rules, China Noto Song editorial section heads, Segoe/Noto Sans 13px body, monospace code. Header at y24; already at y100 the current adverse evidence “F-24 被写入 CSV” must be visible. Left upper zone split: substantial “样例比对” proof table and narrower selected sample detail outlined in pale cyan. Left lower zone: concise actual output in a two-pane code comparison, expected file just F-12, actual file F-12 and F-24, extra row gently copper. No metrics or charts. Top stable project “研发协作” and task “按筛选导出任务”. Source object “任务导出设计 v3”, acceptance “AC-02　导出结果仅含当前筛选命中且本人可见的任务。” Show G3 Lead inspected diff and developer self-test; independent reviewer Chen Qiao repeats with restricted account and discovers F-24 leaks even though filter matches, status “G4 待修复”. Right four-tab drawer, actionable concise defect, T-01 assignee, file scope, proof reference, restrained amber button “退回 T-01 修复”. Issue returns to reviewer before integrator. Detailed restrained Asian desktop typesetting, 27px controls, no big cards, no zoomed presentation, no spurious marketing, no glowing ornaments."
+    },
+    {
+      "file": "04-integration-handoff.png",
+      "title": "复审后接手集成",
+      "focus": "开发修复后，Lead 复核新 diff，陈乔用相同账号独立复审 R-18，确认 CSV 只含 F-12。Lead 交给林岐，待合入成功后记录 G5，继而做真实看板 E2E，并在活动 10 写回已有设计和技能。",
+      "method": "内置 ImageGen 引用 Roadmap Progress 的 4.90 秒帧和本套第 1 张探索，生成回执与纵向证据日志并列、右侧集成交接栏的构图。外部静态画板重排日志、三条复审样例、候选提交及合入动作，继承第一张生成头像。",
+      "referenceIndex": 1,
+      "frameSecond": 4.9,
+      "firstWorkY": 109,
+      "bodyCssPx": 13,
+      "controlsCssPx": 27,
+      "generatedFile": "exec-c90503fb-5c6a-4911-867b-73df4b3b9cfa.png",
+      "prompt": "Design a fourth connected desktop screenshot for Fouc. Source image 1 is a Uxerflow Rudolf Roadmap Progress full in-app frame; image 2 is Fouc's matching first proposed screen. This last scene is a calm successful handoff after independent re-review. Charcoal and ink black 4% tool rail, 68% main canvas, 28% inset right action drawer; modest Chinese Songti section heads, crisp 12–14 px Chinese body, technical mono times. No grass hero this time. Distinct central vertical evidence timeline arranged as an editorial log of a real action: developer repaired the visibility condition on T-01, reviewer Chen Qiao (陈乔) independently reran F-12/F-24/F-37 and confirmed F-24 absent from the CSV, Lead checked, then the integration owner is asked to confirm merge as G5. Show the compact root title “接手集成” and actual work reaching y100 in a 1680×960 desktop, no extra chrome. Left main has short commit and corrected expected/actual CSV receipt near top then a chronological, restrained evidence ledger and the product route for writing back the existing design/rule/skill. Right tab “交接” shows selected authoritative document “任务导出设计 v3”, G4 re-review receipt, known merge candidate, owner, concrete next verification through the real project board export. Footer “确认合入 · G5”. Do not label an unmerged change as already integrated. No percentages, marketing copy, large amber or green boxes. Preserve fine original Rudolf materials, real user actions and composed generous interior space while keeping native-size body text."
+    }
+  ],
+  "verification": "四幅 PNG 均为 1680 × 960，Chromium 按 DPR 1 渲染。逐幅目视对照两条 Uxerflow 原视频的精确应用内框。主图标轨 58px，右栏 470.4px（28%）；第 1、2 张的实质陈述 y=119px（12.4%），第 3、4 张 y=109px（11.4%）；正文 13px，行动控件 27px。已核对每页相同的对象、v3、AC-02、执行角色和样例，G1、G3、G4、G5 均绑定明确检查及责任。人物名、提交号、CSV 和运行记录为原型示例数据。最终交付为静态 UX 图，未执行真实业务测试。"
+}

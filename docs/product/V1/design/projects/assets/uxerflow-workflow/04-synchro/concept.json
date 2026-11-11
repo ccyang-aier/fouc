@@ -1,0 +1,414 @@
+{
+  "title": "团队批次与交接",
+  "studio": "Uxerflow · Synchro",
+  "thesis": "同一条验收条件随可并行的任务包流转，Lead 和独立评审人分别凭自己的证据接手。",
+  "journey": "原文确认 → 活动编排 → 第 1 批派工 → 两项交付与 G3 核验 → G4 独立复核发现 F-24 → EX-17 修复后送回同一评审人 → 新会话复审签收并交给 Lead。源设计、原退回单和交付快照都有反向入口。",
+  "references": [
+    {
+      "profileUrl": "https://dribbble.com/uxerflow",
+      "frameSize": [
+        800,
+        600
+      ],
+      "title": "Barly Design for Uxerflow · Synchro — Project Management — Board Detail",
+      "author": "Barly Design for Uxerflow",
+      "url": "https://dribbble.com/shots/27058593-Synchro-Project-Management-Board-Detail",
+      "imageUrl": "https://cdn.dribbble.com/userupload/46641235/file/still-e09b9102bb6dde0f2d397ca38a02d367.png",
+      "videoUrl": "https://cdn.dribbble.com/userupload/46641235/file/large-581ce04174afee2eecc082da04706dfc.mp4",
+      "framesObserved": [
+        0.4,
+        3.7,
+        6.5,
+        12.6
+      ],
+      "observed": "0.4 秒全幅的应用边界约为 x40–760、y44–557，灰侧栏止于 x180，约占内部窗口 19%。顶部细工具条、下一行工作对象、右侧叠放头像与黑色操作建立稳定位置。3.7 秒细节显示小范围着色的泳道名、浅灰头条、白色可移动卡和底边成员信息。12.6 秒转为单工作对象，图标、标题、紧凑键值、附件和分隔线依次展开。Fouc 的原文、活动编排及退回工作单分别借用这三种组织方式。"
+    },
+    {
+      "profileUrl": "https://dribbble.com/uxerflow",
+      "frameSize": [
+        800,
+        600
+      ],
+      "title": "Barly Design for Uxerflow · Synchro — Project Management — Dashboard",
+      "author": "Barly Design for Uxerflow",
+      "url": "https://dribbble.com/shots/27054769-Synchro-Project-Management-Dashboard",
+      "imageUrl": "https://cdn.dribbble.com/userupload/46628428/file/still-f7c458e3ff3793e7bb93265cdf62372b.png",
+      "videoUrl": "https://cdn.dribbble.com/userupload/46628428/file/large-e56faeb903f546f1c41d2552f60bb789.mp4",
+      "framesObserved": [
+        2.4,
+        10.5,
+        14.6
+      ],
+      "observed": "2.4 秒全幅主栏较宽，右侧团队列表较窄。活动图按责任人占行，成员缩略头像贴近自身任务。两组工具栏在内窗高度的约前 14% 结束。10.5 秒放大讨论，细灰回复线连接左右错开的气泡，附件依附发言卡。Fouc 将责任人泳道用于已派任务的签收到提交轨迹，将紧贴发言的证据用于确认与复审。"
+    },
+    {
+      "profileUrl": "https://dribbble.com/uxerflow",
+      "frameSize": [
+        800,
+        600
+      ],
+      "title": "Uxerflow · Synchro — Project Management — Kanban Detail",
+      "author": "Uxerflow",
+      "url": "https://dribbble.com/shots/27066729-Synchro-Project-Management-Kanban-Detail",
+      "imageUrl": "https://cdn.dribbble.com/userupload/46669218/file/still-893af4b255125f8f70e37d690387b779.png",
+      "videoUrl": "https://cdn.dribbble.com/userupload/46669218/file/large-389f076ba211825a7d41c43c14209d7a.mp4",
+      "framesObserved": [
+        2.5,
+        3.5,
+        6.7
+      ],
+      "observed": "2.5 秒完整桌面的分组表把组名、复选行、负责人、日期和状态对齐，选择只改变单行底色，人员标签以轻微蓝、绿作区分。6.7 秒近景把同一批工作切为窄卡列，列名、数量、二级动作共处一行，头像压在卡片底边。Fouc 派工页使用缩进的可写文件行，活动页沿用紧凑泳道和被选工作卡。"
+    },
+    {
+      "profileUrl": "https://dribbble.com/uxerflow",
+      "frameSize": [
+        800,
+        600
+      ],
+      "title": "Barly Design for Uxerflow · Synchro — Project Management — Inbox",
+      "author": "Barly Design for Uxerflow",
+      "url": "https://dribbble.com/shots/27070757-Synchro-Project-Management-Inbox",
+      "imageUrl": "https://cdn.dribbble.com/userupload/46682842/file/still-718c1cc2cb1a8d5e8d21974c89786772.png",
+      "videoUrl": "https://cdn.dribbble.com/userupload/46682842/file/large-bd9250c139859d3458b3e09318223228.mp4",
+      "framesObserved": [
+        2.5,
+        4.5
+      ],
+      "observed": "2.5 秒原作以约 200∶355 的收件列表与正文并置，列表顶有轻量搜索，单项选中行用灰底。4.5 秒正文滚动到附件和子任务，收件索引仍在原位。Fouc 独立复核保留样例队列与被选证据并置，右边改为预期与实际 CSV 的逐行对照。"
+    }
+  ],
+  "pages": [
+    {
+      "file": "01-confirm-source.png",
+      "title": "原文确认",
+      "focus": "林以安核对 v3 的目标、边界和三条可验证条件，以普通成员 U-07 的反例签收，再把该版本交给 Lead。",
+      "referenceIndex": 0,
+      "frameSecond": 12.6,
+      "supportingFrames": [
+        {
+          "referenceIndex": 0,
+          "frameSecond": 12.6
+        },
+        {
+          "referenceIndex": 1,
+          "frameSecond": 10.5
+        }
+      ],
+      "method": "内置 ImageGen 引用实际官片帧生成页面草图，保留做事人、原文与讨论的横向层次，用小头像、嵌套回复和文件块落实生成草图。定稿校正三个样例和右侧的签收人。 正式 PNG 由独立静态画板按 1600 × 960、DPR 1 输出，两名人类头像取自本套单独生成的人像。",
+      "generationFile": "exec-b3a184a4-1050-43e2-93e9-ea4ee44125b8.png",
+      "prompt": "Use case: ui-mockup. Design the first screen of an original Fouc desktop Chinese team handoff application, a precise full-bleed 1600x960 desktop product screenshot (landscape), no presentation backdrop, no decorative matte. Two real shot frames attached: reference A is Barly Design for Uxerflow's Synchro Board Detail at 12.6s (flat task detail and neutral profile navigation), reference B is its Synchro Dashboard at 10.5s (the comment thread and attachment treatment). Work from the INSIDE of those app windows, preserve the stylistic restraint, font scale, flat white work surface, quiet gray sidebar of about 16% width, charcoal text and black action, spring-like tiny tint only on evidence/selection. The result is Fouc, not a copy of text, brand, data, outer matte or source avatar identity. New precise content: gray left sidebar with Fouc and a black create button, four small task navigation rows, favorites, tiny human account at the base; 48px top bar with real project picker 产品研发, search and actual members. Second band 48px with 按筛选导出任务, right black 确认并交给 Lead. Actual content begins around y=110. Quiet two-column task work surface, roughly 840px authoritative document and 330px compact discussion. Left shows 任务导出设计 with subtle v3 pill, sourced scope, AC-01 and selected AC-02 '导出结果仅含当前筛选命中且本人可见的任务', table of F-18/F-21/F-24 expected visibility, and two restrained linked file objects. Right shows small real-looking Chinese collaborators, an agent and reviewer with ownership. Use restrained exact Chinese type at 13-14 CSS pixels in a real 1600x960 window, normal reference-scale small controls 28px, title no larger than 25px, no oversized headings, pastel cards, photo banners, fake charts, KPI numbers, product marketing, browser chrome, or diagonal perspective. Precisely aligned grid and modest reference-like breathing space; small nearly imperceptible shadows exclusively at controls. Show actual information close to the top rather than a poster. This is one complete product screen.",
+      "viewport": [
+        1600,
+        960
+      ],
+      "bodyFontPx": 13,
+      "firstWorkY": 140,
+      "hotspots": [
+        {
+          "label": "确认并交给 Lead",
+          "x": 1409,
+          "y": 65,
+          "width": 131,
+          "height": 29,
+          "targetFile": "02-activity-board.png"
+        }
+      ]
+    },
+    {
+      "file": "02-activity-board.png",
+      "title": "活动编排",
+      "focus": "Lead 从已签收的活动与沿用架构中组装这次路线，可插入 ADR。选中活动 06 即可进入批次，活动 10 指回原设计与权限规则。",
+      "referenceIndex": 0,
+      "frameSecond": 0.4,
+      "supportingFrames": [
+        {
+          "referenceIndex": 0,
+          "frameSecond": 0.4
+        },
+        {
+          "referenceIndex": 2,
+          "frameSecond": 6.7
+        }
+      ],
+      "method": "内置 ImageGen 引用实际官片帧生成页面草图，生成稿确定四条短泳道和选中活动的下方详情。定稿按实际条件重排卡片，补全 10 项活动编号、文档回写目标和各交接对象。 正式 PNG 由独立静态画板按 1600 × 960、DPR 1 输出，两名人类头像取自本套单独生成的人像。",
+      "generationFile": "exec-251d16a3-c6a0-4def-864e-ac5ee3bf0fb6.png",
+      "prompt": "Use case: ui-mockup. Precise original Fouc Chinese desktop collaboration application screen for the same filtered-task export feature. Two input images are real Uxerflow Synchro product shots, use the inside of the application for visual direction, without any artist matte, outer frame, brand, or unrelated data. One complete flat full-bleed 1600×960 logical desktop screenshot. Height of first actual work under 145 px. Reproduce modest 12–14 CSSpx normal-density typography, 28px controls, compact 45–50px top chrome, restrained white background, ash left nav about 16% width, black main button, no header towers, cards only for genuine work objects, tiny subdued semantic statuses, no gradients, marketing, posters, KPI or mock-device. Left common logo Fouc, black 新建协作, links 工作概览 / 我的交接 / 协作看板 / 成员, current case 按筛选导出任务. Top common project picker 产品研发, compact search and membership. 活动编排. Show a REAL 4-column Synchro board without decorative timeline. Primary action 打开批次派工. At ~110px start a single 4-column body, each swimlane uses an ash header with tinted label and tiny count, white compact 7px-radius actual activity cards, two tiny overlapping collaborators or avatar, short one-line outcome. Four columns 岗前已确认 / 沿用与按需 / 本批次 / 交接后. First has activities 01 目标澄清, 04 特性边界, 05 详细设计. Second has 02 沿用架构 and optional 03 插入 ADR with quiet dashed control. Third has 06 拆解与派工, 07 实施与自测 with selected 06 in graphite outline. Fourth 08 独立评审, 09 集成验证, 10 回写长期资料. In a shallow lower detail band, show the selected role Lead, the two disjoint task packs for 柏舟 and 鹿鸣, then independent evidence handoff. Expose confirmed 权威文档《任务导出设计》v3 and return to original. Source-like visual quiet allowed.",
+      "viewport": [
+        1600,
+        960
+      ],
+      "bodyFontPx": 12,
+      "firstWorkY": 127,
+      "hotspots": [
+        {
+          "label": "打开批次派工",
+          "x": 1426,
+          "y": 65,
+          "width": 114,
+          "height": 29,
+          "targetFile": "03-batch-dispatch.png"
+        },
+        {
+          "label": "详细设计",
+          "x": 270,
+          "y": 444,
+          "width": 319,
+          "height": 110,
+          "targetFile": "01-confirm-source.png"
+        },
+        {
+          "label": "拆任务与派工",
+          "x": 929,
+          "y": 210,
+          "width": 319,
+          "height": 110,
+          "targetFile": "03-batch-dispatch.png"
+        }
+      ]
+    },
+    {
+      "file": "03-batch-dispatch.png",
+      "title": "批次派工",
+      "focus": "Lead 核对 G1 的任务清单、依赖和互不交叉的可写文件，将 EX-17 交给柏舟、EX-18 交给鹿鸣。选中任务的 Context Pack 明确了分支、自测和停止条件。",
+      "referenceIndex": 2,
+      "frameSecond": 2.5,
+      "supportingFrames": [
+        {
+          "referenceIndex": 2,
+          "frameSecond": 2.5
+        },
+        {
+          "referenceIndex": 1,
+          "frameSecond": 2.4
+        }
+      ],
+      "method": "内置 ImageGen 引用实际官片帧生成页面草图，从生成稿保留展开分组与单行选择、右侧任务包。定稿换成各负责包的精确文件路径，明确普通成员复核责任。 正式 PNG 由独立静态画板按 1600 × 960、DPR 1 输出，两名人类头像取自本套单独生成的人像。",
+      "generationFile": "exec-efd11f54-3a6e-4635-8022-8854b5551eee.png",
+      "prompt": "Use case: ui-mockup. Precise original Fouc Chinese desktop collaboration application screen for the same filtered-task export feature. Two input images are real Uxerflow Synchro product shots, use the inside of the application for visual direction, without any artist matte, outer frame, brand, or unrelated data. One complete flat full-bleed 1600×960 logical desktop screenshot. Height of first actual work under 145 px. Reproduce modest 12–14 CSSpx normal-density typography, 28px controls, compact 45–50px top chrome, restrained white background, ash left nav about 16% width, black main button, no header towers, cards only for genuine work objects, tiny subdued semantic statuses, no gradients, marketing, posters, KPI or mock-device. Left common logo Fouc, black 新建协作, links 工作概览 / 我的交接 / 协作看板 / 成员, current case 按筛选导出任务. Top common project picker 产品研发, compact search and membership. 第 1 批 · 派工. Capture Lead's planning work surface. Compact grouped spreadsheet on the left across about 70% of the main surface with two clearly separate implementation rows EX-17 柏舟 服务端导出过滤 and EX-18 鹿鸣 看板导出入口. Child rows name real-looking path scopes and tests, tiny tinted member chips against white, original pill tabs and neutral selection. Right slim inspector 任务上下文, exact referenced authority 任务导出设计 v3 and AC-02, source branch, permitted files, stop if shared contract changes, failed-then-passed verification command. Bottom contextual section shows G1 ownership/ranges/dependencies checked, independent reviewer 岑宁 must receive diff and self-tests after G3. Header black action 分派 2 个任务包. Tiny avatars, subtle source-like hairlines. Visualize ownership of physical files, not charts.",
+      "viewport": [
+        1600,
+        960
+      ],
+      "bodyFontPx": 12.5,
+      "firstWorkY": 128,
+      "hotspots": [
+        {
+          "label": "分派 2 个任务包",
+          "x": 1413,
+          "y": 65,
+          "width": 127,
+          "height": 29,
+          "targetFile": "04-delivery-handoff.png"
+        },
+        {
+          "label": "任务导出设计 v3",
+          "x": 1365,
+          "y": 374,
+          "width": 122,
+          "height": 19,
+          "targetFile": "01-confirm-source.png"
+        }
+      ]
+    },
+    {
+      "file": "04-delivery-handoff.png",
+      "title": "批次交付",
+      "focus": "两个并行任务提交后，Lead 查看文件 diff 和真实自测输出，在 G3 核验后将变更与证据交给岑宁独立复核。",
+      "referenceIndex": 1,
+      "frameSecond": 2.4,
+      "supportingFrames": [
+        {
+          "referenceIndex": 1,
+          "frameSecond": 2.4
+        },
+        {
+          "referenceIndex": 0,
+          "frameSecond": 0.4
+        }
+      ],
+      "method": "内置 ImageGen 引用实际官片帧生成页面草图，把生成稿的送达、局部验证与版本字段压进两行实际批次记录。定稿补齐变更片段、自测身份、两个版本和独立接收人。 正式 PNG 由独立静态画板按 1600 × 960、DPR 1 输出，两名人类头像取自本套单独生成的人像。",
+      "generationFile": "exec-5870929e-e29b-41e5-95ef-811179a7a582.png",
+      "prompt": "Use case: ui-mockup. One additional full desktop Fouc screen for the Chinese product team's confirmed V3 filtered-task export workflow. Exact sources attached: Barly Design for Uxerflow's Synchro Dashboard, complete frame 2.4 s, shows narrow list, collaboration chart and small team portraits, and Synchro Board Detail, 0.4 s, has fine horizontal activities and compact statuses. Adapt only the interior visual grammar and seating. New real content is the dispatched batch record and G3 handoff. Title 批次交付, real work appears at 120px: assignment batch B-01, dispatched 09:34, first card EX-17 柏舟 and second EX-18 鹿鸣 have disjoint filenames; a genuinely useful two-row time-by-owner table indicates 任务包送达 / 局部验证 / 提交变更, with actual times 09:35, 10:42, 10:38 and avatars. Selected EX-17 shows a small true diff file listing and a side-by-side self-test versus evidence manifest, six positive self-tests run as maintenance member U-01. Right slim handoff area lists 岑宁 as independent next receiver, reference 《任务导出设计》v3 AC-02 and open risk 普通成员 U-07 需独立验证. Top black button 交给岑宁独立复核. G3 belongs only to the Lead action verifying actual diffs and self-test, not a board column or organizational stage. Soft ash navigation 16%, near-white content, 13px Chinese desktop body type, 28px controls, compact strong focus near y=110 in a 1600×960 full-bleed viewport. No presentation backdrop, ornamental Gantt, arbitrary charts, purple gradient, oversized typography, KPI, simple numbered stage cards, or stock marketing. Same quiet authentically compact Synchro product look.",
+      "viewport": [
+        1600,
+        960
+      ],
+      "bodyFontPx": 12,
+      "firstWorkY": 128,
+      "hotspots": [
+        {
+          "label": "交给岑宁独立复核",
+          "x": 1402,
+          "y": 65,
+          "width": 138,
+          "height": 29,
+          "targetFile": "05-independent-review.png"
+        },
+        {
+          "label": "查看派工快照",
+          "x": 1130,
+          "y": 289,
+          "width": 89,
+          "height": 19,
+          "targetFile": "03-batch-dispatch.png"
+        },
+        {
+          "label": "任务导出设计 v3",
+          "x": 1365,
+          "y": 348,
+          "width": 122,
+          "height": 19,
+          "targetFile": "01-confirm-source.png"
+        }
+      ]
+    },
+    {
+      "file": "05-independent-review.png",
+      "title": "独立复核",
+      "focus": "岑宁用 U-07 独立下载并对照 CSV，定位 F-24 的额外一行，只把 EX-17 退回柏舟。",
+      "referenceIndex": 3,
+      "frameSecond": 2.5,
+      "supportingFrames": [
+        {
+          "referenceIndex": 3,
+          "frameSecond": 2.5
+        },
+        {
+          "referenceIndex": 1,
+          "frameSecond": 10.5
+        }
+      ],
+      "method": "内置 ImageGen 引用实际官片帧生成页面草图，从生成稿保留收件式样例队列、期望及实际文件并排和仅为错误行使用的红色。定稿锁定原运行身份、测试会话和退回范围。 正式 PNG 由独立静态画板按 1600 × 960、DPR 1 输出，两名人类头像取自本套单独生成的人像。",
+      "generationFile": "exec-ce2f09eb-5b86-496e-9026-aa1ee1669a97.png",
+      "prompt": "Use case: ui-mockup. Precise original Fouc Chinese desktop collaboration application screen for the same filtered-task export feature. Two input images are real Uxerflow Synchro product shots, use the inside of the application for visual direction, without any artist matte, outer frame, brand, or unrelated data. One complete flat full-bleed 1600×960 logical desktop screenshot. Height of first actual work under 145 px. Reproduce modest 12–14 CSSpx normal-density typography, 28px controls, compact 45–50px top chrome, restrained white background, ash left nav about 16% width, black main button, no header towers, cards only for genuine work objects, tiny subdued semantic statuses, no gradients, marketing, posters, KPI or mock-device. Left common logo Fouc, black 新建协作, links 工作概览 / 我的交接 / 协作看板 / 成员, current case 按筛选导出任务. Top common project picker 产品研发, compact search and membership. 独立复核. In the style of the Synchro Inbox: quiet fog-gray nav, white two-part work queue and evidence detail, no cover/banner. In main inner left list 复核队列, active failing F-24 displayed by muted ash selection, other fixture F-18 and F-21. Inner right main surface is true comparison evidence for AC-02, clearly show F-24 matches filter, is not visible to this member, expected excluded, actual CSV contains F-24. Show two very thin comparable CSV preview panes with actual line F-18 and erroneous F-24, tiny highlighted warm red line strictly for discrepancy. Compact source/test file attachment chips, top G3 has real diff and developer self-test, G4 reviewer 岑宁 separately reran leading to failure. Top black/soft red action 退回 EX-17, also provide original doc relation. White, graphite, tiny teal when evidence agrees. No fake metrics or progress giant.",
+      "viewport": [
+        1600,
+        960
+      ],
+      "bodyFontPx": 12.5,
+      "firstWorkY": 142,
+      "hotspots": [
+        {
+          "label": "退回 EX-17",
+          "x": 1441,
+          "y": 65,
+          "width": 99,
+          "height": 29,
+          "targetFile": "06-return-and-repair.png"
+        },
+        {
+          "label": "任务导出设计 v3",
+          "x": 384,
+          "y": 488,
+          "width": 122,
+          "height": 19,
+          "targetFile": "01-confirm-source.png"
+        }
+      ]
+    },
+    {
+      "file": "06-return-and-repair.png",
+      "title": "修复交接",
+      "focus": "柏舟在原文件范围内复现 F-24 后修复，附上 93ad621 和同一身份的回归结果，由 Lead 核验，再交回岑宁。",
+      "referenceIndex": 0,
+      "frameSecond": 12.6,
+      "supportingFrames": [
+        {
+          "referenceIndex": 0,
+          "frameSecond": 12.6
+        },
+        {
+          "referenceIndex": 1,
+          "frameSecond": 10.5
+        }
+      ],
+      "method": "内置 ImageGen 引用实际官片帧生成页面草图，从生成稿保留修改前后和复测前后的成对视图。定稿使用前后一致的 F-18、F-21、F-24，补上各责任人的时间记录。 正式 PNG 由独立静态画板按 1600 × 960、DPR 1 输出，两名人类头像取自本套单独生成的人像。",
+      "generationFile": "exec-7c5f5d8e-bfac-44a6-aaba-facd3ced5ff3.png",
+      "prompt": "Use case: ui-mockup. Precise original Fouc Chinese desktop collaboration application screen for the same filtered-task export feature. Two input images are real Uxerflow Synchro product shots, use the inside of the application for visual direction, without any artist matte, outer frame, brand, or unrelated data. One complete flat full-bleed 1600×960 logical desktop screenshot. Height of first actual work under 145 px. Reproduce modest 12–14 CSSpx normal-density typography, 28px controls, compact 45–50px top chrome, restrained white background, ash left nav about 16% width, black main button, no header towers, cards only for genuine work objects, tiny subdued semantic statuses, no gradients, marketing, posters, KPI or mock-device. Left common logo Fouc, black 新建协作, links 工作概览 / 我的交接 / 协作看板 / 成员, current case 按筛选导出任务. Top common project picker 产品研发, compact search and membership. 修复交接. Show one precise Synchro task detail screen for the returned EX-17 on branch fix/export-visible. Visible artifact is an actual 2-column before/after snippet of a defensive permission-filter repair and repeatable test output for F-24, not a coding terminal theme: white neutral UI with very pale rose/teal changed rows and compact monospace. Right visible original issue, owner 柏舟 (开发 Agent), receiving independent reviewer 岑宁, authority 《任务导出设计》v3 and AC-02. A short activity thread shows 岑宁 returned, 柏舟 added fixed revision and regression. Main action 送回岑宁复审. Use the actual flat Synchro material, not giant panels, no charts/KPI, authentic tiny avatars.",
+      "viewport": [
+        1600,
+        960
+      ],
+      "bodyFontPx": 12.5,
+      "firstWorkY": 142,
+      "hotspots": [
+        {
+          "label": "送回岑宁复审",
+          "x": 1426,
+          "y": 65,
+          "width": 114,
+          "height": 29,
+          "targetFile": "07-recheck-handoff.png"
+        },
+        {
+          "label": "原始独立复核",
+          "x": 1365,
+          "y": 242,
+          "width": 106,
+          "height": 19,
+          "targetFile": "05-independent-review.png"
+        }
+      ]
+    },
+    {
+      "file": "07-recheck-handoff.png",
+      "title": "复审签收",
+      "focus": "岑宁在新的 R-09 会话重新下载，确认只剩 F-18。整批通过 G4 后交给 Lead 做集成与真实验证，G5 等待实际合入。",
+      "referenceIndex": 1,
+      "frameSecond": 2.4,
+      "supportingFrames": [
+        {
+          "referenceIndex": 1,
+          "frameSecond": 2.4
+        },
+        {
+          "referenceIndex": 3,
+          "frameSecond": 4.5
+        }
+      ],
+      "method": "内置 ImageGen 引用实际官片帧生成页面草图，从生成稿保留独立记录与接手收据并置的版式。定稿校正成员、修复版本、三条样例及 G5 的等待状态。 正式 PNG 由独立静态画板按 1600 × 960、DPR 1 输出，两名人类头像取自本套单独生成的人像。",
+      "generationFile": "exec-9871b866-6702-4301-82ae-e4d510db2671.png",
+      "prompt": "Use case: ui-mockup. Precise original Fouc Chinese desktop collaboration application screen for the same filtered-task export feature. Two input images are real Uxerflow Synchro product shots, use the inside of the application for visual direction, without any artist matte, outer frame, brand, or unrelated data. One complete flat full-bleed 1600×960 logical desktop screenshot. Height of first actual work under 145 px. Reproduce modest 12–14 CSSpx normal-density typography, 28px controls, compact 45–50px top chrome, restrained white background, ash left nav about 16% width, black main button, no header towers, cards only for genuine work objects, tiny subdued semantic statuses, no gradients, marketing, posters, KPI or mock-device. Left common logo Fouc, black 新建协作, links 工作概览 / 我的交接 / 协作看板 / 成员, current case 按筛选导出任务. Top common project picker 产品研发, compact search and membership. 复审与集成交接. Independent reviewer 岑宁 has rerun with same F-24 member and fresh output, secure intersection yields F-18 only; independent confirmation cements G4-batch. Present clean project handoff as a split desktop workspace: compact audit record left, precise neutral receipt right, no hero or charts. Show authoritative task design v3, confirmed version of fix, comparison table F-18 / F-21 / F-24; bottom next owner Lead gets reviewed change and evidence for activity 09, G5 still awaiting actual merge, activity 10 after integration writes back into existing design and tests. Top action 查看批次记录. Quiet Synchro tints strictly semantic, minuscule avatars, white flat program.",
+      "viewport": [
+        1600,
+        960
+      ],
+      "bodyFontPx": 12.5,
+      "firstWorkY": 142,
+      "hotspots": [
+        {
+          "label": "查看批次交付",
+          "x": 1426,
+          "y": 65,
+          "width": 114,
+          "height": 29,
+          "targetFile": "04-delivery-handoff.png"
+        },
+        {
+          "label": "原退回证据",
+          "x": 412,
+          "y": 816,
+          "width": 123,
+          "height": 47,
+          "targetFile": "05-independent-review.png"
+        },
+        {
+          "label": "修复交付",
+          "x": 543,
+          "y": 816,
+          "width": 141,
+          "height": 47,
+          "targetFile": "06-return-and-repair.png"
+        }
+      ]
+    }
+  ],
+  "assets": {
+    "portraits": {
+      "method": "内置 ImageGen 原创两位虚构协作者的双人接触印样，正式画板按各自半幅取圆形头像。Agent 用 Fouc 公开图标目录中的职责图形标示。",
+      "generationFile": "exec-5988c324-8173-41fe-9cfd-2545f9c288d3.png",
+      "prompt": "Use case: photorealistic-natural. Create a single clean 2:1 rectangular studio contact sheet for TWO original fictional collaborator profile photographs, two equally wide square photographs side by side edge-to-edge, vertical boundary dead center. No words, grid outlines, margins, labels, props or icons. Professional candid contemporary Chinese software product team, neutral natural window light, 50mm, short camera distance, tight head-and-shoulders, normal facial proportions not beauty retouch; each face exactly centered horizontally and vertically near 48%, both people facing the viewer warmly, realistic and distinct. LEFT square: Chinese woman age 32, short dark bob tucked behind left ear, taupe work jacket, warm sand studio background. RIGHT square: Chinese man age 35, short black hair and black rounded eyeglasses, dark olive crew neck, pale concrete cool gray studio background. Choose a square-native source framing if 2:1 is unavailable by leaving equal photocomposition headshots in each half, their centered faces still crop to a tiny circular team avatar. No dependency on other visual sources: original photography created for this fictional Fouc UI."
+    }
+  },
+  "verification": "逐帧核对同一 Synchro 系列四支公开官片。800 × 600 展示帧中的完整应用窗宽约 720 px，正文目测约 6–8 个视频像素，本套按正常桌面比例重新排字并去掉展示外框。这七张正式 PNG 均为 1600 × 960、DPR 1，主要工作区从 y=127–142 开始，占画面高度 13.2%–14.8%。代表性正文实测 12–13 px，目标段落 13.5 px，主按钮 29 px。逐页验证中文使用 Noto Sans SC，英文使用 Segoe UI，最下方的工作内容均在画面范围内。16 个主要操作坐标直接读取自最终静态画板。版本摘要、运行记录、人员与测试数据均为同一设计案例的示例。G1、G3、G4、G5 只随相应产物核验和签收，G5 保持待合入。"
+}

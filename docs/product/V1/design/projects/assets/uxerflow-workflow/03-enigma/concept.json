@@ -1,0 +1,409 @@
+{
+  "title": "研发调用追踪台",
+  "studio": "Uxerflow · Enigma – AI Agent Dashboard",
+  "thesis": "让业务负责人、Lead、开发 Agent 和 Reviewer 沿着同一条验收条件，逐次签收工作、查看真实产物和退回有证据的问题。",
+  "journey": "目标与验收 → 协作路线 → 执行追踪 → 独立核对。确认 v3 后，Lead 在 G1 确认依赖和文件范围并分派 T-07。开发先复现，再提交 diff 与局测。Lead 在 G3 核对后交独立 Reviewer。R-04 通过新成员会话发现排队后撤权仍导出 F-24，退回原任务修复。Reviewer 复审后交 Lead 再确认，活动 09 完成集成合入后确认 G5，活动 10 更新原设计、规则或技能。",
+  "references": [
+    {
+      "title": "Uxerflow · Enigma – AI Agent Dashboard – Traces",
+      "author": "Uxerflow",
+      "url": "https://dribbble.com/shots/27811288-Enigma-AI-Agent-Dashboard-Traces",
+      "imageUrl": "https://cdn.dribbble.com/userupload/49324158/file/still-a24984d0d49ecb0fdb4363d53541b020.png",
+      "videoUrl": "https://cdn.dribbble.com/userupload/49324158/file/4536bd3873e344290713c52682e7bbd7.mp4",
+      "profileUrl": "https://dribbble.com/uxerflow",
+      "keyframes": [
+        {
+          "second": 3.35,
+          "state": "Traces 的方格图、双分栏与紧凑筛选器。"
+        },
+        {
+          "second": 6.5,
+          "state": "Data visualizer / Runs 的平视运行列表。"
+        }
+      ],
+      "observed": "作者主页公开发布的 2880 × 2160 视频。3.350 秒的 Traces 图用逐列点亮的橙方格表示轨迹量。本方案借用方格形态，改用有图例的标记区分每项活动的主责和协作人。6.500 秒的平视应用窗口约为 2593 × 1844，左侧图标轨约占宽度 3.7%，两层导航合计约占 20.9%。将窗口等比折算到 1600 px 宽，Runs 明细的 run_agent 与侧栏 Traces 的可见字面均实测约 12 px 高，相邻明细行中心距约 66 px。原片采用近黑底、较亮一层的炭灰资料面、虚线行界、橙色细选中线和有界的紧凑按钮。暖色外框属于作品陈列。该作品 PNG 封面为笔记本透视展示，内部比例根据视频的正面帧读取。"
+    },
+    {
+      "title": "Uxerflow · Enigma – AI Agent Dashboard – Homepage",
+      "author": "Uxerflow",
+      "url": "https://dribbble.com/shots/27804999-Enigma-AI-Agent-Dashboard-Homepage",
+      "imageUrl": "https://cdn.dribbble.com/userupload/49301253/file/still-a98174638b90ffbf7e33eee6c43747e2.png",
+      "videoUrl": "https://cdn.dribbble.com/userupload/49301253/file/f243e8519c6f24ca5f964d3919816255.mp4?download=1",
+      "profileUrl": "https://dribbble.com/uxerflow",
+      "keyframes": [
+        {
+          "second": 17.4,
+          "state": "Share skill 里的权限选择已展开，当前值 Can view。"
+        }
+      ],
+      "observed": "同一作者的 2880 × 2160、18.50 秒视频。17.400 秒的 Share skill 对话框保留来源对象，逐行列受影响主体和权利，使用边界浅、微圆角的单项选择与局部橙色提交键。首页原始 PNG 也呈现这组控件。应用窗口在 1200 px 宽的展示稿中约 1080 px 宽，权限对话框约 450 px 宽。将这种明确选择对象、再给出决定的分工用于需求签收与独立评审决定。"
+    }
+  ],
+  "pages": [
+    {
+      "file": "01-agreement.png",
+      "title": "目标与验收",
+      "focus": "林岚与需求 Agent 确认可写入 v3 的范围、生成时点和 AC-02，对照 F-17、F-24、F-39 后选择“确认 v3 并交给 Lead”。",
+      "referenceIndex": 0,
+      "frameSecond": 6.5,
+      "method": "以两张真实系列参考生成对话、契约与样例的双栏草图。首段原草图位于约 23% 高度。定稿用静态排版把 AC-02 提到 12% 高度，逐字排需求、三条样例、目标边界和确认按钮。",
+      "prompt": "Create one polished FLAT APPLICATION SCREENSHOT, 1600 x 960 full bleed for Fouc, a Chinese desktop application managing ADD agent-assisted development. Date 12 November 2026. The two attached images are the real Enigma – AI Agent Dashboard Traces work table (video 6.50s) and an Enigma confirmation dialog. Study the ACTUAL internal design, not Dribbble's artboard: luminous ivory letters on a deep near-neutral obsidian #131313 frame / #1b1b1b table panels, warm amber-orange functional selected tab, modest semibold labels, subdued outlines, dotted row rules and small monochrome controls. Flat orthographic screenshot (no device, no margin, no poster or visible viewport surround). Source contains project picker, run table and statistics but we are designing a different product. Exclude metrics, cost, decorative charts, rings, big numbers and giant headlines. The body must actually look like compact desktop 13 CSS px on this whole 1600x960 working viewport. Headers under 19 px and controls 26 px. A user can see the actual initial working text around y=106-135. Compact icon rail 52px, project navigation column 192px and horizontal project switch at very top only. Use natural Chinese, good typesetting, quiet restrained care of a genuine premium Enigma-style collaborative dev tool. Lots of dark neutral canvas, strictly amber for selected current state and primary action, mint only for checked facts.\nScreen: product manager and requirements agent agree on one testable contract. Top bar shows Fouc / 北辰研发 / 研发协作, right compact search. Local side nav four clear cross-screen destinations: 目标与验收 (active), 协作路线, 执行追踪, 独立核对. Their open task is “按筛选导出任务”. Compact title line same size as reference's detail labels, icon, EXP-17, 任务导出设计 v3. One focused split working panel with (left two thirds) a compact discussion and source contract, (right one third) the checkable input/output fixture. Work directly starts in the top 12%. When user 林岚 asks “按当前筛选导出；没有权限的任务怎么办？” 需求 Agent confirms “服务端按发起人权限再筛一次。” Display an inline source revision '任务导出设计 v3' and this exact text 'AC-02  导出结果仅含当前筛选命中且本人可见的任务'. Right fixture is a neatly aligned table of 3 rows: F-17 进行中 可见 导出; F-24 进行中 无权限 排除; F-39 已完成 可见 排除. Show human approval pending with a primary restrained orange '确认 v3 并交给 Lead' button, then '协作路线' destination. Bottom notes may show actual source attachments but never invent spurious metrics, marketing copy or random chart. Use correct Chinese. Single minimal amber focus highlight, small contained outline square icons and narrow source-style inputs. Differentiate headings from body by weight and whitespace. Keep entire frame as a live desktop tool, not as presentation graphics.",
+      "imageGenFile": "exec-2f2408a1-9346-435e-90e3-07d3ba2a2667.png",
+      "imageGenReferences": [
+        "Traces 6.500 秒平视窗",
+        "Homepage 官方权限确认封面"
+      ],
+      "hotspots": [
+        {
+          "label": "目标与验收",
+          "targetFile": "01-agreement.png",
+          "x": 64,
+          "y": 190,
+          "width": 202,
+          "height": 33
+        },
+        {
+          "label": "协作路线",
+          "targetFile": "02-route.png",
+          "x": 64,
+          "y": 227,
+          "width": 202,
+          "height": 33
+        },
+        {
+          "label": "执行追踪",
+          "targetFile": "03-calls.png",
+          "x": 64,
+          "y": 264,
+          "width": 202,
+          "height": 33
+        },
+        {
+          "label": "独立核对",
+          "targetFile": "04-review.png",
+          "x": 64,
+          "y": 301,
+          "width": 202,
+          "height": 33
+        },
+        {
+          "label": "确认 v3 并交给 Lead",
+          "targetFile": "02-route.png",
+          "x": 1414,
+          "y": 644,
+          "width": 150,
+          "height": 27
+        }
+      ],
+      "measurements": {
+        "viewport": [
+          1600,
+          960
+        ],
+        "firstWorkY": 115,
+        "mainTextCSSPx": 13,
+        "sampleGlyphInkHeightPx": 12,
+        "primaryControlHeightPx": 27,
+        "contentBottomPx": 845,
+        "bodyFonts": [
+          "Noto Sans SC",
+          "Segoe UI",
+          "Consolas"
+        ],
+        "renderScale": 2,
+        "deliveryScale": 1
+      },
+      "sha256": "f88e42e116d461644a1f71ca7120904c18b0fa7d9a940e198106bb100c677c78"
+    },
+    {
+      "file": "02-route.png",
+      "title": "协作路线",
+      "focus": "Lead 确认本次沿用的架构、可插入 ADR 的条件和活动顺序，在 G1 核对 T-07 的依赖和可写文件，签派任务并打开执行追踪。",
+      "referenceIndex": 0,
+      "frameSecond": 3.35,
+      "method": "内置 ImageGen 参考 Traces 平视帧与本套首屏生成了活动账表和责任矩阵。按官方方格与表格语汇静态重排，将每个方格绑定到对应职责，补齐任务包的文件、验证命令、停止条件和 G1。",
+      "prompt": "Create ONE image, a 1600x960 flat full-bleed desktop screenshot for the Chinese Fouc app, 12 November 2026. Reference one is the verified working interface from Uxerflow's Enigma Traces at 6.500 seconds. Reference two is the approved Fouc first screen for this same app; preserve its exact chrome size, source material, sidebar groupings and quiet dark theme. Work screen for “协作路线” (active one of sidebar 目标与验收、协作路线、执行追踪、独立核对). This is a genuine Lead assignment ledger following business confirmation, not a KPI dashboard. Body 12–14 actual CSS px, 1600 px wide, controls 24–28 px, first working line at y=115. No outer mat, no extra top tabs. Top project 北辰研发, work item EXP-17 按筛选导出任务, source 任务导出设计 v3 section AC-02 already confirmed by 林岚. Left, a ten-line activity ledger inspired by Enigma's dark technical trace row system. 01 澄清目标 已确认, 02 项目架构 沿用, 03 记录 ADR 按需, 04 特性边界 已确认, 05 详细设计 已确认, 06 任务拆解 当前, 07 实施与局测 待签派, 08 独立评审 预约, 09 集成合入 待接手, 10 写回设计与规则 待接手. A tiny earned amber dot matrix near bottom may show exact activity ownership for human, Lead, developer and independent Reviewer, no decorative time chart. On right display task-specific context pack 'T-07 · 实现筛选导出' with repository fouc, branch task/export, scope export-tasks.ts and export-tasks.test.ts, 任务依赖 任务导出设计 v3, verification 先建立失败样例→局测→Lead 检查真实 diff, role Reviewer to replay independently, stop if task visibility contract must change. Primary amber action '签派 T-07 并打开追踪'. G1 is a checkpoint for task, dependencies and allowed files, not a stage. Keep quiet midnight neutral panels, hairline borders and perforated rows, precise Chinese, everything visibly actual-size, broad working table not stacks of metrics.",
+      "imageGenFile": "exec-ac616873-6032-4eb5-9c69-efdd3e481a02.png",
+      "imageGenReferences": [
+        "Traces 6.500 秒平视窗",
+        "本套 01-agreement 静态定稿初版"
+      ],
+      "hotspots": [
+        {
+          "label": "目标与验收",
+          "targetFile": "01-agreement.png",
+          "x": 64,
+          "y": 190,
+          "width": 202,
+          "height": 33
+        },
+        {
+          "label": "协作路线",
+          "targetFile": "02-route.png",
+          "x": 64,
+          "y": 227,
+          "width": 202,
+          "height": 33
+        },
+        {
+          "label": "执行追踪",
+          "targetFile": "03-calls.png",
+          "x": 64,
+          "y": 264,
+          "width": 202,
+          "height": 33
+        },
+        {
+          "label": "独立核对",
+          "targetFile": "04-review.png",
+          "x": 64,
+          "y": 301,
+          "width": 202,
+          "height": 33
+        },
+        {
+          "label": "查看 v3",
+          "targetFile": "01-agreement.png",
+          "x": 1497,
+          "y": 63,
+          "width": 82,
+          "height": 27
+        },
+        {
+          "label": "查看确认记录",
+          "targetFile": "01-agreement.png",
+          "x": 1476,
+          "y": 124,
+          "width": 89,
+          "height": 19
+        },
+        {
+          "label": "签派 T-07 并打开追踪",
+          "targetFile": "03-calls.png",
+          "x": 1407,
+          "y": 814,
+          "width": 157,
+          "height": 27
+        }
+      ],
+      "measurements": {
+        "viewport": [
+          1600,
+          960
+        ],
+        "firstWorkY": 115,
+        "mainTextCSSPx": 13,
+        "sampleGlyphInkHeightPx": 12,
+        "primaryControlHeightPx": 27,
+        "contentBottomPx": 881,
+        "bodyFonts": [
+          "Noto Sans SC",
+          "Segoe UI",
+          "Consolas"
+        ],
+        "renderScale": 2,
+        "deliveryScale": 1
+      },
+      "sha256": "5e3e49fd70748ba4a1a47980aeb2c73490674625db1d803e566532b36e4ce8de"
+    },
+    {
+      "file": "03-calls.png",
+      "title": "执行追踪",
+      "focus": "Lead 打开 inspect_diff，对照 c91e5d2、原始失败、固定权限的局测输出与 v3，完成 G3 核验后把动态撤权场景交给独立 Reviewer。",
+      "referenceIndex": 0,
+      "frameSecond": 6.5,
+      "method": "内置 ImageGen 探索调用树与差异窗的组合。静态定稿以 Traces 的状态行重排角色与动作，统一为 T-07 的两个 TypeScript 文件，并让入队时的授权快照与下一页复现直接相连。",
+      "prompt": "Create ONE product work screen for Fouc, 1600x960 full-bleed native desktop Chinese on 12 November 2026. First reference is actual Uxerflow Enigma – AI Agent Dashboard Traces flat worklist (6.500s frame); second is approved same-project Fouc first screen, persist its 54px icon rail, 223px navigation, 48px horizontal header, restrained type, black/charcoal/amber scheme and the same four navigation links. This is “执行追踪” for the already assigned T-07 / 按筛选导出任务 / 任务导出设计 v3 / AC-02. Center: actual dependency tree of agent calls with method names in narrow monospace, using Enigma's small state icons, tabs and dashed row rules, badges only where meaningful. 11:06 read_context v3; 11:09 test_before first reproduced (F-24 appeared); 11:18 modify_export edited two files; 11:22 test_after succeeds; 11:27 inspect_diff Lead selected. Right: actual 3-line diff, a reference to the original v3 condition and the dev-run self-test CSV showing only F-17, excluding F-24, F-39. State that these are role-authored local fixtures. G3 Lead examines implemented diff and local results against source. Independent Reviewer has not yet replayed the case. Primary contained orange '交给 Reviewer 独立核对'. Use actual 13 px body, 24–28px controls; first semantic work item at y≈115. Clear source artifact and author of each bit of evidence. No outer frame, no ringing neon, no analytics, monetary costs, counters or progress dashboards. Neutral near-black panels, grey font and small warm selection, proper Chinese. Nothing copied from previous Fouc designs other than the screen attached for this project.",
+      "imageGenFile": "exec-bb9a0d24-dd35-4631-abf3-2263faca7b73.png",
+      "imageGenReferences": [
+        "Traces 6.500 秒平视窗",
+        "本套 01-agreement 静态定稿初版"
+      ],
+      "hotspots": [
+        {
+          "label": "目标与验收",
+          "targetFile": "01-agreement.png",
+          "x": 64,
+          "y": 190,
+          "width": 202,
+          "height": 33
+        },
+        {
+          "label": "协作路线",
+          "targetFile": "02-route.png",
+          "x": 64,
+          "y": 227,
+          "width": 202,
+          "height": 33
+        },
+        {
+          "label": "执行追踪",
+          "targetFile": "03-calls.png",
+          "x": 64,
+          "y": 264,
+          "width": 202,
+          "height": 33
+        },
+        {
+          "label": "独立核对",
+          "targetFile": "04-review.png",
+          "x": 64,
+          "y": 301,
+          "width": 202,
+          "height": 33
+        },
+        {
+          "label": "返回协作路线",
+          "targetFile": "02-route.png",
+          "x": 1465,
+          "y": 63,
+          "width": 114,
+          "height": 27
+        },
+        {
+          "label": "打开已签派的上下文",
+          "targetFile": "02-route.png",
+          "x": 1440,
+          "y": 124,
+          "width": 125,
+          "height": 19
+        },
+        {
+          "label": "任务导出设计 v3 · AC-02",
+          "targetFile": "01-agreement.png",
+          "x": 1419,
+          "y": 230,
+          "width": 146,
+          "height": 19
+        },
+        {
+          "label": "交给 Reviewer 独立核对",
+          "targetFile": "04-review.png",
+          "x": 1394,
+          "y": 733,
+          "width": 170,
+          "height": 27
+        }
+      ],
+      "measurements": {
+        "viewport": [
+          1600,
+          960
+        ],
+        "firstWorkY": 115,
+        "mainTextCSSPx": 13,
+        "sampleGlyphInkHeightPx": 12,
+        "primaryControlHeightPx": 27,
+        "contentBottomPx": 894.59,
+        "bodyFonts": [
+          "Noto Sans SC",
+          "Segoe UI",
+          "Consolas"
+        ],
+        "renderScale": 2,
+        "deliveryScale": 1
+      },
+      "sha256": "e409566bcb34ccaeaf788bf517064bdedc4d17f812806b9bb3c4d47b4908dd18"
+    },
+    {
+      "file": "04-review.png",
+      "title": "独立核对",
+      "focus": "Reviewer 以新成员会话复现导出期间撤权，在原始 CSV 找到 F-24，连同 R-04 退回 T-07 修复，并保留复审通过后到活动 09 的接手路径。",
+      "referenceIndex": 1,
+      "frameSecond": 17.4,
+      "method": "内置 ImageGen 给出操作记录、CSV 对照和退回决定的方向。静态定稿引用 Homepage 的权限选择和局部动作材质，用相同的提交、角色、撤权时点与两个独立文件逐字校准证据。",
+      "prompt": "Create ONE focused Enigma-inspired Fouc INDEPENDENT REVIEW work screen, a full bleed orthographic 1600x960 Chinese desktop product screen dated 12 November 2026. Attached real Uxerflow Enigma Traces frame shows precise near-black matte row styling. Attached approved Fouc page establishes the exact family and slim navigation. Use the same dark charcoal chrome, narrow amber selection and dotted rows. Body regular 13 px; first real evidence at y=115, primary page title at most 19px. Nav highlight 独立核对; the other entrances are 目标与验收、协作路线、执行追踪. Project switch 北辰研发 in top bar only. This is independent reviewer R-04 of T-07 / 按筛选导出任务, referencing 任务导出设计 v3 and AC-02. Evidence must be meaningfully different from developer's self-test. The reviewer creates a real '进行中' export, then revokes actor access on F-24 between queueing and file generation, then downloads resulting CSV. Side by side monospaced PREVIEW expected.csv task_id F-17, actual.csv task_id F-17 F-24. Highlight just one incorrect row in muted coral. Small interaction trace calls open filtered view, queue CSV, revoke F-24 read, download raw artifact and compare. Left contains usable evidence, right focused inspector visible decision '退回 T-07 修复' with prefilled repair note '写出 CSV 前按发起人重新校验可见性' and expected independent replay after fix. Downstream conditional '复审通过 → Lead 再确认 → G5 集成合入' threaded with original evidence. G4-task is current decision, not an activity. No cost/metrics cards, no random data, marketing, charts, filler or backdrop. Controlled typography and real work surfaces, tiny muted status icons, investigate mismatch then send fix to implementation from same page.",
+      "imageGenFile": "exec-247366a0-15ca-4a05-aeb8-217f800816ef.png",
+      "imageGenReferences": [
+        "Traces 6.500 秒平视窗",
+        "本套 01-agreement 静态定稿初版"
+      ],
+      "hotspots": [
+        {
+          "label": "目标与验收",
+          "targetFile": "01-agreement.png",
+          "x": 64,
+          "y": 190,
+          "width": 202,
+          "height": 33
+        },
+        {
+          "label": "协作路线",
+          "targetFile": "02-route.png",
+          "x": 64,
+          "y": 227,
+          "width": 202,
+          "height": 33
+        },
+        {
+          "label": "执行追踪",
+          "targetFile": "03-calls.png",
+          "x": 64,
+          "y": 264,
+          "width": 202,
+          "height": 33
+        },
+        {
+          "label": "独立核对",
+          "targetFile": "04-review.png",
+          "x": 64,
+          "y": 301,
+          "width": 202,
+          "height": 33
+        },
+        {
+          "label": "对照执行追踪",
+          "targetFile": "03-calls.png",
+          "x": 1465,
+          "y": 63,
+          "width": 114,
+          "height": 27
+        },
+        {
+          "label": "对照开发自测",
+          "targetFile": "03-calls.png",
+          "x": 982,
+          "y": 803,
+          "width": 89,
+          "height": 19
+        },
+        {
+          "label": "退回 T-07 修复",
+          "targetFile": "03-calls.png",
+          "x": 1417,
+          "y": 441,
+          "width": 148,
+          "height": 27
+        },
+        {
+          "label": "查看协作路线",
+          "targetFile": "02-route.png",
+          "x": 1476,
+          "y": 727,
+          "width": 89,
+          "height": 19
+        }
+      ],
+      "measurements": {
+        "viewport": [
+          1600,
+          960
+        ],
+        "firstWorkY": 115,
+        "mainTextCSSPx": 13,
+        "sampleGlyphInkHeightPx": 12,
+        "primaryControlHeightPx": 27,
+        "contentBottomPx": 832.16,
+        "bodyFonts": [
+          "Noto Sans SC",
+          "Segoe UI",
+          "Consolas"
+        ],
+        "renderScale": 2,
+        "deliveryScale": 1
+      },
+      "sha256": "291e7668683279d6c61c84c16d0c5c803de1e9d07e47e538ef090d494a9b160f"
+    }
+  ],
+  "verification": "已并排目视复核 Uxerflow 两个原作与四张定稿。制图画板为满幅 1600 × 960，先于 DPR 1 校验，再以同一逻辑窗口 2 倍采样并等比回到 1600 × 960，保留中文字形边缘。浏览器读取四页的首条实际工作内容均从 y=115 开始，占视口 12.0%。主表正文字号 12–13 px，查看器测得四页抽样的字面均约高 12 px，和 Traces 1600 px 宽平视窗口的示例行一致。主按钮为 27 px，各页当前区块落在画面内，已校验导航的目标页与像素区域。新方案的双层导航占宽 17.3%，给两列工作物留出空间。页面中的任务、提交号及运行证据为同一演示情境的设计数据。原作图像与视频仅用于作者对照，交付的四张图为内置 ImageGen 探索后由静态排版校准的原创 Fouc 产品效果图。"
+}

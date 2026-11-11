@@ -1,0 +1,194 @@
+{
+  "title": "交付文件工作台",
+  "studio": "Uxerflow · Forge AI Agent Code",
+  "thesis": "人和 Agent 围绕同一份打开的文件工作，每次交接都留下可以重新打开的版本、变更或 CSV。",
+  "journey": "负责人确认《任务导出设计》v3 → Lead 把 AC-02、读写路径和停止条件交给开发 → Lead 查验提交与局部自测 → Reviewer 用独立运行核对实际 CSV → Lead 集成，负责人确认后回写已有评审规则。复核发现问题时可把断言和 CSV 一并退回实施。",
+  "references": [
+    {
+      "title": "Uxerflow · Forge – AI Agent Code – Coding Workspace",
+      "url": "https://dribbble.com/shots/27765468-Forge-AI-Agent-Code-Coding-Workspace",
+      "imageUrl": "https://cdn.dribbble.com/userupload/49151207/file/still-531344f930076cfcfd8ceb2e88c861ed.png",
+      "videoUrl": "https://cdn.dribbble.com/userupload/49151207/file/large-b9cf32d46c76b3d4545ff97b1c04393a.mp4",
+      "profileUrl": "https://dribbble.com/uxerflow",
+      "observed": "2880×2160 官方封面的前景窗体平视。单独裁到 1536px 宽后，可见文件树、编辑器和会话约占 19%、48%、31%，窄间隙上是一层浅灰蓝窗体，白色文件标签和底部终端把代码与运行连在一起。树与会话可见字高约 13–15px，普通行距约 23–30px。官片 0.45 秒可见完整窗体，8.5 秒展开终端，12 秒可见运行和会话侧栏同时更新。"
+    },
+    {
+      "title": "Uxerflow · Forge – AI Agent Code – Workspace",
+      "url": "https://dribbble.com/shots/27755707-Forge-AI-Agent-Code-Workspace",
+      "imageUrl": "https://cdn.dribbble.com/userupload/49113475/file/still-f0419cdfabe3a263de6182d028a163ea.png",
+      "videoUrl": "https://cdn.dribbble.com/userupload/49113475/file/large-a59b8a7f170ab7384631ca6b12256ea6.mp4",
+      "profileUrl": "https://dribbble.com/uxerflow",
+      "observed": "官方影片 8 秒附近的输入器把上下文与模型放在单行小控件中，选中项用紧凑描边。14.5 秒转入代码和会话并排，15.4 秒为完整三栏窗体，终端紧贴编辑器底边。采用后者的工作中状态与附着式输入区，项目选择移到 Fouc 顶栏。"
+    }
+  ],
+  "pages": [
+    {
+      "file": "01-design.png",
+      "title": "确认《任务导出设计》v3",
+      "focus": "林乔和需求 Agent 明确筛选、可见范围和 CSV 列，以 F-24 的反例签认 AC-02。确认操作把 v3 交给 Lead。",
+      "referenceIndex": 0,
+      "frameSecond": 0.45,
+      "method": "内置 ImageGen 引用了 Coding Workspace 的原版封面窗体裁切及 Workspace 15.4 秒的完整编辑器。生成稿确定文档与侧会话的并读布局。静态排版校准了字号、四条输入、两行 CSV 和确认控件，并保留了本轮生成的人像与 Agent 头像。",
+      "prompt": "Use case: ui-mockup. Build the first of a working Fouc desktop UX story in Chinese. The attached reference 1 is the cropped, legible entire application in Uxerflow's real Forge AI Agent Code – Coding Workspace; reference 2 is the studio's Workspace video at 15.4 seconds. Preserve their light, compact IDE fabric: icy bluish gray chassis, white one-pixel edged 8px-radius explorer, file editor and collaboration pane, file glyphs, slender compact segmented mode control, small black assistant avatar, mint action, calm black type, pale inset composer with model controls. Design a maximized desktop application at 1600 by 960 landscape (no monitor, wallpaper, margins, poster, marketing or oversized homepage). Single 48px top toolbar with Fouc wordmark and sole project selector “研发协作”, compact 文档 / 代码 / 运行 picker. Explorer width ~250px, large document editor ~825px, right conversation pane ~490px. Use crisp 12–14px Chinese body and 26–29px controls. First work at y=110. Real document tab task-export.md, title “任务导出设计” and “v3”, then “按筛选导出任务”. A terse Markdown design document, literal “AC-02 导出结果仅含当前筛选命中且本人可见的任务”; small four-record fixture matrix with F-18 and F-21 visible and matching, F-24 matching but invisible, F-33 visible and not matching; expected export two rows. In the right panel a real short requirements conversation between 林乔 and 需求 Agent, one compact action tile “确认 v3 并交给 Lead”. Keep the foreground document and chat real and typeset, with restrained rectangular material, near-black glyphs, a dark send circle, limited turquoise; generous empty white space below work. No made-up numerical KPI, kanban, poster headline, ribbons, cards for decoration, no repeated toolbar. All other branding and source demo text replaced.",
+      "generatedFile": "exec-62e0520f-f7ec-41dd-b7dd-1555becee3de.png",
+      "hotspots": [
+        {
+          "label": "确认 v3 并交给 Lead",
+          "targetFile": "02-context.png",
+          "x": 1413,
+          "y": 649,
+          "width": 147,
+          "height": 27
+        }
+      ],
+      "viewport": [
+        1600,
+        960
+      ],
+      "firstWorkY": 104,
+      "bodyFont": "13.5px",
+      "actionHeight": 27
+    },
+    {
+      "file": "02-context.png",
+      "title": "分派范围与验证责任",
+      "focus": "Lead 从已确认的 v3 建立上下文包，限定两条可写路径及权限依赖，在活动清单中确认沿用架构、按需插入 ADR 和独立复核责任，然后完成 G1 分派。",
+      "referenceIndex": 1,
+      "frameSecond": 15.4,
+      "method": "内置 ImageGen 研究 Forge 三栏中的结构化上下文与交接会话，引用 Coding Workspace 封面窗体裁切及 Workspace 15.4 秒帧。外部静态画板将上下文和活动清单排在同一个编辑器内，精确设置活动、责任人与 G1 决策文字。",
+      "prompt": "Use case: ui-mockup. A single 1600x960 maximized desktop screenshot for Fouc. The first local reference is the flat full IDE in Uxerflow Forge AI Agent Code – Coding Workspace. The second is a new frame of their same two Forge films. Preserve the studio's pale gray-blue chassis, 8px softly rounded white 1px-bordered panes, project and compact mode control along one 48px title bar, 250px white explorer rail, roughly 825px central file editor with ice-gray file tabs, 490px white attached Agent session with small black square assistant avatar, calm compact typography, white message composer with small inline context chips, dark round send button. Active product content starts within the first 10–15% of the window. Adult computer scale 12–14 pixel body, 24–30px controls with tiny icons. Very restrained turquoise for actions, muted indigo, plum and green for actual code elements only. No desktop wallpaper, glossy decorative background, poster, KPI, subtitle ribbons, big hero, blanket of cards, system illustrations, fictitious alerts, or contents of source example. Top-left Fouc wordmark and sole current project 研发协作. All operating content in Chinese except real code/identifiers. One coherent, carefully typeset screen for this state: Human lead assigning a verified context pack. Real file context.yml in central editor shows feature 按筛选导出任务, spec 任务导出设计 v3, acceptance AC-02, write scope backend/server/src/modules/tasks/export.ts and export.test.ts; read-only access.ts; verify F-24 excluded from CSV despite matching status; stop when permission model or file scope changes. Show compact vertical connected activity route that tells this story: confirmed needs, existing architecture reused, ADR optional only at a boundary change, bounded coding and test then independent review, integration and updating existing rules. Prefer a short structured file preview plus a restrained vertical line of file statuses, not colorful separate cards. Right Lead session lists one precise dependency and the separately assigned Reviewer with a single turquoise “确认范围并分派” action (G1).",
+      "generatedFile": "exec-78dd11af-dbb3-404b-8315-1eae21303585.png",
+      "hotspots": [
+        {
+          "label": "查看 task-export.md",
+          "targetFile": "01-design.png",
+          "x": 564,
+          "y": 52,
+          "width": 148,
+          "height": 31
+        },
+        {
+          "label": "确认范围并分派给开发",
+          "targetFile": "03-development.png",
+          "x": 1401,
+          "y": 571,
+          "width": 159,
+          "height": 27
+        }
+      ],
+      "viewport": [
+        1600,
+        960
+      ],
+      "firstWorkY": 102,
+      "bodyFont": "13px",
+      "actionHeight": 27
+    },
+    {
+      "file": "03-development.png",
+      "title": "检查实施差异与自测",
+      "focus": "查看 export.ts 中的筛选与权限交集、修复前后的输出及开发自测 dev-041。Lead 据此完成 G3 并送独立 Reviewer。",
+      "referenceIndex": 0,
+      "frameSecond": 8.5,
+      "method": "内置 ImageGen 参照封面窗体与 Coding Workspace 8.5 秒的运行视图生成 diff 和终端草图。静态画板重排可执行的 TypeScript、行号、色块与自测输出，从已执行的固定样例校准关键值并复用本套角色图像。",
+      "prompt": "Use case: ui-mockup. A single 1600x960 maximized desktop screenshot for Fouc. The first local reference is the flat full IDE in Uxerflow Forge AI Agent Code – Coding Workspace. The second is a new frame of their same two Forge films. Preserve the studio's pale gray-blue chassis, 8px softly rounded white 1px-bordered panes, project and compact mode control along one 48px title bar, 250px white explorer rail, roughly 825px central file editor with ice-gray file tabs, 490px white attached Agent session with small black square assistant avatar, calm compact typography, white message composer with small inline context chips, dark round send button. Active product content starts within the first 10–15% of the window. Adult computer scale 12–14 pixel body, 24–30px controls with tiny icons. Very restrained turquoise for actions, muted indigo, plum and green for actual code elements only. No desktop wallpaper, glossy decorative background, poster, KPI, subtitle ribbons, big hero, blanket of cards, system illustrations, fictitious alerts, or contents of source example. Top-left Fouc wordmark and sole current project 研发协作. All operating content in Chinese except real code/identifiers. One coherent, carefully typeset screen for this state: The selected artifact is export.ts with a real TypeScript diff applying one condition, “visibleIds.has(task.id)”, after filtering. Sober monospace gutter and muted full-width green added-line / soft red removed-line backgrounds. Central terminal is expanded below the file, recording prior failing F-24 exposure, then a fresh self-test run dev-041, 4 fixtures, output [F-18,F-21], F-24 absent. Right-side collaborator shows a short implementation handoff from 开发 Agent with patch hash 9d47b2a and G3 review of actual diff and test by Lead. Primary action “送独立复核”. Doc tab task-export.md v3 / AC-02 remains retrievable. Source medium is a real IDE app, readable focus on code and terminal, honest whitespace.",
+      "generatedFile": "exec-b39bcc13-40bd-4fe1-96e3-8eb60589db39.png",
+      "hotspots": [
+        {
+          "label": "查看 context.yml",
+          "targetFile": "02-context.png",
+          "x": 548,
+          "y": 52,
+          "width": 128,
+          "height": 31
+        },
+        {
+          "label": "送独立复核",
+          "targetFile": "04-review.png",
+          "x": 1461,
+          "y": 620,
+          "width": 99,
+          "height": 27
+        }
+      ],
+      "viewport": [
+        1600,
+        960
+      ],
+      "firstWorkY": 119,
+      "bodyFont": "13px",
+      "actionHeight": 27
+    },
+    {
+      "file": "04-review.png",
+      "title": "独立读取 CSV 并断言",
+      "focus": "Reviewer 从独立检出生成 review.csv，对照四条输入，断言完整编号集合为 F-18、F-21 且 F-24 缺席。评审可附证据退回修复，或将通过结论交给 Lead。",
+      "referenceIndex": 0,
+      "frameSecond": 12,
+      "method": "内置 ImageGen 引用 Coding Workspace 封面窗体和第 12 秒的终端反馈细节。静态画板把独立 CSV 原文、输入矩阵、两条断言和 G4-task 控件准确排入文件窗格；保存前以另一进程写出并独立解析这份样例 CSV。",
+      "prompt": "Use case: ui-mockup. A single 1600x960 maximized desktop screenshot for Fouc. The first local reference is the flat full IDE in Uxerflow Forge AI Agent Code – Coding Workspace. The second is a new frame of their same two Forge films. Preserve the studio's pale gray-blue chassis, 8px softly rounded white 1px-bordered panes, project and compact mode control along one 48px title bar, 250px white explorer rail, roughly 825px central file editor with ice-gray file tabs, 490px white attached Agent session with small black square assistant avatar, calm compact typography, white message composer with small inline context chips, dark round send button. Active product content starts within the first 10–15% of the window. Adult computer scale 12–14 pixel body, 24–30px controls with tiny icons. Very restrained turquoise for actions, muted indigo, plum and green for actual code elements only. No desktop wallpaper, glossy decorative background, poster, KPI, subtitle ribbons, big hero, blanket of cards, system illustrations, fictitious alerts, or contents of source example. Top-left Fouc wordmark and sole current project 研发协作. All operating content in Chinese except real code/identifiers. One coherent, carefully typeset screen for this state: Independent Reviewer is verifying this exact patch separately. The selected actual artifact review.csv contains exactly header id,title,status and two CSV data rows F-18,整理评审纪要,进行中 and F-21,更新导出说明,进行中. In central editor switch between 原始 CSV and 表格. Beneath the CSV show input sample F-18/21/24/33 with filter and visibility columns, F-24 matches but is not visible, F-33 visible but misses the filter. A distinct recorded clean run review-087 against commit 9d47b2a and literal “assert.deepEqual(ids, ['F-18', 'F-21'])”, “assert.ok(!ids.includes('F-24'))”, both PASS. Right collaborator is 独立 Reviewer, visibly separated from 开发 Agent; one restrained G4-task judgment with “退回修复” and small mint “通过并交给 Lead”. Small nice code/type and simple structural lines, no gratuitous data chart.",
+      "generatedFile": "exec-0b716a8e-90dd-434f-a6b4-aa8f5e939b63.png",
+      "hotspots": [
+        {
+          "label": "查看 export.ts",
+          "targetFile": "03-development.png",
+          "x": 566,
+          "y": 52,
+          "width": 111,
+          "height": 31
+        },
+        {
+          "label": "通过并交给 Lead",
+          "targetFile": "05-integration.png",
+          "x": 1432,
+          "y": 467,
+          "width": 128,
+          "height": 27
+        }
+      ],
+      "viewport": [
+        1600,
+        960
+      ],
+      "firstWorkY": 105,
+      "bodyFont": "13.5px",
+      "actionHeight": 27
+    },
+    {
+      "file": "05-integration.png",
+      "title": "确认合入并写回评审规则",
+      "focus": "Lead 汇总确认过的 v3、开发提交和独立复核，通过真实入口的集成案例复验导出。林乔在 G5 确认合入，活动 10 把权限反例写入已有评审规则。",
+      "referenceIndex": 1,
+      "frameSecond": 15.4,
+      "method": "内置 ImageGen 引用 Coding Workspace 的封面窗体和 Workspace 15.4 秒的打开文件状态，形成合入报告和右侧会话草图。静态画板校对了上游引用、主分支、复核时间和现有规则的增量，并保留本套生成的角色图像。",
+      "prompt": "Use case: ui-mockup. A single 1600x960 maximized desktop screenshot for Fouc. The first local reference is the flat full IDE in Uxerflow Forge AI Agent Code – Coding Workspace. The second is a new frame of their same two Forge films. Preserve the studio's pale gray-blue chassis, 8px softly rounded white 1px-bordered panes, project and compact mode control along one 48px title bar, 250px white explorer rail, roughly 825px central file editor with ice-gray file tabs, 490px white attached Agent session with small black square assistant avatar, calm compact typography, white message composer with small inline context chips, dark round send button. Active product content starts within the first 10–15% of the window. Adult computer scale 12–14 pixel body, 24–30px controls with tiny icons. Very restrained turquoise for actions, muted indigo, plum and green for actual code elements only. No desktop wallpaper, glossy decorative background, poster, KPI, subtitle ribbons, big hero, blanket of cards, system illustrations, fictitious alerts, or contents of source example. Top-left Fouc wordmark and sole current project 研发协作. All operating content in Chinese except real code/identifiers. One coherent, carefully typeset screen for this state: Lead accepts integration of the same task. The active central file “merge-report.md” shows exact upstream inputs task-export.md v3 AC-02, patch 9d47b2a, developer self-test dev-041, independent Reviewer rerun review-087. Show completed merge c723ab1 into main and a real post-merge run int-092 for the project menu → status filter → export → actual CSV containing exactly F-18,F-21; F-24 remains excluded. A small inline markdown diff to the existing 任务导出设计 and existing review-rules.md records a reusable regression expectation. No new documentation template. Compact right-hand Lead handoff confirms G5 with owner 林乔 and links to reopen independent evidence. Single primary action “查看独立复核”. Keep the calm and legible Forge file-workspace structure; no celebratory art.",
+      "generatedFile": "exec-bdcc5c8d-c251-45c2-9048-e1a685543e49.png",
+      "hotspots": [
+        {
+          "label": "查看实施与局部自测",
+          "targetFile": "03-development.png",
+          "x": 324,
+          "y": 321,
+          "width": 760,
+          "height": 34
+        },
+        {
+          "label": "查看独立复核",
+          "targetFile": "04-review.png",
+          "x": 1449,
+          "y": 659,
+          "width": 111,
+          "height": 27
+        }
+      ],
+      "viewport": [
+        1600,
+        960
+      ],
+      "firstWorkY": 103,
+      "bodyFont": "13.5px",
+      "actionHeight": 27
+    }
+  ],
+  "verification": "五张 PNG 均按 1600×960、DPR 1 逐页目视对照。三个窗格实宽为 278、820、470px，首项工作位于 y=102–119px，主操作高 27px。样例中的两项 Bun 测试通过；独立进程重新导出并用 Python CSV 解析得到 F-18 和 F-21，F-24 与 F-33 均缺席。画面中的提交、运行编号、人员与集成过程是设计场景。按钮热点以终稿上的实际控件像素测量。"
+}

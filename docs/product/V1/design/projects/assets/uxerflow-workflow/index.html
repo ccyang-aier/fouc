@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fouc · ADD 工作流 / Uxerflow 设计对照</title>
+<style>
+* { box-sizing: border-box; }
+:root { color-scheme: light; font: 14px/1.55 Inter, "Segoe UI", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif; color: #222529; background: #f5f5f3; }
+body { margin: 0; }
+button, select, a { font: inherit; }
+button, select { cursor: pointer; }
+button { color: inherit; }
+button:focus-visible, a:focus-visible { outline: 2px solid #30363e; outline-offset: 3px; }
+select:focus-visible { outline: none; border-color: #30363e; }
+a { color: inherit; text-underline-offset: 3px; }
+button { background: #fff; border: 1px solid #d8d9d8; border-radius: 6px; padding: 4px 9px; }
+button:hover { background: #f1f2f1; }
+button:disabled { opacity: .38; cursor: default; }
+main, footer { display:block; }
+.masthead { display:flex; justify-content:space-between; align-items:baseline; gap:16px; margin:0 auto; max-width:1980px; padding:24px 2.6vw 16px; }
+h1 { margin:0; font-size:22px; font-weight:580; letter-spacing:-.035em; }
+.count, .meta { color:#63686b; font-size:12px; }
+main { max-width:1980px; margin:auto; padding:0 2.6vw 30px; }
+.grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+.card { background:white; min-width:0; border:1px solid #dadbd8; border-radius:9px; overflow:hidden; }
+.preview { display:block; width:100%; border:0; border-radius:0; padding:0; background:#eeefed; cursor:zoom-in; }
+.preview img { display:block; width:100%; aspect-ratio:1.72; object-fit:contain; }
+.caption { padding:12px 15px; }
+.name { display:flex; align-items:baseline; gap:9px; }
+.number { color:#787e80; font:12px ui-monospace,monospace; }
+h2 { font-size:16px; letter-spacing:-.02em; margin:0; font-weight:590; }
+.studio { margin-left:auto; font-size:11px; text-align:right; color:#626669; }
+.caption p { margin:6px 0 8px; font-size:12px; line-height:1.65; color:#4e5357; }
+.pages { display:flex; gap:5px 8px; flex-wrap:wrap; }
+.page-link { border:0; border-radius:3px; padding:1px 3px; color:#3f4651; font-size:12px; text-align:left; text-decoration:underline; text-decoration-color:#bec2c7; text-underline-offset:3px; background:transparent; }
+.source-details { margin:8px 15px 12px; font-size:12px; color:#525a60; }
+.source-details summary { cursor:pointer; font-size:12px; }
+.source-details ul { margin:8px 0 0; padding-left:16px; }
+.source-details li + li { margin-top:7px; }
+#gallery footer { color:#666d70; font-size:12px; margin-top:14px; }
+dialog { margin:0; padding:0; border:0; width:100vw; height:100dvh; max-width:100vw; max-height:100dvh; color:#222529; background:#e9eae8; }
+dialog[open] { display:grid; grid-template-rows:auto minmax(0,1fr) auto; }
+.toolbar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:7px 12px; background:#fafaf9; border-bottom:1px solid #d8d9d7; }
+.toolbar select { border:1px solid #d5d7d4; padding:4px; background:white; border-radius:4px; max-width:28vw; }
+.toolbar a { font-size:12px; }
+.push { margin-left:auto; }
+.zoom[aria-pressed="true"] { color:white; background:#292d30; }
+.stage { overflow:auto; min-height:0; padding:8px; }
+.stage.fit { display:flex; align-items:center; justify-content:center; }
+.stage.fit img { display:block; max-height:100%; max-width:100%; width:auto; height:auto; object-fit:contain; }
+.stage.natural img { display:block; max-width:none; max-height:none; margin:0 auto; }
+.statusbar { display:flex; justify-content:space-between; gap:10px; align-items:center; background:#fafaf9; border-top:1px solid #d8d9d7; padding:5px 12px; font-size:12px; color:#4c555a; }
+.statusbar .controls { display:flex; align-items:center; gap:6px; flex-shrink:0; }
+#position { font:12px ui-monospace,monospace; }
+@media (max-width:1200px) { .grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (max-width:720px) { .grid { grid-template-columns:1fr; } .masthead { padding:15px 12px 10px; } main { padding:0 12px 20px; } h1 { font-size:18px; } .toolbar { gap:4px; } .toolbar select { max-width:44vw; } .statusbar { align-items:flex-start; } .statusbar .focus { max-height:3.2em; overflow:auto; } }
+
+.stage figure { margin:0; min-width:0; min-height:0; }
+.stage.fit figure { display:flex; flex-direction:column; justify-content:center; width:100%; height:100%; }
+.stage figure[hidden] { display:none; }
+.stage figcaption { display:none; font-size:12px; line-height:26px; color:#4b5359; }
+.stage.fit .frame { min-width:0; min-height:0; height:100%; display:flex; align-items:center; justify-content:center; }
+.stage.fit .frame img { display:block; max-width:100%; max-height:100%; width:auto; height:auto; }
+.stage.fit .frame img[hidden], .stage .frame a[hidden] { display:none; }
+.stage.compare { display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:stretch; }
+.stage.compare figure { border:1px solid #d6d8d6; padding:5px 9px 9px; border-radius:5px; background:#f5f5f3; }
+.stage.compare figcaption { display:block; line-height:1.4; padding:5px 0; }
+.stage.fit .frame video { max-width:100%; max-height:100%; }
+.stage .frame video[hidden] { display:none; }
+#compare[aria-pressed=true] { background:#2b2e32; color:white; }
+@media (max-width:780px) { .stage.compare { grid-template-columns:1fr; grid-template-rows:1fr 1fr; } }
+</style>
+</head>
+<body>
+<div class="masthead"><h1>Fouc · ADD 工作流设计</h1><span class="count" id="count"></span></div>
+<main id="gallery"><div class="grid" id="grid"></div><footer>选择页面可查看原尺寸。「原作对照」会定位到对应的 Uxerflow 参考画面。</footer></main>
+<dialog id="viewer" aria-label="设计原图浏览器">
+  <div class="toolbar">
+    <button id="back">返回图册</button>
+    <select id="concept" aria-label="选择设计方案"></select>
+    <select id="page" aria-label="选择页面"></select>
+    <button class="push" id="compare" aria-pressed="false">原作对照</button>
+    <button class="zoom" id="zoom" aria-pressed="false">原尺寸</button>
+    <a id="open-png" target="_blank" rel="noopener">打开 PNG</a>
+    <a id="original" target="_blank" rel="noopener">参考原作 ↗</a>
+  </div>
+  <div class="stage fit" id="stage">
+    <figure id="original-pane" hidden><figcaption>参考原作 · <span id="source-name"></span></figcaption><div class="frame"><video id="source-video" preload="metadata" muted controls playsinline hidden></video><img id="source-image" referrerpolicy="no-referrer" alt="对应工作室原作"><a id="source-fallback" target="_blank" rel="noopener" hidden>在作者作品页查看原图 ↗</a></div></figure>
+    <figure id="fouc-pane"><figcaption>Fouc · <span id="page-name"></span></figcaption><div class="frame"><img id="full-image" alt=""></div></figure>
+  </div>
+  <div class="statusbar"><span class="focus" id="focus"></span><div class="controls"><span class="meta" id="link-hint"></span><button id="previous">上一页</button><span id="position"></span><button id="next">下一页</button></div></div>
+</dialog>
+<script id="catalog" type="application/json">[{"title":"活动路线与交接","studio":"Uxerflow · Rudolf","thesis":"Lead 在路线里沿用现有架构，按需开启 ADR。从当前节点可查看任务边界和下一位接手人。","meta":"01-rudolf/concept.json","cover":1,"references":[{"title":"Uxerflow · Rudolf – Startup Agent AI – Generating Artifact","url":"https://dribbble.com/shots/27823617-Rudolf-Startup-Agent-AI-Generating-Artifact","imageUrl":"https://cdn.dribbble.com/userupload/49371736/file/still-3a1db9515940c8e059594a34b52ca948.png","preview":"https://cdn.dribbble.com/userupload/49371736/file/still-3a1db9515940c8e059594a34b52ca948.png?resize=1200x0","video":"https://cdn.dribbble.com/userupload/49371736/file/4839d962f668f8474e521581d9b27380.mp4","profileUrl":"https://dribbble.com/uxerflow","observed":"原作官方视频 16.20 秒，2880 × 2160。取应用内框 (80,100)–(2800,2032)，按 1600px 宽显示后，图标条约 59px，右侧 449px。中间宽画布上半部分有一宽一窄两块，下半部分是一张覆盖两栏的有细网线的工作表。右栏上部是聊天，带淡青色 1px 描边的操作卡固定在输入区上方。内页的皂黑底与炭色浮面接近，衬线区标题约 24–27px，普通无衬线与代码约 14–16px，行高约 21–24px。Fouc 取其产物画布、选择态和对话中的确认卡，改为真实的验收样例与评审。"},{"title":"Uxerflow · Rudolf – Startup Agent AI – Roadmap Progress","url":"https://dribbble.com/shots/27814461-Rudolf-Startup-Agent-AI-Roadmap-Progress","imageUrl":"https://cdn.dribbble.com/userupload/49336033/file/still-d907ece3968bdd1c10d25102f7babeba.png","preview":"https://cdn.dribbble.com/userupload/49336033/file/still-d907ece3968bdd1c10d25102f7babeba.png?resize=1200x0","video":"https://cdn.dribbble.com/userupload/49336033/file/b2394bd0ec87bfa389e718c9e8d39a6a.mp4","profileUrl":"https://dribbble.com/uxerflow","observed":"原作官方视频 4.90 秒，2880 × 2160。取应用内框 (145,158)–(2735,2003)，归一到 1600px 宽后，左轨约 59px，右栏约 448px，中心区约 68%。横向风吹草地封面压白色衬线标题；工作区底部用紧凑图标块、单行标题、第二行说明和细连接线表示临近任务。可用状态的小方签跨在卡片右上边，选中节点带蓝线。右侧按当前节点给出必要输入和下一步按钮。Fouc 将这些手法用于真实活动依赖、按需 ADR、证据交接与 G1/G5 放行。"}],"pages":[{"title":"确认权威设计","src":"01-rudolf/01-confirm-design.png","focus":"陈璐与需求 Agent 核对当前筛选、读取权限和 F-12 / F-24 / F-37 三个样例，确认《任务导出设计》v3 后交给 Lead。","referenceIndex":0,"frameSecond":16.2,"links":[["确认 v3 并交给 Lead",1,1488,820,150,27]]},{"title":"拆解与分派","src":"01-rudolf/02-activity-route.png","focus":"Lead 选中活动 06，查看来源、依赖、文件范围、停止条件及验证人；确认 G1 后，将 T-01 给开发 Agent，并把等待 T-01/G3 的 T-02 留给独立 Reviewer。","referenceIndex":1,"frameSecond":4.9,"links":[["查看确认记录",0,1073,776,89,19],["独立评审与修复复审",2,172,357,126,38],["集成与端到端验证",3,172,453,136,38],["独立复核 AC-02",2,105,679,1058,44]]},{"title":"复核实际导出","src":"01-rudolf/03-independent-review.png","focus":"陈乔用独立数据验证 v3 的 AC-02。开发自测通过，Lead 在 G3 已核验 diff 与日志，独立运行 R-17 的 CSV 仍有 F-24。陈乔附证据退回 T-01，修复后返回本次评审。","referenceIndex":0,"frameSecond":16.2,"links":[["任务导出设计 v3 · AC-02",0,1301,306,174,25],["权威来源 · 任务导出设计",0,88,927,205,18]]},{"title":"复审后接手集成","src":"01-rudolf/04-integration-handoff.png","focus":"开发修复后，Lead 复核新 diff，陈乔用相同账号独立复审 R-18，确认 CSV 只含 F-12。Lead 交给林岐，待合入成功后记录 G5，继而做真实看板 E2E，并在活动 10 写回已有设计和技能。","referenceIndex":1,"frameSecond":4.9,"links":[["查看 R-17 评审记录",2,650,223,510,21],["任务导出设计 v3",0,1275,414,125,39]]}]},{"title":"沿原文复审","studio":"Uxerflow · Verily","thesis":"Reviewer 发现 CSV 多出一条记录，点击发现即定位到设计 v3 的 AC-02，再带着出处退回修改。","meta":"02-verily/concept.json","cover":2,"references":[{"title":"Barly Design for Uxerflow · Verily – AI Dashboard – Chat","url":"https://dribbble.com/shots/27775292-Verily-AI-Dashboard-Chat","imageUrl":"https://cdn.dribbble.com/userupload/49187404/file/still-3cce5746a7e42254aebe7bb7e0c6f07d.png","preview":"https://cdn.dribbble.com/userupload/49187404/file/still-3cce5746a7e42254aebe7bb7e0c6f07d.png?resize=1200x0","video":"https://cdn.dribbble.com/userupload/49187404/file/9910d5b08fc4166f5acd98ea854ea734.mp4","profileUrl":"https://dribbble.com/uxerflow","observed":"13.70 秒的已展开会话。白色左栏约为内窗宽的 20.8%，主栏把正文收在约 74% 宽的居中阅读列里。人发言靠右，Agent 在左边写出实质内容。轻描边输入器贴住下部，只有其外沿有细小网点和青、黄、淡紫色纸光。"},{"title":"Uxerflow · Verily – AI Dashboard – Library","url":"https://dribbble.com/shots/27789917-Verily-AI-Dashboard-Library","imageUrl":"https://cdn.dribbble.com/userupload/49243118/file/still-73bb34c49ecd671c3a4caa23d50de8f9.png","preview":"https://cdn.dribbble.com/userupload/49243118/file/still-73bb34c49ecd671c3a4caa23d50de8f9.png?resize=1200x0","video":"https://cdn.dribbble.com/userupload/49243118/file/817f94f5fd155e3801daf66b43e7d275.mp4","profileUrl":"https://dribbble.com/uxerflow","observed":"10.35 秒可见图书馆内页，克制的衬线标题和搜索在一行，类别排列在下方。两列资料卡有细灰边、等宽小字和从右侧探出的倾斜纸页，底色只在文件列表起始处呈极淡珠光。12.72 秒打开单份资料，顶部返回与重新进入原对话分列两侧，彩浅引文和单列正文组成阅读页。"},{"title":"Uxerflow · Verily – AI Dashboard – File Review","url":"https://dribbble.com/shots/27783826-Verily-AI-Dashboard-File-Review","imageUrl":"https://cdn.dribbble.com/userupload/49220082/file/still-cc7f657ed734755c046501fc29dc43db.png","preview":"https://cdn.dribbble.com/userupload/49220082/file/still-cc7f657ed734755c046501fc29dc43db.png?resize=1200x0","video":"https://cdn.dribbble.com/userupload/49220082/file/e2dbd1b2e196849afca96fe79616c679.mp4","profileUrl":"https://dribbble.com/uxerflow","observed":"14.15 秒处的实际审阅内页把每项分为左侧状态和翻页控件、右侧原文出处与评语。正文以一条细线分隔说明，实证衬灰白底，建议衬很浅的青紫纸光。根据原作卡内宽度估算，状态列约占四分之一。"}],"pages":[{"title":"确认导出边界","src":"02-verily/01-confirmation.png","focus":"产品负责人在需求对话内确认当前项目、筛选、权限和分页范围，看清三个可复现样本，再将《任务导出设计》v3 交给 Lead。","referenceIndex":0,"frameSecond":13.7,"links":[["确认并交给 Lead",1,1342,656,139,29],["产物与交接",1,15,185,295,34],["独立评审",2,15,221,295,34]]},{"title":"从已确认的产物派工","src":"02-verily/02-dispatch.png","focus":"Lead 从产物库选择 CP-07，引用 v3 与既有权限架构，检查依赖、文件范围、验证责任和停止条件，经 G1 派给开发。后续活动显示独立评审、集成合入和第 10 项写回。","referenceIndex":1,"frameSecond":10.35,"links":[["需求对话",0,15,149,295,34],["独立评审",2,15,221,295,34],["独立评审 · G4",2,507,770,297,40]]},{"title":"独立复跑并退回修复","src":"02-verily/03-review.png","focus":"仓宁用普通成员简禾重新导出 CSV。将预期 F-18 与实得 F-18、F-24 并排比较，区分开发自测和独立证据，由 R-01 回看 v3 标准或把 CP-07 退回程岚修复。","referenceIndex":2,"frameSecond":14.15,"links":[["打开原文 · v3 §3.2 AC-02",3,1309,396,171,22],["需求对话",0,15,149,295,34],["产物与交接",1,15,185,295,34]]},{"title":"回到 v3 的 AC-02 原文","src":"02-verily/04-source.png","focus":"Reviewer 的原文链接定位至《任务导出设计》v3 §3.2，保持 R-01 的来路，在正文中高亮 F-24 样本，可复制条款或返回同一复审记录。","referenceIndex":1,"frameSecond":12.72,"links":[["返回复审 R-01",2,505,19,118,28],["打开确认对话",0,1331,19,133,28],["返回复审 R-01",2,942,905,123,30],["CP-07 · 导出实现与验证",1,507,749,181,25]]}]},{"title":"执行与证据追踪","studio":"Uxerflow · Enigma","thesis":"在同一次执行里选中 diff 和自测记录，再打开 Reviewer 的独立重放，核对两次导出为何不同。","meta":"03-enigma/concept.json","cover":2,"references":[{"title":"Uxerflow · Enigma – AI Agent Dashboard – Traces","url":"https://dribbble.com/shots/27811288-Enigma-AI-Agent-Dashboard-Traces","imageUrl":"https://cdn.dribbble.com/userupload/49324158/file/still-a24984d0d49ecb0fdb4363d53541b020.png","preview":"https://cdn.dribbble.com/userupload/49324158/file/still-a24984d0d49ecb0fdb4363d53541b020.png?resize=1200x0","video":"https://cdn.dribbble.com/userupload/49324158/file/4536bd3873e344290713c52682e7bbd7.mp4","profileUrl":"https://dribbble.com/uxerflow","observed":"作者主页公开发布的 2880 × 2160 视频。3.350 秒的 Traces 图用逐列点亮的橙方格表示轨迹量。本方案借用方格形态，改用有图例的标记区分每项活动的主责和协作人。6.500 秒的平视应用窗口约为 2593 × 1844，左侧图标轨约占宽度 3.7%，两层导航合计约占 20.9%。将窗口等比折算到 1600 px 宽，Runs 明细的 run_agent 与侧栏 Traces 的可见字面均实测约 12 px 高，相邻明细行中心距约 66 px。原片采用近黑底、较亮一层的炭灰资料面、虚线行界、橙色细选中线和有界的紧凑按钮。暖色外框属于作品陈列。该作品 PNG 封面为笔记本透视展示，内部比例根据视频的正面帧读取。"},{"title":"Uxerflow · Enigma – AI Agent Dashboard – Homepage","url":"https://dribbble.com/shots/27804999-Enigma-AI-Agent-Dashboard-Homepage","imageUrl":"https://cdn.dribbble.com/userupload/49301253/file/still-a98174638b90ffbf7e33eee6c43747e2.png","preview":"https://cdn.dribbble.com/userupload/49301253/file/still-a98174638b90ffbf7e33eee6c43747e2.png?resize=1200x0","video":"https://cdn.dribbble.com/userupload/49301253/file/f243e8519c6f24ca5f964d3919816255.mp4","profileUrl":"https://dribbble.com/uxerflow","observed":"同一作者的 2880 × 2160、18.50 秒视频。17.400 秒的 Share skill 对话框保留来源对象，逐行列受影响主体和权利，使用边界浅、微圆角的单项选择与局部橙色提交键。首页原始 PNG 也呈现这组控件。应用窗口在 1200 px 宽的展示稿中约 1080 px 宽，权限对话框约 450 px 宽。将这种明确选择对象、再给出决定的分工用于需求签收与独立评审决定。"}],"pages":[{"title":"目标与验收","src":"03-enigma/01-agreement.png","focus":"林岚与需求 Agent 确认可写入 v3 的范围、生成时点和 AC-02，对照 F-17、F-24、F-39 后选择“确认 v3 并交给 Lead”。","referenceIndex":0,"frameSecond":6.5,"links":[["协作路线",1,64,227,202,33],["执行追踪",2,64,264,202,33],["独立核对",3,64,301,202,33],["确认 v3 并交给 Lead",1,1414,644,150,27]]},{"title":"协作路线","src":"03-enigma/02-route.png","focus":"Lead 确认本次沿用的架构、可插入 ADR 的条件和活动顺序，在 G1 核对 T-07 的依赖和可写文件，签派任务并打开执行追踪。","referenceIndex":0,"frameSecond":3.35,"links":[["目标与验收",0,64,190,202,33],["执行追踪",2,64,264,202,33],["独立核对",3,64,301,202,33],["查看 v3",0,1497,63,82,27],["查看确认记录",0,1476,124,89,19],["签派 T-07 并打开追踪",2,1407,814,157,27]]},{"title":"执行追踪","src":"03-enigma/03-calls.png","focus":"Lead 打开 inspect_diff，对照 c91e5d2、原始失败、固定权限的局测输出与 v3，完成 G3 核验后把动态撤权场景交给独立 Reviewer。","referenceIndex":0,"frameSecond":6.5,"links":[["目标与验收",0,64,190,202,33],["协作路线",1,64,227,202,33],["独立核对",3,64,301,202,33],["返回协作路线",1,1465,63,114,27],["打开已签派的上下文",1,1440,124,125,19],["任务导出设计 v3 · AC-02",0,1419,230,146,19],["交给 Reviewer 独立核对",3,1394,733,170,27]]},{"title":"独立核对","src":"03-enigma/04-review.png","focus":"Reviewer 以新成员会话复现导出期间撤权，在原始 CSV 找到 F-24，连同 R-04 退回 T-07 修复，并保留复审通过后到活动 09 的接手路径。","referenceIndex":1,"frameSecond":17.4,"links":[["目标与验收",0,64,190,202,33],["协作路线",1,64,227,202,33],["执行追踪",2,64,264,202,33],["对照执行追踪",2,1465,63,114,27],["对照开发自测",2,982,803,89,19],["退回 T-07 修复",2,1417,441,148,27],["查看协作路线",1,1476,727,89,19]]}]},{"title":"团队看板与批次派工","studio":"Uxerflow · Synchro","thesis":"把一个批次拆给两位负责人，在看板中交接文件范围和验证责任，并跟到修复后的独立复审。","meta":"04-synchro/concept.json","cover":1,"references":[{"title":"Barly Design for Uxerflow · Synchro — Project Management — Board Detail","url":"https://dribbble.com/shots/27058593-Synchro-Project-Management-Board-Detail","imageUrl":"https://cdn.dribbble.com/userupload/46641235/file/still-e09b9102bb6dde0f2d397ca38a02d367.png","preview":"https://cdn.dribbble.com/userupload/46641235/file/still-e09b9102bb6dde0f2d397ca38a02d367.png?resize=1200x0","video":"https://cdn.dribbble.com/userupload/46641235/file/035b096f07694d423016b20f97b67ea0.mp4","profileUrl":"https://dribbble.com/uxerflow","observed":"0.4 秒全幅的应用边界约为 x40–760、y44–557，灰侧栏止于 x180，约占内部窗口 19%。顶部细工具条、下一行工作对象、右侧叠放头像与黑色操作建立稳定位置。3.7 秒细节显示小范围着色的泳道名、浅灰头条、白色可移动卡和底边成员信息。12.6 秒转为单工作对象，图标、标题、紧凑键值、附件和分隔线依次展开。Fouc 的原文、活动编排及退回工作单分别借用这三种组织方式。"},{"title":"Barly Design for Uxerflow · Synchro — Project Management — Dashboard","url":"https://dribbble.com/shots/27054769-Synchro-Project-Management-Dashboard","imageUrl":"https://cdn.dribbble.com/userupload/46628428/file/still-f7c458e3ff3793e7bb93265cdf62372b.png","preview":"https://cdn.dribbble.com/userupload/46628428/file/still-f7c458e3ff3793e7bb93265cdf62372b.png?resize=1200x0","video":"https://cdn.dribbble.com/userupload/46628428/file/a7383a2af17939899ee1865da63c8f64.mp4","profileUrl":"https://dribbble.com/uxerflow","observed":"2.4 秒全幅主栏较宽，右侧团队列表较窄。活动图按责任人占行，成员缩略头像贴近自身任务。两组工具栏在内窗高度的约前 14% 结束。10.5 秒放大讨论，细灰回复线连接左右错开的气泡，附件依附发言卡。Fouc 将责任人泳道用于已派任务的签收到提交轨迹，将紧贴发言的证据用于确认与复审。"},{"title":"Uxerflow · Synchro — Project Management — Kanban Detail","url":"https://dribbble.com/shots/27066729-Synchro-Project-Management-Kanban-Detail","imageUrl":"https://cdn.dribbble.com/userupload/46669218/file/still-893af4b255125f8f70e37d690387b779.png","preview":"https://cdn.dribbble.com/userupload/46669218/file/still-893af4b255125f8f70e37d690387b779.png?resize=1200x0","video":"https://cdn.dribbble.com/userupload/46669218/file/134cc396bff1345a24dc59a1716307ce.mp4","profileUrl":"https://dribbble.com/uxerflow","observed":"2.5 秒完整桌面的分组表把组名、复选行、负责人、日期和状态对齐，选择只改变单行底色，人员标签以轻微蓝、绿作区分。6.7 秒近景把同一批工作切为窄卡列，列名、数量、二级动作共处一行，头像压在卡片底边。Fouc 派工页使用缩进的可写文件行，活动页沿用紧凑泳道和被选工作卡。"},{"title":"Barly Design for Uxerflow · Synchro — Project Management — Inbox","url":"https://dribbble.com/shots/27070757-Synchro-Project-Management-Inbox","imageUrl":"https://cdn.dribbble.com/userupload/46682842/file/still-718c1cc2cb1a8d5e8d21974c89786772.png","preview":"https://cdn.dribbble.com/userupload/46682842/file/still-718c1cc2cb1a8d5e8d21974c89786772.png?resize=1200x0","video":"https://cdn.dribbble.com/userupload/46682842/file/49a57fe38842adc2e7b72207c8be5da0.mp4","profileUrl":"https://dribbble.com/uxerflow","observed":"2.5 秒原作以约 200∶355 的收件列表与正文并置，列表顶有轻量搜索，单项选中行用灰底。4.5 秒正文滚动到附件和子任务，收件索引仍在原位。Fouc 独立复核保留样例队列与被选证据并置，右边改为预期与实际 CSV 的逐行对照。"}],"pages":[{"title":"原文确认","src":"04-synchro/01-confirm-source.png","focus":"林以安核对 v3 的目标、边界和三条可验证条件，以普通成员 U-07 的反例签收，再把该版本交给 Lead。","referenceIndex":0,"frameSecond":12.6,"links":[["确认并交给 Lead",1,1409,65,131,29]]},{"title":"活动编排","src":"04-synchro/02-activity-board.png","focus":"Lead 从已签收的活动与沿用架构中组装这次路线，可插入 ADR。选中活动 06 即可进入批次，活动 10 指回原设计与权限规则。","referenceIndex":0,"frameSecond":0.4,"links":[["打开批次派工",2,1426,65,114,29],["详细设计",0,270,444,319,110],["拆任务与派工",2,929,210,319,110]]},{"title":"批次派工","src":"04-synchro/03-batch-dispatch.png","focus":"Lead 核对 G1 的任务清单、依赖和互不交叉的可写文件，将 EX-17 交给柏舟、EX-18 交给鹿鸣。选中任务的 Context Pack 明确了分支、自测和停止条件。","referenceIndex":2,"frameSecond":2.5,"links":[["分派 2 个任务包",3,1413,65,127,29],["任务导出设计 v3",0,1365,374,122,19]]},{"title":"批次交付","src":"04-synchro/04-delivery-handoff.png","focus":"两个并行任务提交后，Lead 查看文件 diff 和真实自测输出，在 G3 核验后将变更与证据交给岑宁独立复核。","referenceIndex":1,"frameSecond":2.4,"links":[["交给岑宁独立复核",4,1402,65,138,29],["查看派工快照",2,1130,289,89,19],["任务导出设计 v3",0,1365,348,122,19]]},{"title":"独立复核","src":"04-synchro/05-independent-review.png","focus":"岑宁用 U-07 独立下载并对照 CSV，定位 F-24 的额外一行，只把 EX-17 退回柏舟。","referenceIndex":3,"frameSecond":2.5,"links":[["退回 EX-17",5,1441,65,99,29],["任务导出设计 v3",0,384,488,122,19]]},{"title":"修复交接","src":"04-synchro/06-return-and-repair.png","focus":"柏舟在原文件范围内复现 F-24 后修复，附上 93ad621 和同一身份的回归结果，由 Lead 核验，再交回岑宁。","referenceIndex":0,"frameSecond":12.6,"links":[["送回岑宁复审",6,1426,65,114,29],["原始独立复核",4,1365,242,106,19]]},{"title":"复审签收","src":"04-synchro/07-recheck-handoff.png","focus":"岑宁在新的 R-09 会话重新下载，确认只剩 F-18。整批通过 G4 后交给 Lead 做集成与真实验证，G5 等待实际合入。","referenceIndex":1,"frameSecond":2.4,"links":[["查看批次交付",3,1426,65,114,29],["原退回证据",4,412,816,123,47],["修复交付",5,543,816,141,47]]}]},{"title":"文件与代码交付","studio":"Uxerflow · Forge","thesis":"从设计文件打开任务包，在同一组文件中审查代码改动、自测输出和 Reviewer 重新导出的 CSV。","meta":"05-forge/concept.json","cover":2,"references":[{"title":"Uxerflow · Forge – AI Agent Code – Coding Workspace","url":"https://dribbble.com/shots/27765468-Forge-AI-Agent-Code-Coding-Workspace","imageUrl":"https://cdn.dribbble.com/userupload/49151207/file/still-531344f930076cfcfd8ceb2e88c861ed.png","preview":"https://cdn.dribbble.com/userupload/49151207/file/still-531344f930076cfcfd8ceb2e88c861ed.png?resize=1200x0","video":"https://cdn.dribbble.com/userupload/49151207/file/4d5b45ae21f0cb005838cb532eba8b2d.mp4","profileUrl":"https://dribbble.com/uxerflow","observed":"2880×2160 官方封面的前景窗体平视。单独裁到 1536px 宽后，可见文件树、编辑器和会话约占 19%、48%、31%，窄间隙上是一层浅灰蓝窗体，白色文件标签和底部终端把代码与运行连在一起。树与会话可见字高约 13–15px，普通行距约 23–30px。官片 0.45 秒可见完整窗体，8.5 秒展开终端，12 秒可见运行和会话侧栏同时更新。"},{"title":"Uxerflow · Forge – AI Agent Code – Workspace","url":"https://dribbble.com/shots/27755707-Forge-AI-Agent-Code-Workspace","imageUrl":"https://cdn.dribbble.com/userupload/49113475/file/still-f0419cdfabe3a263de6182d028a163ea.png","preview":"https://cdn.dribbble.com/userupload/49113475/file/still-f0419cdfabe3a263de6182d028a163ea.png?resize=1200x0","video":"https://cdn.dribbble.com/userupload/49113475/file/d6efa1cc636083ce150eeef47b5b8dee.mp4","profileUrl":"https://dribbble.com/uxerflow","observed":"官方影片 8 秒附近的输入器把上下文与模型放在单行小控件中，选中项用紧凑描边。14.5 秒转入代码和会话并排，15.4 秒为完整三栏窗体，终端紧贴编辑器底边。采用后者的工作中状态与附着式输入区，项目选择移到 Fouc 顶栏。"}],"pages":[{"title":"确认《任务导出设计》v3","src":"05-forge/01-design.png","focus":"林乔和需求 Agent 明确筛选、可见范围和 CSV 列，以 F-24 的反例签认 AC-02。确认操作把 v3 交给 Lead。","referenceIndex":0,"frameSecond":0.45,"links":[["确认 v3 并交给 Lead",1,1413,649,147,27]]},{"title":"分派范围与验证责任","src":"05-forge/02-context.png","focus":"Lead 从已确认的 v3 建立上下文包，限定两条可写路径及权限依赖，在活动清单中确认沿用架构、按需插入 ADR 和独立复核责任，然后完成 G1 分派。","referenceIndex":1,"frameSecond":15.4,"links":[["查看 task-export.md",0,564,52,148,31],["确认范围并分派给开发",2,1401,571,159,27]]},{"title":"检查实施差异与自测","src":"05-forge/03-development.png","focus":"查看 export.ts 中的筛选与权限交集、修复前后的输出及开发自测 dev-041。Lead 据此完成 G3 并送独立 Reviewer。","referenceIndex":0,"frameSecond":8.5,"links":[["查看 context.yml",1,548,52,128,31],["送独立复核",3,1461,620,99,27]]},{"title":"独立读取 CSV 并断言","src":"05-forge/04-review.png","focus":"Reviewer 从独立检出生成 review.csv，对照四条输入，断言完整编号集合为 F-18、F-21 且 F-24 缺席。评审可附证据退回修复，或将通过结论交给 Lead。","referenceIndex":0,"frameSecond":12,"links":[["查看 export.ts",2,566,52,111,31],["通过并交给 Lead",4,1432,467,128,27]]},{"title":"确认合入并写回评审规则","src":"05-forge/05-integration.png","focus":"Lead 汇总确认过的 v3、开发提交和独立复核，通过真实入口的集成案例复验导出。林乔在 G5 确认合入，活动 10 把权限反例写入已有评审规则。","referenceIndex":1,"frameSecond":15.4,"links":[["查看实施与局部自测",2,324,321,760,34],["查看独立复核",3,1449,659,111,27]]}]},{"title":"可组合的活动画布","studio":"Uxerflow · Vectra","thesis":"在画布里连接本次活动。选中 Lead 节点时才展开设计依赖、交付文件和停止条件。","meta":"06-vectra/concept.json","cover":0,"references":[{"title":"Barly Design for Uxerflow · Vectra – AI Dashboard – Workflow","url":"https://dribbble.com/shots/27587173-Vectra-AI-Dashboard-Workflow","imageUrl":"https://cdn.dribbble.com/userupload/48487203/file/still-33258d7354a5caa4590e5ad5e5ea3285.png","preview":"https://cdn.dribbble.com/userupload/48487203/file/still-33258d7354a5caa4590e5ad5e5ea3285.png?resize=1200x0","video":"https://cdn.dribbble.com/userupload/48487203/file/0eaaa607e2cb270b786bdb339d9b67aa.mp4","profileUrl":"https://dribbble.com/uxerflow","observed":"在工作室原片 9.0 秒的 800×600 帧中，应用约从 x=18 到 782，左栏约占可见应用宽度的 19%。画布蓝色触发节点在橙色 Agent 上方，中性叶节点沿细线扇出，边缘工具与底部浮动工具条避开主体。13.0 秒的右侧设置抽屉约占应用宽度的 27%。15.0 秒的执行记录停靠在画布下缘。按原片显示尺寸估计，正文约 7–8 像素，控件高约 15–18 像素。定稿采用桌面 1× 的 13 像素正文和 28 像素按钮。"},{"title":"Uxerflow · Vectra – AI Dashboard – Overview","url":"https://dribbble.com/shots/27575151-Vectra-AI-Dashboard-Overview","imageUrl":"https://cdn.dribbble.com/userupload/48444284/file/still-7aa329d30914a1a81d8aee52c9e3ce26.png","preview":"https://cdn.dribbble.com/userupload/48444284/file/still-7aa329d30914a1a81d8aee52c9e3ce26.png?resize=1200x0","video":"https://cdn.dribbble.com/userupload/48444284/file/9b1d84a326098656c2e5d8bfb2e46f60.mp4","profileUrl":"https://dribbble.com/uxerflow","observed":"13.4 秒能看到完整的浅色应用。顶栏与筛选动作各占一短行，白色内框之间用低对比细线分开。底部表格有浅灰表头和约 28 像素高的原片数据行。工作页取其表格与窄工具栏关系，主体改为签认正文、样例核对和可逐行读取的 CSV 证据。20.0 秒另核对了同一应用的页签与数据行排列。"}],"pages":[{"title":"编排画布","src":"06-vectra/01-workflow.png","focus":"Lead 把已确认的 v3、既有架构及按条件进入的 ADR 接入活动 06。活动 07 取得 CP-07，G3 与 G4 分别位于交接连线上。节点可打开源版本，底栏能启动 R-028。","referenceIndex":0,"frameSecond":13,"links":[["打开《任务导出设计》v3",1,608,121,240,93],["查看 CP-07 的运行实例",2,299,724,229,84],["启动 R-028 并打开运行实例",2,868,895,88,28]]},{"title":"确认目标与版本","src":"06-vectra/02-design.png","focus":"在 v3 正文中核对目标、范围和 F-16、F-24、F-31 三个样例。右栏保留需求分析 Agent 的追问、林悦的裁决及绑定 v3 的签认记录，底部进入编排。","referenceIndex":1,"frameSecond":13.4,"links":[["用确认的 v3 进入编排画布",0,1272,908,301,29]]},{"title":"运行实例与开发交付","src":"06-vectra/03-run.png","focus":"R-028 展开 CP-07 的源码范围、依赖、验证命令和停止条件，同时显示 7c9a24e 的两项文件变更及两条自测。Lead 完成 G3 核验后，独立评审从右上角进入。","referenceIndex":0,"frameSecond":15,"links":[["返回编排画布",0,1486,19,87,29],["打开 R-028 独立评审",3,1462,77,111,28],["查看运行所用设计 v3",1,592,262,120,21]]},{"title":"独立核对导出证据","src":"06-vectra/04-review.png","focus":"Reviewer 以普通成员周宁的身份，对照可见集合、筛选命中集合和原始 CSV，确定 F-24 错在第 3 行。可查看 v3、原始运行，或将证据退回活动 07。","referenceIndex":1,"frameSecond":13.4,"links":[["查看原始运行",2,1486,19,87,29],["查看 AC-02 的源版本",1,1469,77,104,28],["退回原活动并查看修复与复审",4,1453,893,104,28]]},{"title":"修复、复审与下一次交接","src":"06-vectra/05-repair.png","focus":"开发在原活动 07 交付 8d26b17，Reviewer 重取 CSV，仅见 F-16。工作页保存首次偏差、修复自测及独立复审的对照结果，G4-task 通过后交给活动 09。","referenceIndex":0,"frameSecond":15,"links":[["返回首次独立评审",3,1462,77,111,28],["打开复审绑定的设计 v3",1,1160,572,54,18],["复审完成后回到编排",0,1470,691,87,28]]}]}]</script>
+<script>
+'use strict';
+const concepts = JSON.parse(document.getElementById('catalog').textContent);
+const byId = id => document.getElementById(id);
+const viewer = byId('viewer');
+let activeConcept = 0;
+let activePage = 0;
+let originalSize = false;
+let comparing = false;
+const sourceVideo=byId('source-video'), sourceImage=byId('source-image'), sourceLink=byId('source-fallback');
+let sourceFrame=0;
+function updateAddress(fragment) {
+  const address=new URL(location.href);
+  address.hash=fragment;
+  if(address.href!==location.href) history.replaceState(null,'',address.href);
+}
+function setReference() {
+  const c=concepts[activeConcept], p=c.pages[activePage];
+  const r=c.references[p.referenceIndex ?? 0] || c.references[0];
+  sourceFrame=Number.isFinite(p.frameSecond)?p.frameSecond:(r.frameSecond??0);
+  byId('source-name').textContent=r.title+(r.video?' · '+Number(sourceFrame.toFixed(3))+' 秒':'');
+  byId('page-name').textContent=p.title;
+  byId('original').href=r.url;
+  sourceLink.href=r.url;
+  byId('original-pane').hidden=!comparing;
+  byId('compare').setAttribute('aria-pressed',String(comparing));
+  byId('compare').textContent=comparing?'关闭对照':'原作对照';
+  sourceVideo.pause();
+  if(!comparing) return;
+  const poster=r.preview||r.imageUrl||'';
+  sourceImage.hidden=true;
+  sourceLink.hidden=true;
+  sourceVideo.hidden=!r.video;
+  sourceImage.dataset.poster=poster;
+  if(r.video){
+    if(poster) sourceVideo.poster=poster;
+    if(sourceVideo.getAttribute('src')!==r.video) sourceVideo.src=r.video;
+    if(sourceVideo.readyState>=1) seekSource();
+  } else showPoster();
+}
+function seekSource() {
+  if(!Number.isFinite(sourceVideo.duration))return;
+  sourceVideo.currentTime=Math.max(0,Math.min(sourceFrame,sourceVideo.duration-.08));
+}
+function showPoster() {
+  sourceVideo.hidden=true;
+  const poster=sourceImage.dataset.poster||'';
+  sourceImage.hidden=!poster; sourceLink.hidden=Boolean(poster);
+  if(poster && sourceImage.getAttribute('src')!==poster) sourceImage.src=poster;
+  else if(poster && sourceImage.complete && !sourceImage.naturalWidth){sourceImage.hidden=true;sourceLink.hidden=false;}
+}
+sourceVideo.addEventListener('loadedmetadata',seekSource);
+sourceVideo.addEventListener('error',showPoster);
+sourceImage.addEventListener('error',()=>{sourceImage.hidden=true;sourceLink.hidden=false;});
+function el(tag, cls, value) {
+  const element = document.createElement(tag);
+  if (cls) element.className = cls;
+  if (value) element.textContent = value;
+  return element;
+}
+function link(label, url) {
+  const a = el('a', '', label);
+  a.href = url; a.target = '_blank'; a.rel = 'noopener';
+  return a;
+}
+function label(index) { return String(index + 1).padStart(2,'0'); }
+function setSize() {
+  byId('stage').className = 'stage ' + (originalSize ? 'natural' : 'fit') + (comparing?' compare':'');
+  byId('zoom').setAttribute('aria-pressed', String(originalSize));
+  byId('zoom').textContent = originalSize ? '适应窗口' : '原尺寸';
+}
+function selectPage(c, p) {
+  activeConcept = c; activePage = p;
+  updateAddress((c+1)+'/'+(p+1));
+  const concept = concepts[c], page = concept.pages[p];
+  byId('concept').value = String(c);
+  byId('page').replaceChildren(...concept.pages.map((item,i) => new Option(label(i) + ' · ' + item.title, i)));
+  byId('page').value = String(p);
+  byId('full-image').src = page.src;
+  byId('full-image').alt = concept.title + ' · ' + page.title;
+  byId('open-png').href = page.src;
+  setReference();
+  byId('focus').textContent = page.focus;
+  byId('link-hint').textContent = page.links?.length?'可点击画中操作':'';
+  byId('full-image').style.cursor=''; byId('full-image').removeAttribute('title');
+  byId('position').textContent = (p+1) + ' / ' + concept.pages.length;
+  byId('previous').disabled = p === 0;
+  byId('next').disabled = p === concept.pages.length - 1;
+  byId('stage').scrollTo(0,0);
+}
+function show(c,p) {
+  originalSize = false; comparing = false; setSize(); selectPage(c,p);
+  if (!viewer.open) viewer.showModal();
+  document.body.style.overflow = 'hidden';
+}
+byId('count').textContent = concepts.length + ' 套方案 · ' + concepts.reduce((n,c) => n+c.pages.length,0) + ' 个页面';
+for (const [i,c] of concepts.entries()) {
+  byId('concept').add(new Option(label(i) + ' · ' + c.title,i));
+  const card = el('article','card');
+  const button = el('button','preview');
+  button.setAttribute('aria-label','查看' + c.title);
+  const cover=c.cover??0;
+  const photo=el('img'); photo.src=c.pages[cover].src; photo.alt=c.title+' · '+c.pages[cover].title;
+  button.append(photo); button.addEventListener('click',() => show(i,cover));
+  const caption = el('div','caption'), name = el('div','name');
+  name.append(el('span','number',label(i)),el('h2','',c.title),el('span','studio',c.studio));
+  const pages = el('div','pages');
+  c.pages.forEach((p,j) => { const b=el('button','page-link',p.title); b.addEventListener('click',()=>show(i,j)); pages.append(b); });
+  caption.append(name,el('p','',c.thesis),pages);
+  const details=el('details','source-details'), list=el('ul');
+  details.append(el('summary','','参考作品与编排'));
+  for (const r of c.references) {
+    const li=el('li'); li.append(link(r.title,r.url));
+    if (r.video) li.append(' · ',link('原作视频',r.video));
+    if (r.profileUrl) li.append(' · ',link('工作室主页',r.profileUrl));
+    if (r.observed) li.append(el('div','',r.observed));
+    if (r.audience) li.append(el('div','meta',r.audience));
+    list.append(li);
+  }
+  details.append(list); if(c.meta) details.append(link('逐页设计依据与出图方法',c.meta)); card.append(button,caption,details); byId('grid').append(card);
+}
+byId('back').addEventListener('click',()=>viewer.close());
+viewer.addEventListener('close',()=>{document.body.style.overflow='';sourceVideo.pause();updateAddress('');});
+byId('concept').addEventListener('change',e=>selectPage(Number(e.target.value),0));
+byId('page').addEventListener('change',e=>selectPage(activeConcept,Number(e.target.value)));
+byId('zoom').addEventListener('click',()=>{originalSize=!originalSize;comparing=false;setReference();setSize();});
+byId('compare').addEventListener('click',()=>{comparing=!comparing;originalSize=false;setReference();setSize();});
+byId('previous').addEventListener('click',()=>selectPage(activeConcept,activePage-1));
+byId('next').addEventListener('click',()=>selectPage(activeConcept,activePage+1));
+const artwork = byId('full-image');
+function linkAt(event) {
+  const bounds=artwork.getBoundingClientRect();
+  if(!bounds.width || !bounds.height) return;
+  const x=(event.clientX-bounds.left)*artwork.naturalWidth/bounds.width;
+  const y=(event.clientY-bounds.top)*artwork.naturalHeight/bounds.height;
+  return concepts[activeConcept].pages[activePage].links?.find(([,target,left,top,width,height])=>x>=left&&x<=left+width&&y>=top&&y<=top+height);
+}
+artwork.addEventListener('pointermove',event=>{
+  const dest=linkAt(event);
+  artwork.style.cursor=dest?'pointer':'';
+  if(dest) artwork.title=dest[0]; else artwork.removeAttribute('title');
+});
+artwork.addEventListener('click',event=>{const dest=linkAt(event);if(dest)selectPage(activeConcept,dest[1]);});
+function openHash() {
+  const match=location.hash.match(/^#(\d+)(?:\/(\d+))?$/);
+  if(!match) return;
+  const c=Number(match[1])-1, p=Number(match[2]||1)-1;
+  if(concepts[c] && concepts[c].pages[p]) show(c,p);
+}
+openHash();
+window.addEventListener('hashchange',openHash);
+viewer.addEventListener('keydown',e=>{
+  if(e.target.tagName==='SELECT')return;
+  if(e.key==='ArrowLeft'&&activePage>0) { e.preventDefault();selectPage(activeConcept,activePage-1); }
+  if(e.key==='ArrowRight'&&activePage+1<concepts[activeConcept].pages.length) { e.preventDefault();selectPage(activeConcept,activePage+1); }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,250 @@
+{
+  "title": "可组合的研发工作流",
+  "studio": "Uxerflow · Vectra AI Dashboard",
+  "thesis": "Lead 从确认的设计版本选取本轮活动，开发与 Reviewer 在独立工作页交付变更、核对原始证据并退回修复。",
+  "journey": "在版本页查看人的签认，带入编排画布后启动 R-028。运行页把 G3 的 diff 与自测交给 Reviewer。RV-028 根据 CSV 第 3 行将 F-24 退回原活动，修复页对照 7c9a24e 与 8d26b17，独立重取 CSV 后衔接活动 09。各页可回到对应源版本、运行记录或首次评审。",
+  "references": [
+    {
+      "title": "Barly Design for Uxerflow · Vectra – AI Dashboard – Workflow",
+      "author": "Barly Design for Uxerflow",
+      "url": "https://dribbble.com/shots/27587173-Vectra-AI-Dashboard-Workflow",
+      "imageUrl": "https://cdn.dribbble.com/userupload/48487203/file/still-33258d7354a5caa4590e5ad5e5ea3285.png",
+      "videoUrl": "https://cdn.dribbble.com/userupload/48487203/file/large-37410ffd82118ae7da4a1f065f2fd5b9.mp4",
+      "profileUrl": "https://dribbble.com/uxerflow",
+      "observed": "在工作室原片 9.0 秒的 800×600 帧中，应用约从 x=18 到 782，左栏约占可见应用宽度的 19%。画布蓝色触发节点在橙色 Agent 上方，中性叶节点沿细线扇出，边缘工具与底部浮动工具条避开主体。13.0 秒的右侧设置抽屉约占应用宽度的 27%。15.0 秒的执行记录停靠在画布下缘。按原片显示尺寸估计，正文约 7–8 像素，控件高约 15–18 像素。定稿采用桌面 1× 的 13 像素正文和 28 像素按钮。",
+      "inspectedSeconds": [
+        9,
+        13,
+        15
+      ]
+    },
+    {
+      "title": "Uxerflow · Vectra – AI Dashboard – Overview",
+      "author": "Uxerflow",
+      "url": "https://dribbble.com/shots/27575151-Vectra-AI-Dashboard-Overview",
+      "imageUrl": "https://cdn.dribbble.com/userupload/48444284/file/still-7aa329d30914a1a81d8aee52c9e3ce26.png",
+      "videoUrl": "https://cdn.dribbble.com/userupload/48444284/file/large-2f7bf61f88a3cfb7bfd72cdeb2b76866.mp4",
+      "profileUrl": "https://dribbble.com/uxerflow",
+      "observed": "13.4 秒能看到完整的浅色应用。顶栏与筛选动作各占一短行，白色内框之间用低对比细线分开。底部表格有浅灰表头和约 28 像素高的原片数据行。工作页取其表格与窄工具栏关系，主体改为签认正文、样例核对和可逐行读取的 CSV 证据。20.0 秒另核对了同一应用的页签与数据行排列。",
+      "inspectedSeconds": [
+        12.3,
+        13.4,
+        20
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "file": "01-workflow.png",
+      "title": "编排画布",
+      "focus": "Lead 把已确认的 v3、既有架构及按条件进入的 ADR 接入活动 06。活动 07 取得 CP-07，G3 与 G4 分别位于交接连线上。节点可打开源版本，底栏能启动 R-028。",
+      "referenceIndex": 0,
+      "frameSecond": 13,
+      "supportingFrames": [
+        {
+          "referenceIndex": 0,
+          "frameSecond": 9
+        }
+      ],
+      "method": "内置 ImageGen 读取 Workflow 9.0 秒与 13.0 秒原帧，探索蓝色来源、橙色 Lead、小节点头和右抽屉的组合。逐项核对草案后，用静态 HTML/CSS 与矢量连线重排实际活动、回退边及停止条件，再由 Chromium 以 1× 输出最终中文 PNG。",
+      "prompt": "Use case: ui-mockup. Design ONE 1600 × 960, edge-to-edge desktop application screenshot at normal 1× browser zoom, not a Dribbble presentation. The two attached frames are the actual Vectra Workflow by Barly Design for Uxerflow, frames at 9 and 13 seconds. Use ONLY those frames as visual authorship: fine dot-grid barely visible, near-white work canvas with faintly blue-gray side rail, a white selected row, very small colored node header strips (indigo for a confirmed design, apricot/orange for the Lead agent), soft native edges, dotted orange auxiliary relations and small circular ports, little right-edge controls, floating bottom-center toolbar. A white node configuration inspector occupies 24% of screen only on selection. Remove the original navy exterior movie matte; zoom the application itself edge to edge. Reinterpret the screen with all original Fouc content. Chinese productivity application for ADD collaborative R&D. Main canvas shows confirmed document 《任务导出设计》v3 leading to an orange “Lead 编排”, a selected “实现与局部测试” and linked “独立评审” connected downstream; small leaf inputs “沿用架构”, “按需 ADR”, “Context Pack” and the path to “集成与回写”. Nodes in a spatial constellation, credible connections with minimal crossings. No copied brands or integrations. Selected node inspector assigns a developer and cites AC-02 “导出结果仅含当前筛选命中且本人可见的任务”, a verification responsibility and stop condition. Sidebar wordmark Fouc with narrow near-neutral rail, one selected work navigation entry and a short recent activity list; project switcher at top only, header named “按筛选导出任务”. Discreet blue action “启动运行”, edge actions and small editing controls. Actual body text 12–14 px, regular weights, node titles 13–15 px, buttons 24–29 px; use 100% scale, no giant type or headers. First productive content near y=105. Carefully laid out calm, credible, quiet desktop workspace with gentle tonal differences, ample canvas but densely usable node contents. Do not make a poster, metrics, decorative numbers, huge illustration, gradients across panels, or kanban. Flat orthographic view, no surrounding device.",
+      "generationDraft": "exec-51821e44-c882-4ed6-83de-f09d176f4eab.png",
+      "dimensions": {
+        "width": 1600,
+        "height": 960,
+        "devicePixelRatio": 1
+      },
+      "firstWorkY": 121,
+      "bodyTextPx": 13,
+      "hotspots": [
+        {
+          "label": "打开《任务导出设计》v3",
+          "targetFile": "02-design.png",
+          "x": 608,
+          "y": 121,
+          "width": 240,
+          "height": 93
+        },
+        {
+          "label": "查看 CP-07 的运行实例",
+          "targetFile": "03-run.png",
+          "x": 299,
+          "y": 724,
+          "width": 229,
+          "height": 84
+        },
+        {
+          "label": "启动 R-028 并打开运行实例",
+          "targetFile": "03-run.png",
+          "x": 868,
+          "y": 895,
+          "width": 88,
+          "height": 28
+        }
+      ]
+    },
+    {
+      "file": "02-design.png",
+      "title": "确认目标与版本",
+      "focus": "在 v3 正文中核对目标、范围和 F-16、F-24、F-31 三个样例。右栏保留需求分析 Agent 的追问、林悦的裁决及绑定 v3 的签认记录，底部进入编排。",
+      "referenceIndex": 1,
+      "frameSecond": 13.4,
+      "method": "内置 ImageGen 以 Overview 13.4 秒的原帧和本套编排画布试排版本正文与讨论。静态定稿采用已签认快照，使后续运行和评审都能回查同一个 v3；将目标提前到首行工作内容，逐字重排标准、样例与确认时间。",
+      "prompt": "Use case: ui-mockup. A genuinely full-bleed 1600 × 960 Chinese desktop productivity application at 100% zoom, quiet near-white Vectra surfaces and blue-gray side rail. The attached first movie frame is by Barly Design for Uxerflow and is the sole external visual direction; second image is the already calibrated shell of this same Fouc concept. Preserve its small compact toolbar, tiny action icons, subtle table header and hairline borders, active white rail item, typography 12–14 pixels, buttons 24–29 pixels. No surrounding navy movie matte, metrics, charts, giant signs or decorative posters. Same Fouc app and project 北辰研发, project switcher in the top bar only. First useful content before y=145. One desktop screenshot, not a collage. Create the standalone source version confirmation, distinct from the node canvas. Object 《任务导出设计》v3. Owner 林悦 and requirement analyst have clarified the target “按筛选导出任务”. Layout: a quiet versioned authoritative design document on left with one title, human-sized short sections, scope, and a three-row table of concrete sample expectations. Exact requirement AC-02: “导出结果仅含当前筛选命中且本人可见的任务。” F-16 matches and is visible, include. F-24 matches, inaccessible, exclude. F-31 visible, does not match, exclude. On right a working clarification thread with one precise question from the requirement analyst, one human answer establishing member visibility, and a decision bound to v3. Main CTA “确认 v3 并进入编排”. Source Vectra top bar and table, replace its chart with the actual document. No metrics.",
+      "generationDraft": "exec-b9719613-663a-4fa5-b671-a0351e24f945.png",
+      "dimensions": {
+        "width": 1600,
+        "height": 960,
+        "devicePixelRatio": 1
+      },
+      "firstWorkY": 130,
+      "bodyTextPx": 13.5,
+      "hotspots": [
+        {
+          "label": "用确认的 v3 进入编排画布",
+          "targetFile": "01-workflow.png",
+          "x": 1272,
+          "y": 908,
+          "width": 301,
+          "height": 29
+        }
+      ]
+    },
+    {
+      "file": "03-run.png",
+      "title": "运行实例与开发交付",
+      "focus": "R-028 展开 CP-07 的源码范围、依赖、验证命令和停止条件，同时显示 7c9a24e 的两项文件变更及两条自测。Lead 完成 G3 核验后，独立评审从右上角进入。",
+      "referenceIndex": 0,
+      "frameSecond": 15,
+      "method": "内置 ImageGen 读取 Workflow 15.0 秒下沿日志与本套 1× 画布，试排活动列、上下文和变更证据。静态定稿重建活动状态、两项真实交付字段与事件表，将 G3 记为 Lead 的核验记录，尚待处理的活动保留未启动状态。",
+      "prompt": "Use case: ui-mockup. A genuinely full-bleed 1600 × 960 Chinese desktop productivity application at 100% zoom, quiet near-white Vectra surfaces and blue-gray side rail. The attached first movie frame is by Barly Design for Uxerflow and is the sole external visual direction; second image is the already calibrated shell of this same Fouc concept. Preserve its small compact toolbar, tiny action icons, subtle table header and hairline borders, active white rail item, typography 12–14 pixels, buttons 24–29 pixels. No surrounding navy movie matte, metrics, charts, giant signs or decorative posters. Same Fouc app and project 北辰研发, project switcher in the top bar only. First useful content before y=145. One desktop screenshot, not a collage. Create the standalone execution instance R-028 for the Fouc workflow 按筛选导出任务. Build a practical work detail page quite distinct from the canvas. A slim list shows the run’s real activities on left. In the main portion a compact Context Pack CP-07 binds 《任务导出设计》v3, its checkable AC-02, branch feat/task-filter-export, authorized files service.ts and tasks.integration.test.ts, developer and Lead verification responsibilities and a stop if member visibility contract or file ownership changes. On the right of this detail show the actual diff commit 7c9a24e plus two local test rows, with sample F-16 and F-31. Bottom edge retains the original short execution log with times and actual events. G3 has been checked by the Lead, next action “打开独立评审” goes to a separate work surface. Omit KPIs or charts.",
+      "generationDraft": "exec-694f6004-d845-43d9-8434-3c454e889b0b.png",
+      "dimensions": {
+        "width": 1600,
+        "height": 960,
+        "devicePixelRatio": 1
+      },
+      "firstWorkY": 134,
+      "bodyTextPx": 13,
+      "hotspots": [
+        {
+          "label": "返回编排画布",
+          "targetFile": "01-workflow.png",
+          "x": 1486,
+          "y": 19,
+          "width": 87,
+          "height": 29
+        },
+        {
+          "label": "打开 R-028 独立评审",
+          "targetFile": "04-review.png",
+          "x": 1462,
+          "y": 77,
+          "width": 111,
+          "height": 28
+        },
+        {
+          "label": "查看运行所用设计 v3",
+          "targetFile": "02-design.png",
+          "x": 592,
+          "y": 262,
+          "width": 120,
+          "height": 21
+        }
+      ]
+    },
+    {
+      "file": "04-review.png",
+      "title": "独立核对导出证据",
+      "focus": "Reviewer 以普通成员周宁的身份，对照可见集合、筛选命中集合和原始 CSV，确定 F-24 错在第 3 行。可查看 v3、原始运行，或将证据退回活动 07。",
+      "referenceIndex": 1,
+      "frameSecond": 13.4,
+      "supportingFrames": [
+        {
+          "referenceIndex": 0,
+          "frameSecond": 13
+        }
+      ],
+      "method": "内置 ImageGen 以 Overview 13.4 秒和 Workflow 13.0 秒原帧探索样例核对与决定抽屉。生成草案的 CSV 含有与其样例表冲突的行；静态定稿重新绘制权限夹具、带行号的实际 CSV、包含三种情况的核对表与退回动作。",
+      "prompt": "Use case: ui-mockup. One full-bleed, normal 1×, 1600×960 desktop application screen for Fouc in Chinese. The first supplied frame is from Uxerflow Vectra Overview at 13.4 seconds and the second from Vectra Workflow at 13 seconds. These are the sole visual reference, by Barly Design for Uxerflow. Preserve their fine cool blue-gray left rail, very quiet white inset main window, flush compact global toolbar, low-contrast panel borders, hierarchical but modest type, fine table rhythms, tidy upper-right small blue primary action and selection accent. Do not reuse a dashboard chart, KPIs, labels or a navy outer film frame. Create an original “独立评审” work surface for the running R-028 “按筛选导出任务”. Top-level rail Fouc, “研发工作流” selected. A project switcher exists only at the top. At the top of the white main area show the source “任务导出设计 v3”, “AC-02”, and the commit 7c9a24e. A large work area shows a real proof comparison of authorization test data: F-16 matches and is visible, exported as expected; F-24 matches but is not visible to the requesting member, expected excluded, observed in CSV row 3; F-31 does not match, excluded. Right inspector shows the independent reviewer’s finding, a short decision with return owner and the button “退回活动 07”. Show source and actual CSV side-by-side or stacked in one quiet evidence surface, using neutral headers and only one pale red failed row. At lower edge place an execution-event table, as in Vectra Workflow. Actual 12–14 pixel body letters, compact 24–29 pixel controls, first substantive work near y=110. App intended for professional careful daily use, restrained white/blue-gray materials, no pictorial clutter, no blob backgrounds, no poster titles, no decorative oversized numerals. Desktop screenshot, straight-on edge to edge.",
+      "generationDraft": "exec-ed6a546b-f7b1-4db7-9f5f-d415d58588f2.png",
+      "dimensions": {
+        "width": 1600,
+        "height": 960,
+        "devicePixelRatio": 1
+      },
+      "firstWorkY": 138,
+      "bodyTextPx": 14,
+      "hotspots": [
+        {
+          "label": "查看原始运行",
+          "targetFile": "03-run.png",
+          "x": 1486,
+          "y": 19,
+          "width": 87,
+          "height": 29
+        },
+        {
+          "label": "查看 AC-02 的源版本",
+          "targetFile": "02-design.png",
+          "x": 1469,
+          "y": 77,
+          "width": 104,
+          "height": 28
+        },
+        {
+          "label": "退回原活动并查看修复与复审",
+          "targetFile": "05-repair.png",
+          "x": 1453,
+          "y": 893,
+          "width": 104,
+          "height": 28
+        }
+      ]
+    },
+    {
+      "file": "05-repair.png",
+      "title": "修复、复审与下一次交接",
+      "focus": "开发在原活动 07 交付 8d26b17，Reviewer 重取 CSV，仅见 F-16。工作页保存首次偏差、修复自测及独立复审的对照结果，G4-task 通过后交给活动 09。",
+      "referenceIndex": 0,
+      "frameSecond": 15,
+      "method": "内置 ImageGen 以 Workflow 15.0 秒和本套已定稿画布试排修复后的时序与交接。草案使用画布节点呈现检查点。静态定稿改用独立工作详情和新旧提交对照，让 G4-task 对应 Reviewer 签认，G5 位于后续集成合入确认。",
+      "prompt": "Use case: ui-mockup. A genuinely full-bleed 1600 × 960 Chinese desktop productivity application at 100% zoom, quiet near-white Vectra surfaces and blue-gray side rail. The attached first movie frame is by Barly Design for Uxerflow and is the sole external visual direction; second image is the already calibrated shell of this same Fouc concept. Preserve its small compact toolbar, tiny action icons, subtle table header and hairline borders, active white rail item, typography 12–14 pixels, buttons 24–29 pixels. No surrounding navy movie matte, metrics, charts, giant signs or decorative posters. Same Fouc app and project 北辰研发, project switcher in the top bar only. First useful content before y=145. One desktop screenshot, not a collage. Create the original developer repair record of the same R-028 and independent re-review, a distinct action detail after RV-028 returned activity 07 for the F-24 fixture. Keep the source movie’s split work area and lower execution log. Show chronological repair, commit 8d26b17, local retest passing three sample cases, independent Reviewer replay as ordinary project member, and actual CSV containing F-16 only. G4-task independently approved after fresh evidence; G5 is upcoming, integration not yet claimed. Small source links to original finding and design v3, one clear primary button “回到编排”. Quiet green only for verified facts, subdued neutral elsewhere. No giant numbers or canned headings.",
+      "generationDraft": "exec-f1855cb3-82ed-4177-a380-218562b422ab.png",
+      "dimensions": {
+        "width": 1600,
+        "height": 960,
+        "devicePixelRatio": 1
+      },
+      "firstWorkY": 134,
+      "bodyTextPx": 13,
+      "hotspots": [
+        {
+          "label": "返回首次独立评审",
+          "targetFile": "04-review.png",
+          "x": 1462,
+          "y": 77,
+          "width": 111,
+          "height": 28
+        },
+        {
+          "label": "打开复审绑定的设计 v3",
+          "targetFile": "02-design.png",
+          "x": 1160,
+          "y": 572,
+          "width": 54,
+          "height": 18
+        },
+        {
+          "label": "复审完成后回到编排",
+          "targetFile": "01-workflow.png",
+          "x": 1470,
+          "y": 691,
+          "width": 87,
+          "height": 28
+        }
+      ]
+    }
+  ],
+  "verification": "5 张完成图均为实际 1600×960、DPR 1。按图序，第一个业务对象、目标或验收正文的顶部是 121、130、134、138、134 像素。工作正文字号为 13–14 像素，标准按钮 28–29 像素。已逐张目视比对 Uxerflow 原帧，检查端口、连线、文件名、三个样例、CSV 行号与时间先后。13 个跨页热点取自最终排版的边界坐标。资料使用当前仓库真实文件名，人员、运行、提交标识及证据均为同一交互示例。内置 ImageGen 生成五份阶段草案，最终画面的中文、图形和控件经静态重排后输出。"
+}

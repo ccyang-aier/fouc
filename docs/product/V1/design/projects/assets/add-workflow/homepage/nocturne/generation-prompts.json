@@ -1,0 +1,82 @@
+{
+  "concept": "nocturne",
+  "name": "深色指挥台",
+  "date": "2026-11-12",
+  "final_generation": {
+    "iteration": 3,
+    "intent": "edit",
+    "reason": "Correct state semantics only: Agent 进行中 becomes Agent 任务; 最近交付 becomes 最近更新.",
+    "prompt": "Use case: ui-mockup. Precise text-only edit of a high-fidelity Fouc desktop homepage.\nInput image 1 is the mandatory actual Fouc shell reference, preserving exact product identity and geometry. Input image 2 is the EDIT TARGET and must remain visually identical except for TWO headings.\nONLY make these two Chinese title replacements in image2:\n1. Right rail header currently “Agent 进行中” → change to “Agent 任务”. Preserve the adjacent green dot, count “3”, “查看全部”, all three Agent rows and all their actual states, including “等待审阅”.\n2. Bottom-left section heading currently “最近交付” → change to “最近更新”. Preserve its typography, position, all other bottom-row text and controls, including “任务批量调整 · 修复已提交”, “今天 09:42” and “查看交付”.\nPreserve EVERYTHING ELSE: all Chinese and English text, every work row, date, icons, avatars, controls, separator geometry, exact 1585×992 image proportions, 272px sidebar, compact desktop density, dark graphite palette, existing subtle materials, project selector, navigation, main surface, tab bar and footer. Do not restyle, recompose, add new UI or change any status wording. Keep both changed headings in the same font size, weight, color and baseline as their originals. This is strictly a two-heading correction, not a redesign.",
+    "referenced_image_paths": [
+      "C:/AIWorks/26Coding/fouc/docs/product/V1/design/projects/assets/add-workflow/reference/fouc-shell-wide.jpg",
+      "C:/AIWorks/26Coding/fouc/docs/product/V1/design/projects/assets/add-workflow/homepage/nocturne/home.png"
+    ],
+    "edit_target_original_source": "C:/Users/17335/.codex/generated_images/01a1cbb6-a6f5-78e2-9384-cc1d6f2d61cb/exec-81d6a250-fd34-448b-a8a4-0330b7b1851b.png",
+    "source_output": "C:/Users/17335/.codex/generated_images/01a1cbb6-a6f5-78e2-9384-cc1d6f2d61cb/exec-d8254392-df86-4188-8c82-b7974a4d92e7.png",
+    "selected": true,
+    "inspection": "Both requested titles corrected. Work rows, run statuses, shell geometry, dark palette and hierarchy remain coherent; minor raster generation differences do not materially alter the design.",
+    "output": "docs/product/V1/design/projects/assets/add-workflow/homepage/nocturne/home-v2.png"
+  },
+  "previous_selected_generation": {
+    "iteration": 2,
+    "intent": "edit",
+    "reason": "Tighten oversized toolbar and typography to ordinary desktop density; request flat dark surfaces.",
+    "prompt": "Use case: ui-mockup.\nMake ONE precise density/material correction to the Fouc dark project HOMEPAGE shown in input image 2.\nInput image1 is the mandatory ACTUAL Fouc shell reference, for exact shell geometry, icons and top-bar scale. Input image2 is the edit target. Keep the target's excellent two-decision/four-work/three-Agent homepage composition and accurate Chinese text, all content/actions, top-left project selector, active 工作台 nav, and footer.\nThe target's content toolbar is too tall and typography a little too large; its surface also has unwanted textured lighting. Correct ONLY these production details:\n1. Flat, strictly uniform CSS colors, pixel-sharp product screenshot: shell#111111, sidebar#141414, main#181818, elevated#222222, text#ededed, secondary#a3a3a3, borders rgba(237,237,237,.14), sidebar icons#b3b3b3. No paper grain, vignetting, lighting falloff, gradients, glow, simulated photographic rendering or shadows. Uniform solid fills.\n2. On a roughly1600x1000 image, keep sidebar272px and system bar44px as input1. Shrink the SINGLE content toolbar to44–48px: y44–92. “工作台”18px, date12px, compact 新建工作 button30px tall. Main content must begin aroundy110 rather than150. No extra toolbar row.\n3. Compact text scale: section headings20px maximum, item titles15–16px, body/control13px, metadata12px. All buttons30px tall, avatars22px maximum. Preserve deliberate spacious group separation, but no inflated controls.\n4. Attention rows104px each; ongoing rows70px each. Slim right rail remains secondary; visible same three meaningful Agent results and 打开/暂停 controls. Keep two human decisions most prominent. Recently delivered strip stays quiet near bottom with calm space below.\nNo new elements. No giant headline, KPI wall, chat, code, editor, ten-stage wall, extra project/workspace selector, knowledge-base or automation. This is one high-fidelity workbench homepage at real ordinary desktop density.",
+    "referenced_image_paths": [
+      "C:/AIWorks/26Coding/fouc/docs/product/V1/design/projects/assets/add-workflow/reference/fouc-shell-wide.jpg",
+      "C:/Users/17335/.codex/generated_images/01a1cbb6-a6f5-78e2-9384-cc1d6f2d61cb/exec-be96bcd8-c50e-4e3a-8e10-0cf9fbb9aef6.png"
+    ],
+    "source_output": "C:/Users/17335/.codex/generated_images/01a1cbb6-a6f5-78e2-9384-cc1d6f2d61cb/exec-81d6a250-fd34-448b-a8a4-0330b7b1851b.png",
+    "selected": false,
+    "inspection": "Selected final maintains actual shell structure, human-attention hierarchy, four work resumptions, three compact Agent result entries, and one recent delivery strip."
+  },
+  "mode": "built-in image_gen",
+  "use_case": "ui-mockup",
+  "intent": "generate",
+  "reference": "C:/AIWorks/26Coding/fouc/docs/product/V1/design/projects/assets/add-workflow/reference/fouc-shell-wide.jpg",
+  "reference_role": "Actual Fouc shell geometry, navigation, icons and typography; color material converted only to existing dark tokens verified in src/app/globals.css",
+  "source_brief": "docs/product/V1/design/projects/assets/add-workflow/homepage/generation-brief.json",
+  "source_tokens": "src/app/globals.css:134-212",
+  "output": "docs/product/V1/design/projects/assets/add-workflow/homepage/nocturne/home-v2.png",
+  "hierarchy": [
+    "Two human decision/review entries with context and precise detail-page actions",
+    "Four resumable work rows",
+    "Slim right rail: three Agent tasks and latest meaningful results",
+    "Quiet recent-updates row"
+  ],
+  "style": {
+    "palette": {
+      "shell": "#111111",
+      "sidebar": "#141414",
+      "panel": "#181818",
+      "elevated": "#222222",
+      "ink": "#ededed",
+      "secondary": "#a3a3a3",
+      "border": "rgba(237,237,237,.14)",
+      "sidebar_icon": "#b3b3b3"
+    },
+    "material": "Premium flat matte graphite; fine single borders; restrained semantic amber, green and blue",
+    "density": "Approximately1600x1000 at100 percent, sidebar272px, system44px, toolbar44-48px, body13px, metadata12px, headings18-22px, buttons30px"
+  },
+  "interaction": {
+    "entry": "Single 新建工作 button",
+    "decisions": "查看决定 and 进入复审 route to full evidence and responsible confirmation; no homepage approval",
+    "resume": [
+      "继续设计",
+      "查看进展",
+      "查看结论",
+      "继续编写"
+    ],
+    "agents": "Three tasks show meaningful result with 打开 and 暂停; waiting run pause appears muted"
+  },
+  "scope": "Homepage concept only; all displayed work, people, counts and results are sample UX content, not current implementation or execution evidence.",
+  "generations": [
+    {
+      "iteration": 1,
+      "prompt": "Use case: ui-mockup\nAsset type: one pixel-sharp, high-fidelity Chinese desktop application screenshot for the Fouc project workbench HOMEPAGE.\nPrimary request: Design the “深色指挥台” concept: a human-attention-first project homepage, showing decisions that need the person, useful resumable work, and a small quiet view of current Agent runs. It must read immediately as the project homepage, never as a feature editor.\n\nInput image 1 is the ACTUAL Fouc light-theme shell REFERENCE. Match its system bar, left project selector, left navigation geometry and familiar icon silhouettes, active 工作台 tab, history arrows, add-tab button, search and Windows controls, section structure and footer. Replace all old dashboard content. Convert only the color material to Fouc's EXISTING dark theme. Preserve shell proportions and product typography. The image is reference material, not the intended dashboard content.\n\nOutput composition: one straight-on complete application screenshot, approximately 1600×1000 landscape at ordinary 100% desktop scale. No outer frame, no slide title, no collage, no perspective. Sidebar EXACTLY about 272px wide (17% of image), top system bar 44px tall. Main continuous surface starts at x272, y44, has 16px outside corners and one hairline boundary. ONE compact 44–48px content toolbar only. Main core content begins around y112. Use 13px body and controls, 12px secondary metadata, 18–22px major headings, 30px buttons, 20px avatars. Do not enlarge the product controls or text.\n\nPalette, strictly existing dark tokens: shell #111111; sidebar #141414; main #181818; elevated #222222; primary text #ededed; secondary #a3a3a3; muted #8a8a8a; fine borders rgba(237,237,237,0.14); sidebar icons #b3b3b3. Elegant matte graphite software craft, extremely subtle tone differences. Off-white primary button with charcoal text. Amber #d9a743 for genuine human attention, green #37c395 for running/success, muted blue only for content links. No new theme, colorful navigation, neon, sci-fi, gradients, glow, shadows, ornamental illustrations, or colored card backgrounds.\n\nShell text, accurately rendered:\nProject selector: “Fouc 桌面端 V1”.\nSidebar rows: “新对话”, “工作台” SELECTED in a subtle neutral gray row, “任务”, “成员”, “资产”, “智能体”. Use familiar solid FA7 silhouettes from the reference, restrained gray, small and carefully aligned.\nSidebar section “频道” and one row “产品与设计” with a small purple channel mark as the reference.\nSidebar section “最近”, quiet empty-state “暂无最近对话”.\nFooter: “社区”, “连接器”; bottom identity “Fouc Admin”, subtle moon and gear controls.\nTop tab label “工作台”. The rest of the upper shell and Windows controls exactly follow the reference.\n\nMain page toolbar, y44–92: left small heading “工作台”, right quiet date “11月12日 · 周四”, then one compact “＋ 新建工作” outlined neutral button. No other title band or breadcrumb.\n\nMain inner grid: generous crisp 28px inset; broad left content (roughly 865px) and a slim RIGHT Agent rail (roughly 300px), a 32px gutter and a single subtle vertical divider. Flat surfaces; avoid redundant containers. Every block follows an exact clean baseline grid.\n\nLEFT, human-attention section at the top, dominant:\nHeader “需要你处理” with a tiny amber count “2”, quiet right text “进入详情后确认”.\nTwo beautifully composed horizontal decision/review rows, about 104px tall each, separated by a fine neutral rule, with an elegant 2px amber accent used only at the first row's very short left marker. No giant warning panels.\nRow 1: small amber category “待决定” and compact ID “FUC-42”, title “确认邀请重发规则” in crisp 17px semibold. Supporting context “成员邀请与权限 · ADR-012”, next line “两个方案已备齐 · design.md v3 · 林悦”. Right aligned off-white 30px button “查看决定” with small right arrow.\nRow 2: small amber category “待复审” and ID “FUC-40”, title “复审任务批量调整”, context “独立复审 · 修复轮次 2”, next line “证据已更新 · 周宁”. Right aligned neutral outlined 30px button “进入复审”.\nDo not approve anything directly here: no checkbox, approval switch or fabricated gate percentage.\n\nLEFT, below attention rows, concise ongoing-work register, header “继续工作” and far-right small “全部工作” with right arrow. Four flat rows with tiny work-type icon, work ID, name, current activity in a refined neutral tag, one exact useful context line, owner metadata and a precise action on the right. Row spacing about 70px, hairline separators; this is an entry ledger, no mini-editors:\n1. “FUC-42” “成员邀请与权限”; activity “详细设计”; context “邀请重发规则待确认 · design.md v3”; owner “林悦”; action “继续设计”.\n2. “FUC-38” “设备会话断连”; activity “复现与定位”; context “已复现 · 等待验证根因”; owner “Codex”; action “查看进展”.\n3. “FUC-45” “连接器权限审计”; activity “调研结论”; context “3 项发现待审阅”; owner “陈宁”; action “查看结论”.\n4. “FUC-46” “项目活动摘要”; activity “正文草稿”; context “基于本周已确认的交付记录”; owner “林悦”; action “继续编写”.\nSmall type icons only, no playful large emoji. The stage, Agent, type and status remain separate concepts.\n\nRIGHT rail starts level with human section. Header “Agent 进行中” with tiny green dot and count “3”, quiet “查看全部”.\nThree compact task entries, with meaningful result instead of logs:\n1. Label “Codex”, small green running dot. Task “设备会话断连”. Latest result “已补充断连复现记录”. Tiny metadata “2 分钟前 · 正在验证根因”. Bottom small plain controls “打开” and pause icon with “暂停”.\n2. Label “Tester Agent”, green running dot. Task “导出流程验证”. Latest result “已完成 2 / 4 条真实旅程”. Metadata “5 分钟前 · 验证继续中”. Controls “打开” and “暂停”.\n3. Label “Research Agent”, neutral dot. Task “连接器权限审计”. Latest result “已整理 3 项发现”. Metadata “8 分钟前 · 等待审阅”. Control “打开”, pause icon muted since run is waiting.\nUse subtle horizontal separators, no big progress bars, no chart, no full console or chat. Rail is secondary, the two human entries dominate.\n\nA single quiet bottom row around y820, title “最近交付”, small green check, “任务批量调整 · 修复已提交”, metadata “今天 09:42”, right lightweight “查看交付”. It anchors the layout without a big card or extra dashboard panel. Leave calm natural breathing room below.\n\nAll text must be clean readable Simplified Chinese, real compact UI typography like Microsoft YaHei / Inter. Professional studio-level detail: sharp fine rules, exactly aligned small controls, restrained semantic colors, flat crisp boundaries, logical high-density desktop scale. Upper human actions are the visual hierarchy, followed by four ongoing works, while the rail stays quiet.\nAvoid: giant greeting, huge typography, promotional copy, KPI wall, metrics dashboard, ten-stage mandatory workflow wall, progress percentage for the work, calendar, permanent chat pane, code diff, document editor, fabricated workspace entity, second project chooser, knowledge-base or automation menu. This is one homepage with multiple current-project work items.",
+      "referenced_image_paths": [
+        "C:/AIWorks/26Coding/fouc/docs/product/V1/design/projects/assets/add-workflow/reference/fouc-shell-wide.jpg"
+      ]
+    }
+  ]
+}

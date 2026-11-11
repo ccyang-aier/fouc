@@ -1,0 +1,72 @@
+{
+  "concept": "tempo",
+  "name": "交付航线",
+  "date": "2026-11-12",
+  "mode": "built-in image_gen",
+  "use_case": "ui-mockup",
+  "scope": "Fouc current-project WORKBENCH HOMEPAGE only; illustrative UX data",
+  "brief": "../generation-brief.json",
+  "output": "home-v2.png",
+  "dimensions": {
+    "width": 1568,
+    "height": 1003
+  },
+  "style": "Swiss planning studio: a white surface, thin graphite grid, restrained small schedule typography, amber human-checkpoint markers, thin today line and muted-blue validation status.",
+  "composition": "A dominant five-work project-wide weekly trajectory, Nov 9–15 2026 with Today Thu Nov 12. Fixed work-name column, sparse short schedule runs and upcoming review/delivery nodes. Under it are two human judgment checkpoints with evidence, version and responsible person, followed by one small resume entry; no right inspector.",
+  "main_click": {
+    "label": "继续当前工作",
+    "target_work": "FUC-42 成员邀请与权限",
+    "target": "design.md v3 · 邀请重发规则 · 方案对比"
+  },
+  "reference": {
+    "path": "C:/AIWorks/26Coding/fouc/docs/product/V1/design/projects/assets/add-workflow/reference/fouc-shell-wide.jpg",
+    "role": "Actual Fouc shell geometry, icons, typography, project/navigation/footer and light neutral material only; old dashboard content discarded."
+  },
+  "selected_source": "C:/Users/17335/.codex/generated_images/01a1cbb6-ecbe-7093-b4f5-b801fb7dc716/exec-d9d7c1ca-2ed8-40f0-b26b-cf872f89b2f3.png",
+  "generations": [
+    {
+      "step": 1,
+      "role": "initial generation",
+      "prompt": "Use case: ui-mockup.\nCreate ONE finished, exceptionally refined high-fidelity Chinese desktop application screenshot of the Fouc project WORKBENCH HOMEPAGE. This is concept \"交付航线\". Output a single flat front-on screenshot, approximately 1600 x 1000 pixels, landscape 8:5. No presentation board, no device frame, no exterior title, no collage. This is a real product homepage design, NOT a feature editor, individual work detail or calendar product.\n\nREFERENCE IMAGE ROLE: the attached image is the ACTUAL Fouc application shell and must be closely reproduced: project header, icon shapes, system tab bar, history arrows, Windows controls, light-gray sidebar and footer. Use that image as shell reference ONLY. Entire old dashboard content must be replaced. Preserve shell visual geometry at ordinary 100% desktop density; do not enlarge controls. Sidebar x0–272px, top system bar 44px. Main one white rounded surface from x272, y44 to right/bottom, 16px corners and one very fine gray border; outside pale gray. Existing system tab has 工作台, with add-tab plus, history arrows, search and Windows controls. Sidebar background #f9f9f9, 13px text, compact 32px nav rows. Top project is \"Fouc 桌面端 V1\". Nav entries exactly 新对话 / 工作台 / 任务 / 成员 / 资产 / 智能体, 工作台 selected neutral gray. Then 频道 with 产品与设计; 最近 with 暂无最近对话. Footer exactly 社区, 连接器, Fouc Admin with avatar/moon/settings as reference. Use same FA7 Solid silhouettes, compact grayscale navigation. No new project chooser, no workspace, knowledge base or automation.\n\nART DIRECTION: a Swiss planning studio, architectural white, disciplined subtle cool graphite typography, fine gray rules, precision dates and elegant tiny status markers, exceptionally exact baseline alignment and polished professional schedule components. It must look like top software studio craftsmanship, NOT a wireframe or simplistic line drawing. No shadows, no gradients, no colorful calendar, no giant headings, no poster typography. Body and controls around13px, secondary12px, page title18–20px maximum, buttons30px. Intentional but normal software information density with calm white space. Semantic color only: tiny amber human-checkpoint markers, muted blue validation event, graphite other work. No decorative graphs or KPI tiles.\n\nPAGE TOOLBAR: exactly ONE 44–48px horizontal toolbar y44–92, x296–1560. Small title \"工作台\" left, immediately a low-key descriptor \"交付航线\" in gray separated by a short fine line. On the right compact week navigation \"‹  11月9日 — 15日  ›\" and a neutral 30px \"今天\" button, then compact dark \"+ 新建工作\". No subtitle band, no large calendar header, no tabs, no second date bar. Core begins about y108.\n\nDOMINANT HOME COMPOSITION: one broad project-wide weekly trajectory occupying the upper approximately500px; fixed work-name left column about250px; seven precisely equal day columns for Monday Nov9 to Sunday Nov15,2026. Dates must be CHRONOLOGICALLY CORRECT:\n\"周一 09\" \"周二 10\" \"周三 11\" \"周四 12\" \"周五 13\" \"周六 14\" \"周日 15\".\nRender each with small day word and date in sophisticated compact typography; a small amber \"今天\" word next to Thursday12. Thin warm amber today marker running vertically through Thursday column, with tiny cap; NO broad tinted stripe, no giant time marker. Weekend columns only very subtly tinted #fcfcfc. Grid fine1px light gray. Left header \"本周工作\" and tiny count \"5项\". One small restrained legend at top-right of grid header \"◇ 人工检查点   · 交付节点\" in12px. Each work row about72px high, not giant cards. Work labels fixed at left baseline with 11px monospaced ID above or beside 13px name, current activity and responsible person in12px beneath. Exactly these FIVE independent work rows, NOT ten stages and NOT one work's phase pipeline:\n1. \"FUC-42\" \"成员邀请与权限\" with \"详细设计 · 林悦\". Short graphite schedule bar spans Mon09 to Thu12, label \"设计 v3\". At Thu12 in same row precise amber outlined diamond marker and compact event label \"15:00 规则确认\". At Fri13 tiny review point with \"10:00 设计评审\". The row is quietly selected with #fafafa wash, NOT a dark block.\n2. \"FUC-40\" \"任务批量调整\" with \"独立复审 · 周宁\". A short neat graphite bar on Wed11 ending at Thu12. Thu12 amber diamond \"16:30 独立复审\". Fri13 compact point \"11:00 修复验收\".\n3. \"FUC-45\" \"连接器权限审计\" with \"调研结论 · 陈宁\". A short gray run on Tue10–Wed11 labelled \"发现已整理\". Fri13 amber outlined diamond \"14:00 结论审阅\".\n4. \"FUC-44\" \"导出流程验证\" with \"真实 E2E · Tester Agent\". Thin muted blue short bar Thu12–Fri13 labelled \"2 / 4 旅程验证\"; Fri13 point \"16:00 交付验证\".\n5. \"FUC-38\" \"设备会话断连\" with \"复现与定位 · Codex\". Small Mon09 completed point \"已复现\", short neutral run Wed11–Thu12 and Thu12 small point \"14:00 根因验证\".\nAvoid overlaps and clipped event labels. Event labels appear as small sophisticated pills / outlined annotated nodes around the correct day with finely tailored padding; deliberately sparse, real usable schedule controls rather than giant empty chart. Never stretch bars to fill the grid, never render all10activities. There is no percentage. Today is Thursday Nov12,2026. These are sample planned checkpoints, not execution evidence.\n\nLOWER HOME ACTION BAND: immediately below weekly trajectory, fine horizontal rule, small label \"接下来，需要你\" with count \"2\". This is one compact horizontal band with TWO side-by-side human checkpoint entries about half width each, divided by a fine vertical rule, not a giant card dashboard:\nFirst: amber outlined diamond, \"15:00 · 今天\", title \"确认邀请重发规则\"; small second line \"成员邀请与权限 · ADR-012 · design.md v3\"; small third line \"证据：两个方案已备齐  ·  确认人：林悦\". Right-aligned compact link-button \"查看决定 ↗\".\nSecond: amber outlined diamond, \"16:30 · 今天\", title \"复审任务批量调整\"; small second line \"修复轮次 2 · review.md v2\"; third line \"证据：复审包已更新  ·  复审人：周宁\". Compact link-button \"进入复审 ↗\".\nEvidence, version and responsible HUMAN must remain visible. Gate is an entry to judgment on a dedicated page, NEVER a bare checkbox, green autopass or homepage approve button.\n\nSMALL RESUME ENTRY: below at roughly y780 a quiet shallow white strip with top/bottom fine rules; small file icon then \"继续：成员邀请与权限\" in13px, next line \"design.md v3 · 邀请重发规则 · 上次停在方案对比\". Right aligned30px dark compact button \"继续当前工作 →\". This is a resume entry, not a content editor. In the bottom quiet whitespace a very restrained single12px note \"陈宁提交了连接器权限审计的 3 项发现 · 10分钟前\" as meaningful recent change, aligned with grid. Footer within main bottom-left can be tiny \"活动按需回访\" as a gentle reminder that activities are flexible and revisitable; do NOT list all10activities or show fixed stage progress.\n\nEXACT PRODUCT INTENT: HOME resumes useful work, surfaces two independent human judgments, locates multiple current-project work items, offers one compact create entry. One real project scope only. No right inspector, no permanent chat, no code diff, no feature-detail document, no dual tabs, no filter toolbar, no large title/welcome, no all-tool menu, no statistics cards, no 10-column process. Maintain the actual reference shell proportions including window tab geometry, footer, and fine neutral controls. Render all Chinese cleanly and precisely.",
+      "referenced_image_paths": [
+        "C:/AIWorks/26Coding/fouc/docs/product/V1/design/projects/assets/add-workflow/reference/fouc-shell-wide.jpg"
+      ],
+      "transparent_background": false,
+      "source": "C:/Users/17335/.codex/generated_images/01a1cbb6-ecbe-7093-b4f5-b801fb7dc716/exec-435ab9a2-a128-46c0-9acd-953ac2607ad6.png",
+      "selected": false
+    },
+    {
+      "step": 2,
+      "role": "one targeted desktop density and shell geometry correction",
+      "prompt": "Use case: ui-mockup. Precise geometry/density correction of image2 only. Image1 is the actual Fouc SHELL REFERENCE ONLY; its old dashboard content is irrelevant. Image2 is the selected \"交付航线\" homepage to preserve.\n\nKeep the design, all Chinese words and literal work names, five weekly work rows, Nov9–15 2026 chronology, Thursday12 today marker, two human checkpoint entries with evidence/version/person, small resume strip, neutral style and fine rules unchanged. Do not redesign the composition or introduce anything.\n\nCorrect ONLY desktop density and shell geometry to the required approximately1600x1000 product screenshot: sidebar MUST be272px (17%of full width), system bar44px tall, main begins x272/y44 with16px corner, single compact content toolbar44–48px tall. The weekly trajectory surface should begin near y100, rather than the excessive y125 in image2. Thus reduce top toolbar whitespace, body/control type to13px and metadata12px, headings18–20px, buttons30px, slightly compact row height around70–72px. Keep 5rows and sparse schedule elements clean and precisely aligned. Keep dates in chronological equal columns with fixed left work labels. Ensure blue E2E validation bar occupies Thursday12 through Friday13 only, and retain the Friday13 16:00 delivery-validation point. Other schedule labels remain anchored to their original correct day. Preserve refined legibility and all lower-band text. No larger control scale, no giant header, no right panel. Reproduce the actual shell's icon silhouettes and footer. One finished flat Chinese app screenshot only, no exterior captions or frame.",
+      "referenced_image_paths": [
+        "C:/AIWorks/26Coding/fouc/docs/product/V1/design/projects/assets/add-workflow/reference/fouc-shell-wide.jpg",
+        "C:/Users/17335/.codex/generated_images/01a1cbb6-ecbe-7093-b4f5-b801fb7dc716/exec-435ab9a2-a128-46c0-9acd-953ac2607ad6.png"
+      ],
+      "transparent_background": false,
+      "source": "C:/Users/17335/.codex/generated_images/01a1cbb6-ecbe-7093-b4f5-b801fb7dc716/exec-905907cf-f95d-4a65-bdf9-e2d9835445cc.png",
+      "selected": false
+    },
+    {
+      "step": 3,
+      "role": "targeted removal of non-actionable bottom-left framework caption only",
+      "prompt": "Use case: precise-object-edit.\nImage1 is the original actual Fouc shell reference ONLY, not the edit target. Image2 is the final selected Chinese Fouc \"交付航线\" homepage, the edit target. Preserve image2's whole composition and all existing pixels as closely as possible.\n\nMake EXACTLY ONE local edit to image2: remove the small gray caption \"活动按需回访\" at the bottom-left INSIDE the white main content surface, approximately x292–385, y917–932 in the 1568x1003 image. Fill this small text area with the same plain white background. Leave this location empty. This framework explanation has no homepage action value. Do not replace it with other wording or graphics.\n\nInvariants: keep absolutely everything else unchanged: the 1568x1003 canvas and density; Fouc project/sidebar/system/footer/window controls; page toolbar; all five work rows, dates Nov9–15 2026 and Thu12 today marker; exact grid, schedule bars and checkpoint chips; both human checkpoint entries, evidence/version/person metadata, links and buttons; resume strip and \"继续当前工作\" button; and especially the bottom-RIGHT actual recent-update sentence and bullet \"陈宁提交了连接器权限审计的 3 项发现 · 10分钟前\". Do not move, reflow, resize, restyle, recolor, recopy or regenerate any other text. No crops, no new elements. Return one finished screenshot with only the specified bottom-left small caption removed.",
+      "referenced_image_paths": [
+        "C:/AIWorks/26Coding/fouc/docs/product/V1/design/projects/assets/add-workflow/reference/fouc-shell-wide.jpg",
+        "C:/AIWorks/26Coding/fouc/docs/product/V1/design/projects/assets/add-workflow/homepage/tempo/home.png"
+      ],
+      "edit_target_original_source": "C:/Users/17335/.codex/generated_images/01a1cbb6-ecbe-7093-b4f5-b801fb7dc716/exec-905907cf-f95d-4a65-bdf9-e2d9835445cc.png",
+      "transparent_background": false,
+      "source": "C:/Users/17335/.codex/generated_images/01a1cbb6-ecbe-7093-b4f5-b801fb7dc716/exec-d9d7c1ca-2ed8-40f0-b26b-cf872f89b2f3.png",
+      "selected": true
+    }
+  ],
+  "verification": {
+    "inspected": true,
+    "final_files": [
+      "home-v2.png",
+      "generation-prompts.json"
+    ],
+    "notes": "Five literal current-project work names, chronological week and Thursday today marker, current activity labels, two human checkpoints with evidence/version/person and detail-entry actions, compact resume entry, actual light Fouc shell. Final targeted edit removed only the bottom-left caption 活动按需回访; schedule, checkpoints, buttons and bottom-right recent update are visually preserved."
+  }
+}

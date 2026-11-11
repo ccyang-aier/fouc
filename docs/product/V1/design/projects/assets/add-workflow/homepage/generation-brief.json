@@ -1,0 +1,95 @@
+{
+  "deliverable": "Five independent high-fidelity designs for the same Fouc project workbench HOMEPAGE only",
+  "mode": "built-in image_gen; ui-mockup; new generation grounded in an existing shell reference",
+  "date": "2026-11-12",
+  "scope": "Design the landing page reached by 工作台 in the existing sidebar. Do not design a feature-detail, document editor, batch execution or review page. Do not generate a multi-screen board.",
+  "reference": "C:/AIWorks/26Coding/fouc/docs/product/V1/design/projects/assets/add-workflow/reference/fouc-shell-wide.jpg",
+  "reference_role": "Actual Fouc shell geometry, navigation, typography and material only. Replace the old dashboard content. Image is 1773x1108; do not enlarge all controls when composing a roughly 1600x1000 image.",
+  "density": {
+    "target_frame": "approximately 1600x1000, ordinary 100 percent desktop product scale",
+    "sidebar": "272px, approximately 17 percent of the output width, never 320px",
+    "system_bar": "44px; existing tabs about 32px",
+    "content_frame": "single white main surface with 16px outside corners and a fine border",
+    "page_toolbar": "ONE compact 44-48px row; no breadcrumbs, stacked title/description/status/tabs/filter bands",
+    "content_start": "around y96; no huge hero pushing core work below half the viewport",
+    "type": "13px controls/body, 12px secondary metadata, 18-22px headings max",
+    "controls": "30px buttons; ordinary rows 34-40px; avatars 20-24px"
+  },
+  "shell_text": {
+    "project": "Fouc 桌面端 V1",
+    "navigation": ["新对话", "工作台", "任务", "成员", "资产", "智能体"],
+    "selected": "工作台",
+    "sections": ["频道", "产品与设计", "最近"],
+    "footer": ["社区", "连接器", "Fouc Admin"],
+    "system_controls": "history arrows, active 工作台 tab, add tab, search, task, Windows window controls; same silhouettes and geometry"
+  },
+  "home_job": [
+    "Resume the exact useful place in an ongoing work item, with a precise next action.",
+    "Surface one or two decisions or independent reviews that actually need the person.",
+    "Locate the other current-project work without exposing every workflow tool.",
+    "Offer one compact 新建工作 entry; details are requested after entry, not all on the homepage."
+  ],
+  "add_semantics": [
+    "Ten activities are a flexible revisitable pool, not ten mandatory columns or a progress percentage.",
+    "Stage, role, skill, run status and evidence gate are different concepts.",
+    "Homepage labels a work item's current activity and next action, then routes to dedicated pages.",
+    "Gates require evidence, version and the responsible confirmer; do not approve from a bare homepage checkbox.",
+    "Research and writing are valid work types. Bug fixing can start at reproduction.",
+    "Project remains the sole business scope. No workspace entity or extra project chooser. No knowledge-base or automation module."
+  ],
+  "sample_work": [
+    {"id":"FUC-42","name":"成员邀请与权限","type":"特性开发","activity":"详细设计","context":"邀请重发规则待确认；design.md v3","action":"继续设计","owner":"林悦"},
+    {"id":"FUC-38","name":"设备会话断连","type":"问题修复","activity":"复现与定位","context":"已复现；等待验证根因","action":"查看进展","owner":"Codex"},
+    {"id":"FUC-45","name":"连接器权限审计","type":"只读调研","activity":"调研结论","context":"3 项发现待审阅","action":"查看结论","owner":"陈宁"},
+    {"id":"FUC-40","name":"任务批量调整","type":"特性开发","activity":"独立复审","context":"修复已提交；等候 Reviewer","action":"进入复审","owner":"周宁"},
+    {"id":"FUC-44","name":"导出流程验证","type":"交付验证","activity":"真实 E2E","context":"正在验证 2 / 4 条旅程","action":"查看运行","owner":"Tester Agent"},
+    {"id":"FUC-46","name":"项目活动摘要","type":"文档工作","activity":"正文草稿","context":"基于本周已确认的交付记录","action":"继续编写","owner":"林悦"}
+  ],
+  "needs_human": [
+    {"name":"确认邀请重发规则","work":"成员邀请与权限","context":"ADR-012 · 两个方案已备齐","action":"查看决定"},
+    {"name":"复审任务批量调整","work":"任务批量调整","context":"修复轮次 2 · 证据已更新","action":"进入复审"}
+  ],
+  "recent_changes": ["陈宁提交了连接器权限审计的 3 项发现", "Codex 补充了设备断连的复现记录", "林悦更新了成员邀请设计 v3"],
+  "constraints": [
+    "One real application screenshot per concept. No collage, marketing board, device frame, tilted perspective or external title.",
+    "This must look like a project homepage: show multiple work items or project-wide resumption/attention. Never a single feature's editor or code diff.",
+    "The five concepts must differ in content hierarchy AND visual composition, not the same layout with different titles.",
+    "No huge greeting, poster typography, KPI wall, decorative chart, permanent chat pane, giant command box, or every feature advertised at once.",
+    "Professional studio-level craftsmanship from typography, fine rules, strong alignment, deliberate spacing, material and coherent work content.",
+    "Neutral global navigation and actions; use color sparingly for actual workflow type, status, warning, success and content links.",
+    "Keep resource cards flat, single-border and crisp; no stacked shadows or excessive nesting. Do not draw UI icons by hand. Match current FA7 icon shapes.",
+    "All illustrated tasks, counts, people and results are sample UX content, not current implementation or execution evidence."
+  ],
+  "concepts": {
+    "editorial": {
+      "name": "编辑简报",
+      "style": "A premium editorial daily brief: off-white/white paper, graphite typography, fine horizontal rules, asymmetric proportions, small carefully aligned metadata; no giant headline and no grid of dashboards.",
+      "composition": "A dominant resume-work spread on the left: current work and the exact place to continue, with a small meaningful excerpt from design v3. A narrow right margin holds two needs-human items. Below the main spread, a compact ledger of other ongoing work and a single short change note. Main object and reading rhythm lead; distinct hierarchy rather than equal-sized cards.",
+      "primary": "继续设计"
+    },
+    "ledger": {
+      "name": "精密台账",
+      "style": "Refined professional engineering ledger: crisp cool-neutral white, hairline table structure, disciplined 13px typography, small monospaced IDs and timestamps, aligned columns and nuanced state chips; flat, confident and high precision.",
+      "composition": "The homepage is one broad grouped work register with six current work rows: work name, current activity, exact next action, responsible person and update. Human attention is indicated in the relevant row with restrained amber, not a second dashboard. A lightweight selected-row context strip underneath gives the next action and source references; it is not a permanent side inspector or an editor. No three-column layout, no card grid.",
+      "primary": "新建工作"
+    },
+    "desk": {
+      "name": "工作桌面",
+      "style": "A crafted contemporary software work desk: precise flat document-preview cards, subtle white/gray material, thin crisp edges, small workflow-color accents, carefully cropped real content previews, compact metadata and human presence. Sophisticated, tactile but not 3D or decorative.",
+      "composition": "A concise human-attention ribbon is part of the first content row. Below, an asymmetric collection of four ongoing work surfaces: one wide active design card with a small real document excerpt; a smaller debugging card with reproduction steps; a research card with three findings; a writing card with an outline fragment. Cards are entry points to different work, not editors. Low at the bottom are two recent updates as a compact text row. An updated document or submitted finding is not a completed delivery. No permanent side panel, no equal KPI tiles.",
+      "primary": "继续工作"
+    },
+    "nocturne": {
+      "name": "深色指挥台",
+      "style": "Use Fouc's EXISTING dark theme, not a new colorful theme: shell #111111, sidebar #141414, main panel #181818, elevated #222222, text #ededed, secondary #a3a3a3, borders rgba(237,237,237,.14). Same exact geometry and icons as light reference. Elegant matte graphite, extremely restrained amber/green/blue, no neon, no sci-fi effects.",
+      "composition": "Human-attention first: two well-designed decision/review rows dominate the upper left, each with context and a precise entry action. Under them a concise list of four other ongoing work items. A slim right rail shows three Agent tasks with their actual state, latest meaningful result and appropriate controls; waiting for review is not running. Full logs and chat are hidden. A quiet recent-update row anchors the bottom; a submitted fix is not a completed delivery. Do not become an all-metrics monitoring dashboard.",
+      "primary": "查看决定"
+    },
+    "tempo": {
+      "name": "交付航线",
+      "style": "Swiss planning studio: white surface, exact fine-line grid, restrained graphite hierarchy, small schedule typography, elegant thin today marker, selected work with tiny semantic colors. Architectural and calm, not a colorful calendar or enormous Gantt chart.",
+      "composition": "A project-level weekly work trajectory is the dominant plane, Mon Nov9 to Sun Nov15 2026, Today Thu Nov12. Four work rows show near-term confirmed delivery/checkpoint events rather than ten stages. Current work names stay at a fixed left baseline; selected row points to an actual upcoming review. A short lower action band contains the next two human checkpoints and a small resume entry. No right side inspector, no KPI wall, no enormous calendar header or duplicate date tabs.",
+      "primary": "继续当前工作"
+    }
+  }
+}
